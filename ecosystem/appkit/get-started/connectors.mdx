@@ -1,6 +1,7 @@
 ---
 title: "Connectors"
 sidebarTitle: "Connectors"
+icon: plug
 ---
 
 A connector is the transport AppKit uses to talk to a wallet. The `AppKit` instance is created with one or more connectors and at least one network. AppKit cares about the connector's `id`, `type`, `metadata`, and the methods it exposes (`connectWallet`, `disconnectWallet`, `getConnectedWallets`, `destroy`). The interface hides the protocol details. See [Wallets and connectors concept](/ecosystem/appkit/concepts/wallets-and-connectors) for the model.

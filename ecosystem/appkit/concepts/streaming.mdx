@@ -1,0 +1,48 @@
+---
+title: "Streaming"
+sidebarTitle: "Streaming"
+icon: tower-broadcast
+---
+
+Streaming in AppKit is a per-network subscription layer that turns provider events into live balance, jetton, and transaction updates for the app.
+
+Streaming reflects the provider's view of the chain, not finality. The transport can disconnect while the chain advances. After reconnect, updates resume from the provider's current view and may skip in-flight transitions. Treat the stream as a fast cache, not proof of settlement.
+
+## Live provider signals
+
+Streaming complements point-in-time API reads. Instead of asking an API client for the latest state after every interaction, the app subscribes to changes for an address on a specific network.
+
+The `StreamingManager` coordinates providers by `chainId`. A streaming provider implements one transport for one network, such as a Toncenter or TonAPI websocket stream. Registering another provider for the same network replaces the previous stream for that chain.
+
+## Subscription lifetime
+
+A subscription belongs to the consumer that created it. Balance, jetton, transaction, and combined watches all return an unsubscribe function, and that function is the app's handle for stopping updates when a component unmounts or a flow ends.
+
+Connecting and disconnecting the streaming layer opens and closes provider transports without changing the subscription list. This lets an app pause network activity and resume with the same watches still registered.
+
+## Connection state
+
+Connection state describes transport health, not chain finality. A websocket can disconnect and reconnect while the underlying account state continues to change.
+
+After reconnect, updates may resume from the provider's current view of the chain. A flow that needs certainty should refresh from the configured API client before it changes product state.
+
+## Transaction status lifecycle
+
+`useWatchTransactions` (and the underlying `watchTransactions` action) emits status updates with `update.status` set to one of `'pending' | 'confirmed' | 'finalized' | 'invalidated'`. Each status names a different stage and carries a different meaning:
+
+- `pending` — the streaming provider has seen the request but not its inclusion in a block.
+- `confirmed` — a block contains the transaction but it is not irreversible.
+- `finalized` — the chain considers the transaction permanent.
+- `invalidated` — the provider has rolled the transaction back or rejected it; treat the same as a failed send.
+
+UI hints are appropriate at every stage. Product-state changes (delivering value, settling an order) are appropriate only at `finalized`.
+
+## Rule
+
+Store every unsubscribe function. Treat streaming updates as best-effort UI refresh signals, then reconcile with a point-in-time read when correctness matters.
+
+## Related pages
+
+- [Providers](/ecosystem/appkit/concepts/providers)
+- [Networks](/ecosystem/appkit/concepts/networks)
+- [Get Started > Streaming](/ecosystem/appkit/get-started/streaming)
