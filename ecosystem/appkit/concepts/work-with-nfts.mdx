@@ -11,14 +11,14 @@ icon: image
 [NFTs](/standard/tokens/nft/overview) (non-fungible tokens) are unique digital assets on TON, similar to ERC-721 tokens on Ethereum. Unlike [jettons](/standard/tokens/jettons/overview), which are fungible and interchangeable, each NFT is unique and represents ownership of a specific item. NFTs consist of a collection contract and individual NFT item contracts for each token.
 
 <Warning>
-  **Verify NFT authenticity.** Scammers may create fake NFTs that mimic popular collections. An NFT item contract can claim any collection address, so reading the `collection` field from the item alone is not sufficient.
+  **Verify NFT authenticity.** Scammers create fake NFTs that mimic popular collections. An NFT item contract can claim any collection address, so reading the `collection` field from the item alone is not sufficient.
 
   Mitigation: To verify that an NFT item genuinely belongs to a collection, query the collection contract with the item's index and check that the returned address matches the item's address. See [how to verify an NFT item](/standard/tokens/nft/verify) for the full procedure.
 </Warning>
 
 ## Ownership
 
-NFT ownership is tracked through individual NFT item contracts. Unlike jettons, which have a balance, one either owns a specific NFT item or does not. Each item contract carries an `ownerAddress` that reflects current ownership.
+NFT ownership is tracked through individual NFT item contracts. Unlike jettons, which have a balance, a wallet either owns a specific NFT item or it does not. Each item contract carries an `ownerAddress` that reflects current ownership.
 
 A discrete ownership check is fine for assembling an outgoing transfer, but UI state should not be derived from it — ownership can change between read and render. There is no `watchNfts` streaming action; mirror live ownership state with a polling pattern.
 
@@ -32,7 +32,7 @@ See [How to > NFTs](/ecosystem/appkit/howto/nfts) for the read, render, and poll
   Double-check the recipient address to avoid permanent loss of valuable NFTs.
 </Warning>
 
-Before making a transfer, make sure there is enough Toncoin on the sender wallet to cover the [fees](/foundations/fees).
+Before making a transfer, make sure the sender's wallet has enough Toncoin to cover the [fees](/foundations/fees).
 
 An NFT transfer carries the destination owner address, the NFT contract address, and an optional small Toncoin amount included with the recipient message. A common failure mode is **stale ownership**: the NFT changes owners between the read and the transfer attempt. Read `ownerAddress` again before opening the wallet so the user signs a transfer based on current ownership. If `isOnSale` is true, also check `realOwnerAddress`.
 
@@ -80,7 +80,7 @@ export interface NFT {
 }
 ```
 
-NFT display data (`info`, `attributes`, `extra`) is off-chain and untrusted. The contract address is the authoritative routing key. When `isOnSale` is `true`, the item is technically owned by a sale contract for the duration of the listing — `ownerAddress` points to the sale contract, while `realOwnerAddress` is the original seller. Render the seller, but route any on-chain interaction on `ownerAddress` because that's the contract that actually holds the NFT.
+NFT display data (`info`, `attributes`, `extra`) is off-chain and untrusted. The contract address is the authoritative routing key. When `isOnSale` is `true`, `ownerAddress` points to the sale contract and `realOwnerAddress` points to the seller. Render the seller, but route on-chain interactions through `ownerAddress`.
 
 ## Settlement
 

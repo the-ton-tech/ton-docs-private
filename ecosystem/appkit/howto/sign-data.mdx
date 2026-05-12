@@ -115,7 +115,7 @@ const response = await signCell(appKit, {
 
 ## Verify the signature
 
-The wallet returns `{ signature, address, timestamp, domain, payload }`. Verify server-side: check the Ed25519 signature against the payload and the wallet's public key, match the address and domain, reject stale timestamps, and reject reused nonces. See [Sign data concept → Verify a response](/ecosystem/appkit/concepts/sign-data#verify-a-response) for the field-by-field checklist.
+The wallet returns `{ signature, address, timestamp, domain, payload }`. Verify it server-side: check the Ed25519 signature, match the address and domain, reject stale timestamps, and reject reused nonces. See [Sign data concept → Verify a response](/ecosystem/appkit/concepts/sign-data#verify-a-response) for the field-by-field checklist.
 
 ## Common failures
 

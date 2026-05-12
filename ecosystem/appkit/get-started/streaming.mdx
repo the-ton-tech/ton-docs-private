@@ -12,7 +12,7 @@ You need a streaming provider registered on the AppKit instance before any watch
 
 ## Mount global watchers
 
-Mount the `useWatch*` hooks once at a high level — the router, the app shell, or a layout component — so the underlying cache stays current for every consumer below. Calling a hook with no arguments simply keeps the cache warm; passing an `onChange` callback is for one-shot side effects (toast, log, navigate). The official example app calls `useWatchBalance()`, `useWatchJettons()`, and `useWatchTransactions({ onChange })` from its router for exactly this reason.
+Mount `useWatch*` hooks once at a high level, such as the router, app shell, or layout. Calling a hook with no arguments keeps the cache warm. Pass `onChange` only for side effects such as toasts, logs, or navigation.
 
 ```tsx
 import { useWatchBalance, useWatchTransactions } from '@ton/appkit-react';

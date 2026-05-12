@@ -4,7 +4,7 @@ sidebarTitle: "Basic getter hooks"
 icon: magnifying-glass
 ---
 
-Getter hooks read AppKit state from React. A getter hook exposes a slice of AppKit state — the selected wallet, an address balance, the current network — to a component, and re-renders when that slice changes. They do not initiate wallet actions; sending a transaction or signing a message goes through mutation hooks (`useTransferTon`, `useSignText`, `useSendTransaction`).
+Getter hooks read AppKit state from React and re-render when that state changes. They do not start wallet actions; transactions and signatures use mutation hooks such as `useTransferTon`, `useSignText`, and `useSendTransaction`.
 
 ## Before you begin
 

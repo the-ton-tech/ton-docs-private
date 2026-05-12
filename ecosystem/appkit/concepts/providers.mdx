@@ -25,7 +25,11 @@ A swap provider integrates a DEX or aggregator. It returns a **quote** for a rou
 
 ## Staking
 
-A staking provider quotes a stake or unstake intent for a specific pool or protocol, then builds the matching `TransactionRequest`. Liquid-staking positions may appear in the wallet as derivative balances, such as tsTON. AppKit exposes pool metadata and APY as provider-supplied **display data**, not as a guarantee of future yield or redemption timing. Unstake mechanics, including instant, delayed, and round-end exits, are provider-specific. The bundled staking provider is Tonstakers. See [Staking](/ecosystem/appkit/concepts/staking) for the full flow.
+A staking provider quotes a stake or unstake intent for a specific pool or protocol, then builds the matching `TransactionRequest`.
+
+Liquid-staking positions may appear in the wallet as derivative balances, such as tsTON. AppKit exposes pool metadata and APY as provider-supplied **display data**, not a guarantee of future yield or redemption timing.
+
+Unstake mechanics — instant, delayed, or round-end — are provider-specific. The bundled staking provider is Tonstakers. See [Staking](/ecosystem/appkit/concepts/staking) for the full flow.
 
 ## How they are registered
 

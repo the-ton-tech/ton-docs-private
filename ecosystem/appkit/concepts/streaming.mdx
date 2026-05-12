@@ -6,7 +6,7 @@ icon: tower-broadcast
 
 Streaming in AppKit is a per-network subscription layer that turns provider events into live balance, jetton, and transaction updates for the app.
 
-Streaming reflects the streaming provider's view of the chain, not finality. The underlying transport is a long-lived connection; it can disconnect and reconnect while the chain advances, and after reconnect updates resume from the provider's current view, which may skip in-flight transitions. Treat the stream as a fast cache, not as proof of settlement.
+Streaming reflects the provider's view of the chain, not finality. The transport can disconnect while the chain advances. After reconnect, updates resume from the provider's current view and may skip in-flight transitions. Treat the stream as a fast cache, not proof of settlement.
 
 ## Live provider signals
 

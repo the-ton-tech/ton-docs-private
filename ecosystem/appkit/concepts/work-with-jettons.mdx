@@ -10,7 +10,7 @@ icon: coins
 
 [Jettons](/standard/tokens/jettons/overview) are fungible tokens on TON, similar to ERC-20 tokens on Ethereum. Unlike Toncoin, which is the native TON currency used in all transfers, each jetton has a separate master (minter) contract and an individual wallet contract for each holder.
 
-For example, USDT on TON is implemented as a jetton, and its minter contract address is `EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs`. By providing this address and the recipient's TON wallet contract address, AppKit knows which tokens to send and to whom.
+For example, USDT on TON is implemented as a jetton, and its minter contract address is `EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs`. Pass this address and the recipient's TON wallet address so AppKit can build the jetton transfer.
 
 <Note>
   To deploy and mint a new jetton on the mainnet without writing code, use the dedicated official tool: [TON MINTER](https://minter.ton.org).
@@ -18,7 +18,7 @@ For example, USDT on TON is implemented as a jetton, and its minter contract add
 
 ## Jetton wallet contract
 
-Each jetton holder has a dedicated jetton wallet contract derived from `(jettonMaster, ownerAddress)`. The owner is the user's TON wallet; the jetton wallet is a separate contract owned by it. Transfers always read the destination **owner address** — AppKit derives the recipient's jetton wallet internally.
+Each jetton holder has a dedicated jetton wallet contract derived from `(jettonMaster, ownerAddress)`. The owner is the user's TON wallet; the jetton wallet is a separate contract owned by the user's TON wallet. Transfers always read the destination **owner address** — AppKit derives the recipient's jetton wallet internally.
 
 If the recipient has never held this jetton, the transfer deploys the recipient's jetton wallet contract on first receive, which costs additional gas. The default outer-TON allowance on a built `transferJetton` request is designed to cover this case.
 
@@ -43,10 +43,10 @@ See [How to > Read balances](/ecosystem/appkit/howto/read-balances) for single-j
 <Warning>
   **Funds at risk.** Each jetton stores the `decimals` parameter in its [metadata](#metadata-and-decimals). Transferring without accounting for decimals can result in sending drastically more or fewer tokens than intended.
 
-  Mitigation: Verify the correct `decimals` value before calculating transfer amounts. For USDT, decimals is 6.
+  Mitigation: Verify the correct `decimals` value before calculating transfer amounts. For USDT, the decimals value is 6.
 </Warning>
 
-Before making a transfer, make sure there is enough Toncoin on the sender wallet to cover the [fees](/foundations/fees).
+Before making a transfer, make sure the sender's wallet has enough Toncoin to cover the [fees](/foundations/fees).
 
 A jetton transfer carries the destination owner address, the jetton master address, the amount (in fractional jetton units), the decimals, and an optional comment. AppKit derives the sender's jetton wallet, builds the inner jetton transfer payload, and wraps it in an outer TON message.
 

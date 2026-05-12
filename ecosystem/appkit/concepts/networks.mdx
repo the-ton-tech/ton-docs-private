@@ -18,7 +18,7 @@ At least one network must be configured. If a flow tries to read from a chain th
 
 Some flows are explicitly scoped to a network. Others need a fallback when the caller does not pass one. The default network is that fallback.
 
-Changing the default network changes the chain AppKit uses for unspecific reads and actions. Connectors observe this change so wallet-facing flows can compare the selected wallet's network with the app's current expectation.
+Changing the default network changes the chain AppKit uses for reads and actions that do not specify a network. Connectors observe this change so wallet-facing flows can compare the selected wallet's network with the app's current expectation.
 
 ## Network mismatch
 

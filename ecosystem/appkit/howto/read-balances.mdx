@@ -8,7 +8,7 @@ Read Toncoin and jetton balances for the connected wallet or any address.
 
 ## Before you begin
 
-A connected wallet (or a known address) and the React provider mounted. See [Connect to a wallet](/ecosystem/appkit/howto/connect-to-a-wallet).
+You need a connected wallet or known address, and the React provider must be mounted. See [Connect to a wallet](/ecosystem/appkit/howto/connect-to-a-wallet).
 
 ## Pick the right hook
 
@@ -71,7 +71,7 @@ const formatted = getFormattedJettonInfo(jetton);
 
 ## Jetton wallet address
 
-Each jetton holder has a dedicated jetton wallet contract derived from `(jettonMaster, ownerAddress)`. For display purposes — for example, showing the user their per-jetton wallet address — resolve it explicitly. `transferJetton` handles this derivation internally, so you do not need to pre-resolve the address to send.
+Each jetton holder has a dedicated jetton wallet contract derived from `(jettonMaster, ownerAddress)`. Resolve it explicitly only when you need to display that address. `transferJetton` derives the recipient's jetton wallet internally.
 
 ```tsx
 import { useJettonWalletAddress, useAddress } from '@ton/appkit-react';

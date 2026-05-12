@@ -8,7 +8,7 @@ Open a wallet session, restore it across reloads, and disconnect cleanly.
 
 ## Before you begin
 
-You need an `AppKit` instance with at least one connector and the React providers mounted. See [Connectors](/ecosystem/appkit/get-started/connectors) for the instance and [Installation → Set up React providers](/ecosystem/appkit/get-started/installation/react-app#set-up-react-providers) for the wrap.
+You need an `AppKit` instance with at least one connector and the React providers mounted. See [Connectors](/ecosystem/appkit/get-started/connectors) for the instance and [Installation → Set up React providers](/ecosystem/appkit/get-started/installation/react-app#set-up-react-providers) for the provider setup.
 
 ## Drop-in button
 
@@ -73,7 +73,7 @@ const address = useAddress(); // string | undefined
 
 ## Register a connector after construction
 
-When the connector configuration depends on values that aren't available at construction time — a user-scoped manifest URL, a feature flag, a dynamically chosen wallet set — register it with the `addConnector` action. It accepts a `Connector` instance or a factory and returns an unregister function.
+If connector configuration is not available at construction time, register it with `addConnector`. Use this for user-scoped manifest URLs, feature flags, or dynamic wallet sets. `addConnector` accepts a `Connector` instance or a factory and returns an unregister function.
 
 ```ts
 import { addConnector, createTonConnectConnector } from '@ton/appkit';

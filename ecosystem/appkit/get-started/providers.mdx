@@ -4,7 +4,7 @@ sidebarTitle: "Providers"
 icon: layer-group
 ---
 
-Providers are AppKit's plug points to the rest of the world: services that read from a chain, push live updates, build swap transactions, or build staking transactions. They sit on the AppKit instance and supply data; they do not own UI, sessions, or signing. See [Providers concept](/ecosystem/appkit/concepts/providers) for the model.
+Providers connect AppKit to external services: chain reads, live updates, swap transactions, and staking transactions. They sit on the AppKit instance and supply data; they do not own UI, sessions, or signing. See [Providers concept](/ecosystem/appkit/concepts/providers) for the model.
 
 ## Before you begin
 
@@ -12,7 +12,7 @@ You need AppKit packages installed and an `AppKit` instance created. See [Instal
 
 ## Provider types
 
-The four data and DeFi providers attach to AppKit at different points in the lifecycle. The API client sits inside the network entry on the constructor and supplies point-in-time reads. Swap and staking providers go in the constructor's `providers` array (typed as `ProviderInput[]`) and are imported only when the app actually offers those flows. The streaming provider is registered separately on `appKit.streamingManager` *after* construction — it is not bundled with the API client, and watch hooks plus `watch*` actions are no-ops until at least one streaming provider is registered.
+Provider types attach at different points. API clients live in `networks[chainId].apiClient`. Swap and staking providers go in `AppKitConfig.providers`. Streaming providers are registered after construction on `appKit.streamingManager`; watch hooks and `watch*` actions are no-ops until one is registered.
 
 | Type               | Where it goes                                                             |
 | ------------------ | ------------------------------------------------------------------------- |

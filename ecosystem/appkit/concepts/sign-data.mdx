@@ -4,7 +4,7 @@ sidebarTitle: "Sign data"
 icon: signature
 ---
 
-Sign Data lets a wallet attest to application data without sending a transaction. Typical use cases include user-facing acknowledgments, off-chain receipts, and signatures that a backend or TON smart contract verifies later. For wallet-ownership sign-in, use `ton_proof` instead; it is a separate flow handled during connection.
+Sign data lets a wallet attest to application data without sending a transaction. Typical use cases include user-facing acknowledgments, off-chain receipts, and signatures that a backend or TON smart contract verifies later. For wallet-ownership sign-in, use `ton_proof` instead; it is a separate flow handled during connection.
 
 The wallet returns an Ed25519 signature, the signing address, the wallet-supplied timestamp, and the dApp domain observed by the wallet. Your verifier is responsible for validating the response.
 
@@ -48,9 +48,9 @@ Use binary payloads for compact binary protocols, hash chains, or signing the di
 
 ## Sign cell
 
-`signCell` signs a TON cell encoded as a Bag-of-Cells (BoC), together with a TL-B schema describing the cell layout. The wallet uses the schema to parse the cell, render fields to the user, and compute the canonical signing input. The verifier, whether backend or smart contract, uses the same schema to reconstruct that input.
+Use cell payloads when a TON contract will verify the signature, or when the data is structured rather than plain text but should still be displayed meaningfully. Cell is the only payload kind designed for on-chain verification.
 
-Use cell payloads when a TON contract will verify the signature, or when the data is structured, not plain text, and should still be displayed in a meaningful form. Cell is the only payload kind designed for on-chain verification. The schema is part of the signed-data contract: the wallet uses it for display, and the verifier uses it to reconstruct the signed input. If the layout does not match, verification fails even when the underlying values are equivalent.
+`signCell` takes a TON cell encoded as a Bag-of-Cells (BoC) and a TL-B schema describing the layout. The wallet uses the schema to parse the cell and render fields to the user. The verifier — backend or smart contract — uses the same schema to reconstruct the signed input. If the layout does not match, verification fails even when the underlying values are equivalent.
 
 ## Verify a response
 
