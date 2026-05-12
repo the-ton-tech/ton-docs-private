@@ -1,13 +1,13 @@
 ---
 title: "Get started with AppKit"
-sidebarTitle: "Get started"
+sidebarTitle: "Overview"
 ---
 
 Use this section to learn the AppKit surface one piece at a time. Each page introduces one part of the toolkit with the smallest example that explains it.
 
 AppKit ships in three layers. `@ton/appkit` is the core: it owns the `AppKit` instance, the connectors, the actions, and the type definitions, and it works on its own from plain TypeScript. `@ton/appkit-react` is a thin layer on top that exposes the same surface as React hooks and ready-to-mount components, plus a default stylesheet. The optional DeFi and streaming providers (`@ton/appkit/swap/*`, `@ton/appkit/staking/*`, and the streaming providers registered on `appKit.streamingManager`) plug AppKit into external services and live data.
 
-Read Get started for orientation. Each page here defines one piece of the surface, shows the smallest example that explains it, and stops. When you need to actually build a flow — connect, read, send, sign — switch to the [How to](/ecosystem/appkit/howto) section, which extends the same code patterns into full task recipes.
+Each page here defines one piece of the surface, shows the smallest example that explains it, and stops. When you need to actually build a flow — connect, read, send, sign — switch to the [How to](/ecosystem/appkit/howto) section, which extends the same code patterns into full task recipes.
 
 ## What you will learn
 
@@ -27,5 +27,5 @@ Each page is a short orientation: one paragraph, one snippet, then a link to a d
 ## After this section
 
 - See task-level walkthroughs in [How to](/ecosystem/appkit/howto).
-- See the full hook list in [React reference](/ecosystem/appkit/reference/react).
-- See the full action list in [Core actions](/ecosystem/appkit/reference/actions).
+- See the full hook list in the [`@ton/appkit-react` reference](/ecosystem/appkit/reference/appkit-react).
+- See the full action list in the [`@ton/appkit` reference](/ecosystem/appkit/reference/appkit).

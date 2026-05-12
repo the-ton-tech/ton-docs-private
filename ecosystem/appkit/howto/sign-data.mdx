@@ -4,7 +4,7 @@ sidebarTitle: "Sign data"
 icon: signature
 ---
 
-Ask the wallet to sign a payload. AppKit supports plain text, raw binary, and TON cells.
+Ask the wallet to sign a payload. AppKit supports plain text, raw binary, and TON cells. See [Sign data concept](/ecosystem/appkit/concepts/sign-data) for the model, payload-kind selection, and the full verify checklist.
 
 ## Before you begin
 
@@ -54,6 +54,16 @@ export function SignMessage() {
 }
 ```
 
+Core action:
+
+```ts
+import { signText } from '@ton/appkit';
+
+const response = await signText(appKit, {
+  text: 'Sign in to example.com\nnonce=2c8e9...',
+});
+```
+
 ## Sign binary
 
 ```tsx
@@ -61,14 +71,22 @@ import { useSignBinary } from '@ton/appkit-react';
 
 const { mutate: signBinary } = useSignBinary();
 
-signBinary({
-  binary: 'base64-encoded-payload',
+signBinary({ bytes: 'iJM7Wb...=' });
+```
+
+Core action:
+
+```ts
+import { signBinary } from '@ton/appkit';
+
+const response = await signBinary(appKit, {
+  bytes: 'iJM7Wb...=', // base64 of the bytes you want signed
 });
 ```
 
 ## Sign a cell
 
-For application protocols that exchange typed payloads, send a TON cell.
+For application protocols that exchange typed payloads, send a TON cell with a TL-B schema. The schema is required — the wallet uses it to parse and display the cell, and the verifier uses it to reconstruct the signing input.
 
 ```tsx
 import { useSignCell } from '@ton/appkit-react';
@@ -80,14 +98,37 @@ const cell = beginCell().storeUint(42, 32).storeStringTail('hello').endCell();
 
 signCell({
   cell: cell.toBoc().toString('base64'),
+  schema: 'auth#_ nonce:uint64 ttl:uint32 = Auth;',
+});
+```
+
+Core action:
+
+```ts
+import { signCell } from '@ton/appkit';
+
+const response = await signCell(appKit, {
+  cell: 'te6cck...=', // base64-encoded BoC
+  schema: 'auth#_ nonce:uint64 ttl:uint32 = Auth;',
 });
 ```
 
 ## Verify the signature
 
-The wallet returns `{ signature, address, network }`. Verify the signature server side against the payload and the wallet's public key before trusting it. Treat the client-side response as a hint, not proof.
+The wallet returns `{ signature, address, timestamp, domain, payload }`. Verify server-side: check the Ed25519 signature against the payload and the wallet's public key, match the address and domain, reject stale timestamps, and reject reused nonces. See [Sign data concept → Verify a response](/ecosystem/appkit/concepts/sign-data#verify-a-response) for the field-by-field checklist.
+
+## Common failures
+
+| Failure              | Meaning                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| User rejected        | The user closed or rejected the wallet request.                                                       |
+| Wallet not connected | No wallet is selected; the action throws `Wallet not connected`. Check `useSelectedWallet` first.     |
+| Unsupported kind     | The selected wallet does not support `binary` or `cell` signing. Fall back to `text` if appropriate.  |
+| Stale timestamp      | The wallet-supplied timestamp is outside your acceptance window. Ask the user to sign again.          |
+| Wrong domain         | The response `domain` does not match the dApp domain you expect. Treat as suspicious — do not accept. |
 
 ## Related
 
-- [React reference](/ecosystem/appkit/reference/react)
-- [Build → Sign data](/ecosystem/appkit/build/sign-data)
+- [Sign data concept](/ecosystem/appkit/concepts/sign-data)
+- [`@ton/appkit-react` reference](/ecosystem/appkit/reference/appkit-react)
+- [Connect to a wallet](/ecosystem/appkit/howto/connect-to-a-wallet)

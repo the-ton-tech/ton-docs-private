@@ -8,6 +8,8 @@ TON Connect's **AppKit** is an open-source SDK that integrates web2 and web3 app
 
 The framework-independent core lives in `@ton/appkit`. React bindings live in `@ton/appkit-react` and wrap the same actions with hooks.
 
+AppKit prepares requests, tracks application state, and connects your interface to wallets and providers. Wallets still sign transactions and data. Your backend still verifies orders, signatures, and business rules.
+
 ## Features
 
 - TON Connect protocol compliance: integrate with the standard wallet infrastructure for TON.
@@ -28,30 +30,13 @@ A single `AppKit` instance holds four kinds of state: configured **networks** (m
 
 ## Configuration
 
-Create `AppKit` once with an `AppKitConfig`. All fields are optional; pass only the configuration your app needs.
+Create the `AppKit` instance once with an `AppKitConfig`. All fields are optional; pass only the configuration your app needs. See [Connectors](/ecosystem/appkit/get-started/connectors) for the constructor walkthrough.
 
-```ts
-import { AppKit, Network, createTonConnectConnector, setDefaultNetwork } from '@ton/appkit';
+A few configuration knobs are worth knowing about up front:
 
-const appKit = new AppKit({
-  networks: {
-    [Network.mainnet().chainId]: {
-      apiClient: { url: 'https://toncenter.com', key: 'your-api-key' },
-    },
-  },
-  connectors: [
-    createTonConnectConnector({
-      tonConnectOptions: { manifestUrl: 'https://example.com/tonconnect-manifest.json' },
-    }),
-  ],
-});
-
-setDefaultNetwork(appKit, { network: Network.mainnet() });
-```
-
-`setDefaultNetwork` defines the network that connectors should require when a wallet connects. Pass `undefined` to allow wallets from any network. Set `ssr: true` in `AppKitConfig` when constructing AppKit in a server-rendered environment such as Next.js.
-
-Get a mainnet API key from [t.me/toncenter](https://t.me/toncenter) to access higher rate limits. Asset reads issue many requests; without a key, expect frequent 429 responses. See the full setup on the [Installation page](/ecosystem/appkit/get-started/installation).
+- `setDefaultNetwork(appKit, { network })` defines the network connectors require when a wallet connects. Pass `undefined` to allow wallets from any network.
+- `ssr: true` in `AppKitConfig` switches AppKit into a mode safe for server-rendered environments such as Next.js.
+- Get a mainnet API key from [t.me/toncenter](https://t.me/toncenter) for higher rate limits. Asset reads issue many requests; without a key, expect frequent 429 responses.
 
 <Note>
   If `networks` is omitted entirely, AppKit constructs a **mainnet-only** `ApiClientToncenter` with no API key. Fine for quick prototyping; expect rate limits on real workloads. Testnet apps must declare `networks` explicitly.
@@ -82,20 +67,7 @@ Read actions that target the selected wallet (`getBalance`, `getJettons`, `getNf
 
 ## React integration
 
-`@ton/appkit-react` provides hooks for the main AppKit actions and watchers. Mount `AppKitProvider` once, then call hooks anywhere below it.
-
-```tsx
-import { AppKitProvider } from '@ton/appkit-react';
-import '@ton/appkit-react/styles.css';
-
-function App() {
-  return (
-    <AppKitProvider appKit={appKit}>
-      <Routes />
-    </AppKitProvider>
-  );
-}
-```
+`@ton/appkit-react` provides hooks for the main AppKit actions and watchers. Mount `AppKitProvider` once at the root inside a TanStack `QueryClientProvider`, then call hooks anywhere below it. See [Installation → Set up React providers](/ecosystem/appkit/get-started/installation/react-app#set-up-react-providers) for the mount.
 
 Most async data hooks return TanStack Query results such as `{ data, isLoading, error, refetch }`, and mutation hooks return `{ mutate, mutateAsync, isPending, error }`. Watch hooks such as `useWatchBalance` return `void` and keep the related query cache fresh while mounted. Wallet state hooks read AppKit's local store directly: `useSelectedWallet()` returns `[wallet, setWalletId]`, while `useConnectedWallets()` and `useConnectors()` return arrays.
 

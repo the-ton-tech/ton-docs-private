@@ -32,19 +32,13 @@ interface SignDataResponse {
 
 Each signing action accepts an optional `network` and throws when no wallet is selected.
 
+See [How to > Sign data](/ecosystem/appkit/howto/sign-data) for the React hooks and vanilla call code.
+
 ## Sign text
 
 `signText` signs a UTF-8 string. The wallet receives the literal text and can display it to the user before asking for confirmation. Use this format when the payload is intended to be human-readable.
 
 Use it for attestations the user should read in the wallet, such as terms acknowledgments, off-chain receipts, or agreements recorded server-side. **Do not** use it for wallet-ownership sign-in; that is what `ton_proof` is for. Do not include secrets or hidden data in text payloads, because the text is visible to the user.
-
-```ts
-import { signText } from '@ton/appkit';
-
-const response = await signText(appKit, {
-  text: 'Sign in to example.com\nnonce=2c8e9...',
-});
-```
 
 ## Sign binary
 
@@ -52,28 +46,11 @@ const response = await signText(appKit, {
 
 Use binary payloads for compact binary protocols, hash chains, or signing the digest of a larger off-chain document. Binary signing is also useful when the payload must remain byte-for-byte stable and a text encoding step could change it.
 
-```ts
-import { signBinary } from '@ton/appkit';
-
-const response = await signBinary(appKit, {
-  bytes: 'iJM7Wb...=', // base64 of the bytes you want signed
-});
-```
-
 ## Sign cell
 
 `signCell` signs a TON cell encoded as a Bag-of-Cells (BoC), together with a TL-B schema describing the cell layout. The wallet uses the schema to parse the cell, render fields to the user, and compute the canonical signing input. The verifier, whether backend or smart contract, uses the same schema to reconstruct that input.
 
 Use cell payloads when a TON contract will verify the signature, or when the data is structured, not plain text, and should still be displayed in a meaningful form. Cell is the only payload kind designed for on-chain verification. The schema is part of the signed-data contract: the wallet uses it for display, and the verifier uses it to reconstruct the signed input. If the layout does not match, verification fails even when the underlying values are equivalent.
-
-```ts
-import { signCell } from '@ton/appkit';
-
-const response = await signCell(appKit, {
-  cell: 'te6cck...=', // base64-encoded BoC
-  schema: 'auth#_ nonce:uint64 ttl:uint32 = Auth;',
-});
-```
 
 ## Verify a response
 

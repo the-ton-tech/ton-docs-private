@@ -101,12 +101,63 @@ import { getNft } from '@ton/appkit';
 const nft = await getNft(appKit, { nftAddress: 'EQ...' });
 ```
 
+## Continuous ownership monitoring
+
+There is no `watchNfts` streaming action. To keep an NFT view in sync, mount a query hook with a refetch interval, or run a polling loop from vanilla code.
+
+```tsx
+import { useNfts } from '@ton/appkit-react';
+
+const { data, isLoading, error, refetch } = useNfts({
+  limit: 100,
+  query: { refetchInterval: 10_000 },
+});
+```
+
+From vanilla JS:
+
+```ts
+import { type AppKit, type NFT, getNfts } from '@ton/appkit';
+
+/** Start polling. Returns a stop function. */
+export function startNftOwnershipMonitoring(
+  appKit: AppKit,
+  onNftsUpdate: (nfts: NFT[]) => void,
+  intervalMs: number = 10_000,
+): () => void {
+  let isRunning = true;
+
+  const poll = async () => {
+    while (isRunning) {
+      const result = await getNfts(appKit, { limit: 100 });
+      onNftsUpdate(result?.nfts ?? []);
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  };
+
+  poll();
+  return () => { isRunning = false; };
+}
+```
+
+Pick an interval based on UX needs — shorter intervals provide fresher data but increase API usage. For large wallets, call `getNfts` with increasing `offset` to paginate.
+
 ## Confirm settlement
 
 The wallet accepting the request does not prove the NFT moved. Track the transaction with [Streaming](/ecosystem/appkit/get-started/streaming) and verify ownership before crediting value.
 
+## Common failures
+
+| Failure                | Meaning                                                                                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| User rejected          | The user closed or rejected the wallet request.                                                           |
+| Stale ownership        | The NFT changed owners between the read and the transfer. Reread `ownerAddress` before sending.            |
+| NFT on sale            | `isOnSale === true` — the NFT is held by a sale contract. Cancel the listing or transfer through the sale contract flow. |
+| Soulbound NFT          | `isSoulbound === true` — the item cannot be transferred.                                                  |
+| Invalid address        | The recipient or NFT contract address is malformed or for the wrong network.                              |
+
 ## Related
 
 - [Use UI widgets](/ecosystem/appkit/howto/use-ui-widgets)
-- [React reference](/ecosystem/appkit/reference/react)
-- [Build → Work with NFTs](/ecosystem/appkit/build/work-with-nfts)
+- [`@ton/appkit-react` reference](/ecosystem/appkit/reference/appkit-react)
+- [Work with NFTs concept](/ecosystem/appkit/concepts/work-with-nfts)

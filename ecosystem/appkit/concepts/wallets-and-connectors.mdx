@@ -35,6 +35,8 @@ Wallet ids are derived from `(network, address)`. The same address on a differen
 
 A connector is the transport between AppKit and a wallet. It opens the pairing flow, reports connected wallets, and routes signing requests to the wallet.
 
+A connector is not a wallet and does not sign. Signing always happens inside the user's wallet application; the connector only carries requests to it and responses back.
+
 A connector implements the `Connector` interface. Connector ids are unique — registering a second connector with the same id calls `destroy()` on the old one and replaces it.
 
 ```ts
@@ -57,77 +59,19 @@ Both paths accept the same input: a `Connector` instance or a factory `(ctx) => 
 
 ### At construction
 
-Pass connectors in the `connectors` field of `AppKitConfig`. The constructor runs `addConnector` for each entry in order.
-
-```ts
-import { AppKit, createTonConnectConnector } from '@ton/appkit';
-
-const appKit = new AppKit({
-  connectors: [
-    createTonConnectConnector({
-      tonConnectOptions: { manifestUrl: 'https://example.com/tonconnect-manifest.json' },
-    }),
-  ],
-});
-```
+Pass connectors in the `connectors` field of `AppKitConfig`. The constructor runs `addConnector` for each entry in order. See [Get Started > Connectors](/ecosystem/appkit/get-started/connectors) for the constructor walkthrough.
 
 ### After construction
 
-The `addConnector` action registers a connector on an existing `AppKit` instance and returns an unregister function. Use it when the connector depends on values that are not available at construction time, such as a user-scoped manifest URL, or when the app needs to replace connectors dynamically.
-
-```ts
-import { addConnector, createTonConnectConnector } from '@ton/appkit';
-
-const unregister = addConnector(
-  appKit,
-  createTonConnectConnector({
-    tonConnectOptions: { manifestUrl: 'https://example.com/tonconnect-manifest.json' },
-  }),
-);
-
-// Later, to remove and destroy the connector:
-unregister();
-```
+The `addConnector` action registers a connector on an existing `AppKit` instance and returns an unregister function. Use it when the connector depends on values that are not available at construction time, such as a user-scoped manifest URL, or when the app needs to replace connectors dynamically. See [How to > Connect to a wallet → Register a connector after construction](/ecosystem/appkit/howto/connect-to-a-wallet#register-a-connector-after-construction) for the code.
 
 ## React hooks
 
-`@ton/appkit-react` exposes hooks for the main wallet and connector actions and state readers: `useConnect`, `useDisconnect`, `useConnectors`, `useConnectedWallets`, `useSelectedWallet`, and `useAddress`.
-
-A typical connect-or-disconnect button reads the selected wallet and routes to the matching mutation:
-
-```tsx
-import { useConnect, useDisconnect, useSelectedWallet } from '@ton/appkit-react';
-
-function ConnectButton() {
-  const [wallet] = useSelectedWallet();
-  const { mutate: connect, isPending: isConnecting, error } = useConnect();
-  const { mutate: disconnect, isPending: isDisconnecting } = useDisconnect();
-
-  if (wallet) {
-    return (
-      <button
-        onClick={() => disconnect({ connectorId: wallet.connectorId })}
-        disabled={isDisconnecting}
-      >
-        {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
-      </button>
-    );
-  }
-
-  return (
-    <>
-      <button onClick={() => connect({ connectorId: 'tonconnect' })} disabled={isConnecting}>
-        {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-      </button>
-      {error && <div>{error.message}</div>}
-    </>
-  );
-}
-```
+`@ton/appkit-react` exposes hooks for the main wallet and connector actions and state readers: `useConnect`, `useDisconnect`, `useConnectors`, `useConnectedWallets`, `useSelectedWallet`, and `useAddress`. See [How to > Connect to a wallet](/ecosystem/appkit/howto/connect-to-a-wallet) for the full picker and disconnect-button patterns.
 
 Mutation hooks return TanStack Query's `{ mutate, mutateAsync, isPending, error }`. Async data hooks such as `useBalance` return TanStack Query results. Wallet and connector state hooks read AppKit's local store directly: `useSelectedWallet()` returns `[wallet, setWalletId]`, `useConnectedWallets()` returns `WalletInterface[]`, `useConnectors()` returns `Connector[]`, and `useConnectorById(id)` returns `Connector | undefined`. Watch hooks such as `useWatchBalance` return `void` and keep the related query cache fresh while mounted.
 
-For the complete hook surface, see [`@ton/appkit-react/docs/hooks.md`](https://github.com/ton-connect/kit/tree/main/packages/appkit-react/docs). For the underlying core actions, see [`@ton/appkit/docs/actions.md`](https://github.com/ton-connect/kit/tree/main/packages/appkit/docs).
+For the complete hook surface, see the [`@ton/appkit-react` reference](/ecosystem/appkit/reference/appkit-react). For the underlying core actions, see the [`@ton/appkit` reference](/ecosystem/appkit/reference/appkit).
 
 `setSelectedWalletId` updates the stored id but does not emit `wallets:selection-changed`. The selection event fires only when the connected wallet list changes — through `connect`, `disconnect`, `addConnector`, or the auto-select that runs when the previously selected wallet drops off. After calling `setSelectedWalletId` directly, call `refetch()` on any query hooks that depend on the selected wallet.
 

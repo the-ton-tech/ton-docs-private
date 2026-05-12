@@ -75,6 +75,32 @@ const formatted = getFormattedJettonInfo(jetton);
 // formatted: { name, symbol, decimals, balance, image, address }
 ```
 
+## Jetton wallet address
+
+Each jetton holder has a dedicated jetton wallet contract derived from `(jettonMaster, ownerAddress)`. For display purposes — for example, showing the user their per-jetton wallet address — resolve it explicitly. `transferJetton` handles this derivation internally, so you do not need to pre-resolve the address to send.
+
+```tsx
+import { useJettonWalletAddress, useAddress } from '@ton/appkit-react';
+
+const ownerAddress = useAddress();
+const { data: walletAddress, isLoading } = useJettonWalletAddress({
+  ownerAddress: ownerAddress ?? '<TON_WALLET_ADDRESS>',
+  jettonAddress: '<JETTON_MINTER_ADDRESS>',
+});
+```
+
+From vanilla JS:
+
+```ts
+import { getJettonWalletAddress, getSelectedWallet } from '@ton/appkit';
+
+const wallet = getSelectedWallet(appKit);
+const address = await getJettonWalletAddress(appKit, {
+  jettonAddress: '<JETTON_MINTER_ADDRESS>',
+  ownerAddress: wallet?.getAddress() ?? '<TON_WALLET_ADDRESS>',
+});
+```
+
 ## Read from vanilla JS
 
 ```ts
@@ -91,5 +117,5 @@ Mount `useWatchBalance()` and `useWatchJettons()` once high in the tree to keep 
 ## Related
 
 - [Streaming](/ecosystem/appkit/get-started/streaming)
-- [React reference](/ecosystem/appkit/reference/react)
+- [`@ton/appkit-react` reference](/ecosystem/appkit/reference/appkit-react)
 - [Send Toncoin](/ecosystem/appkit/howto/send-toncoin)

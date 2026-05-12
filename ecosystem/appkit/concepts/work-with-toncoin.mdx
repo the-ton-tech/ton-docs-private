@@ -5,261 +5,32 @@ icon: gem
 ---
 
 <Note>
-  [Initialize the AppKit](/ecosystem/appkit/get-started/installation) before using examples on this page.
+  [Initialize the AppKit](/ecosystem/appkit/get-started/installation) before using the actions discussed on this page.
 </Note>
+
+Toncoin is the native currency of the TON blockchain. AppKit exposes Toncoin through balance reads, transfer actions, and the settlement trace API.
 
 ## Balance
 
-Blockchain state changes constantly as new blocks are produced. This has implications for when and how to check TON wallet contract balances:
+Balances are returned as strings representing fractional Toncoin units. For example, `'0.1'` is a balance of 0.1 Toncoin, or 100000000 nanoToncoin. Decimal precision is 9 digits, so the smallest possible balance is `'0.000000001'` Toncoin or 1 nanoToncoin.
 
-- [Discrete one-off checks](#on-demand-balance-check) have almost no value on their own — the state might change immediately after the query completes, invalidating its results. Thus, such checks are only practical when making outgoing transfers.
-- [Continuous monitoring](#continuous-balance-monitoring) is useful for UI display, showing the most recent balance to users, but should not be used for transaction confirmations.
+Blockchain state changes constantly. A discrete one-off balance check has almost no value on its own — the state may change immediately after the query completes, invalidating the result. Use one-off checks only when assembling an outgoing transfer; use continuous monitoring (streaming) for UI display.
 
-Notice that both cases require querying the blockchain data via the API client set during the [AppKit initialization](/ecosystem/appkit/get-started/installation). Obtain and provide the key from the selected client to access higher requests-per-second limits.
-
-### On-demand balance check
-
-Balances are returned as strings representing fractional Toncoin units. For example, `'0.1'` is a balance of 0.1 Toncoin or 100000000 nanoToncoin. Decimal precision of Toncoin is 9 digits, so the smallest possible balance is `'0.000000001'` Toncoin or 1 nanoToncoin.
-
-<Warning>
-  Do not store the balance check results anywhere in the app's state, as they become outdated quickly. For UI purposes, do [continuous balance monitoring](#continuous-balance-monitoring).
-</Warning>
-
-<CodeGroup>
-  ```tsx title="React" icon="react"
-  import { useBalance } from '@ton/appkit-react';
-
-  export const BalanceCard = () => {
-    const { data: balance } = useBalance();
-
-    return (
-      <p>TON wallet balance in fractional Toncoin: {balance ?? '0'}</p>
-    );
-  };
-  ```
-
-  ```ts title="TypeScript" icon="globe"
-  import { getBalance } from '@ton/appkit';
-
-  const balance = await getBalance(appKit);
-  if (balance) {
-    console.log('TON wallet balance in fractional Toncoin:', balance);
-  }
-  ```
-</CodeGroup>
-
-### Continuous balance monitoring
-
-Subscribe to balance changes so the displayed value follows the chain. `watchBalance` (and `useWatchBalance` in React) connect to the streaming provider and push fresh values as they arrive — no manual polling needed. For the React side, `useBalance` also exposes `refetch`/`isLoading`/`isError` so the UI can recover from one-off errors.
-
-Modify the following examples according to the application logic:
-
-<CodeGroup>
-  ```tsx title="React" icon="react" expandable
-  import { useBalance } from '@ton/appkit-react';
-
-  export const BalanceCard = () => {
-    const {
-      data: balance,
-      isLoading: isBalanceLoading,
-      isError: isBalanceError,
-      refetch: onRefresh,
-    } = useBalance();
-
-    if (isBalanceError) {
-      return (
-        <div>
-          <p>Error retrieving balance</p>
-          <button onClick={() => onRefresh()}>Try again</button>
-        </div>
-      );
-    }
-
-    return (
-      <div>
-        {isBalanceLoading ? (
-          <p>Loading the balance...</p>
-        ) : (
-          <p>TON wallet balance in fractional Toncoin: {balance ?? '0'}</p>
-        )}
-      </div>
-    );
-  };
-  ```
-
-  ```ts title="TypeScript" icon="globe"
-  import { watchBalance } from '@ton/appkit';
-
-  const stop = watchBalance(appKit, {
-    onChange: (update) => {
-      // update.balance (formatted string in fractional Toncoin)
-      // update.rawBalance (nanoToncoin)
-      // update.address
-    },
-  });
-
-  // Stop monitoring once it is no longer needed
-  stop();
-  ```
-</CodeGroup>
+See [How to > Read balances](/ecosystem/appkit/howto/read-balances) for the read code and [Get Started > Streaming](/ecosystem/appkit/get-started/streaming) for live updates.
 
 ## Transfers
 
-Modify the following examples according to the application logic:
+A Toncoin transfer carries a recipient address, an amount in fractional Toncoin, and an optional comment or base64 payload. AppKit assembles the request; the wallet signs and broadcasts; the chain settles.
 
-<CodeGroup>
-  ```tsx title="React (component)" icon="react"
-  // Pre-built UI component for sending Toncoin transactions by clicking a button.
-  // It handles success and error states while being customizable.
-  import { SendTonButton } from '@ton/appkit-react';
+See [How to > Send Toncoin](/ecosystem/appkit/howto/send-toncoin) for the component, hook, and core action.
 
-  export const SendToncoin = () => {
-    // For example: 'UQ...'
-    const recipientAddress = '<TON_WALLET_ADDRESS>';
-    // For example, '0.1' or '1' Toncoin.
-    const toncoin = '<FRACTIONAL_AMOUNT>';
-
-    return (
-      <SendTonButton
-        // Where to send Toncoin to
-        recipientAddress={recipientAddress}
-
-        // Toncoin amount
-        amount={toncoin}
-
-        // (optional) Comment string
-        comment="Hello from AppKit!"
-
-        // (optional) Add custom button title
-        // Defaults to Send X TON, where X is Toncoin amount
-        text="Send TON"
-
-        // (optional) Handle successes
-        onSuccess={(result) => console.log('Transaction sent:', result)}
-
-        // (optional) Handle errors
-        onError={(error) => console.error('Transaction failed:', error)}
-
-        // (optional) Add custom CSS classes
-        className=''
-
-        // (optional) When set to `true`, the button is disabled
-        disabled={false}
-      />
-    );
-  };
-  ```
-
-  ```tsx title="React (hook)" icon="react"
-  import { useTransferTon } from '@ton/appkit-react';
-
-  export const SendToncoin = () => {
-    const { mutate: transfer, isPending, error, data } = useTransferTon();
-
-    const handleTransfer = () => {
-      transfer({
-        // Where to send Toncoin to.
-        // For example: 'UQ...'
-        recipientAddress: '<TON_WALLET_ADDRESS>',
-
-        // Fractional Toncoin amount string.
-        // For example, '0.1' or '10' Toncoin.
-        amount: '<FRACTIONAL_AMOUNT>',
-
-        // (optional) Comment string. Defaults to none if not provided.
-        comment: 'Hello from AppKit!',
-
-        // (optional) Payload data encoded as a Base64 string.
-        //            Overrides the `comment`, if provided.
-        payload: '<PAYLOAD>',
-
-        // (optional) Initial state (code and data) for deploying a new contract,
-        //            encoded as a Base64 string
-        stateInit: '<STATE_INIT>',
-      });
-    };
-
-    return (
-      <div>
-        <button onClick={handleTransfer} disabled={isPending}>
-          {isPending ? 'Transferring...' : 'Transfer TON'}
-        </button>
-        {error && <div>Error: {error.message}</div>}
-        {data && (
-          <div>
-            <p>Transfer successful: {data.boc}</p>
-          </div>
-        )}
-      </div>
-    );
-  };
-  ```
-
-  ```ts title="TypeScript" icon="globe"
-  import {
-    type AppKit,
-    type Base64String,
-    // Single-call transfer
-    transferTon,
-    // Two-step transfer: create a transaction object separately from sending it
-    createTransferTonTransaction,
-    sendTransaction,
-  } from '@ton/appkit';
-
-  async function sendToncoin(
-    /** Initialized AppKit instance */
-    appKit: AppKit,
-    /** Recipient's TON wallet address as a string */
-    recipientAddress: string,
-    /** Amount in fractional Toncoin */
-    amount: string,
-    /** Optional comment string */
-    comment?: string,
-    /** Optional payload body as a BoC in Base64-encoded string */
-    payload?: Base64String,
-    /**
-     * Optional initial state (code and data) for deploying a new contract,
-     * stored as a BoC in Base64-encoded string
-     */
-    stateInit?: Base64String,
-  ) {
-    // Sign and send via TON Connect
-    const result = await transferTon(appKit, {
-      recipientAddress,
-      amount,
-      // Optional comment OR payload, not both
-      ...(comment && { comment }),
-      ...(payload && { payload }),
-      ...(stateInit && { stateInit }),
-    });
-    console.log('Transaction sent:', result.boc);
-
-    // Alternatively, build the transaction first with createTransferTonTransaction,
-    // then pass the resulting object to the sendTransaction function.
-  }
-  ```
-</CodeGroup>
-
-`createTransferTonTransaction` is synchronous (no `await` needed); the jetton and NFT variants are async because they query the chain to derive the recipient's contract address. Both `createTransferTonTransaction` and `transferTon` throw when no wallet is selected.
-
-## Confirm transaction delivery
+## Finality
 
 TON achieves transaction [finality](https://en.wikipedia.org/wiki/Blockchain#Finality) after a single masterchain block confirmation, where new blocks are produced approximately every 3 seconds. Once a transaction appears in a masterchain block, it becomes irreversible.
 
-Therefore, to reliably confirm the transaction delivery and status, one needs to check whether a transaction has achieved masterchain finality using the selected API client. Applications should not block the UI while waiting for such confirmation. With [continuous balance monitoring](#continuous-balance-monitoring) and subsequent transaction requests, users will receive the latest information either way.
+`sendTransaction` returning a `boc` means **the user signed**. Settlement is a separate state — verify with `getTransactionStatus(appKit, { boc })`, which returns `'unknown' | 'pending' | 'completed' | 'failed'` along with `totalMessages`, `pendingMessages`, and `onchainMessages` for trace progress. Treat only `status === 'completed'` as final.
 
-Confirmations are only needed to reliably display a list of past transactions, including the most recent ones. For detailed transaction tracking and message lookups, the [message lookup guide](/ecosystem/ton-connect/message-lookup) covers finding transactions by external message hash, waiting for confirmations, and applying message normalization.
-
-```ts
-import { getTransactionStatus } from '@ton/appkit';
-
-const status = await getTransactionStatus(appKit, { boc: response.boc });
-if (status.status === 'completed') {
-  // Confirmed on chain.
-}
-```
-
-`status` is `'unknown' | 'pending' | 'completed' | 'failed'`. The response also includes `totalMessages`, `pendingMessages`, and `onchainMessages` for trace progress. Pass either `boc` (recommended — the action computes the normalized hash) or `normalizedHash` directly.
+Applications should not block the UI while waiting for confirmation. Show a "signed / confirming" state, let streaming push live updates, and act on `completed` when it arrives. For finding a transaction by external message hash and applying normalization, see the [message lookup guide](/ecosystem/ton-connect/message-lookup).
 
 ## Rules
 

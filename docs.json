@@ -804,8 +804,7 @@
               "ecosystem/appkit/get-started/providers",
               "ecosystem/appkit/get-started/basic-getter-hooks",
               "ecosystem/appkit/get-started/streaming",
-              "ecosystem/appkit/get-started/sending-transactions",
-              "ecosystem/appkit/get-started/using-ui-widgets"
+              "ecosystem/appkit/get-started/sending-transactions"
             ]
           },
           {
@@ -836,9 +835,7 @@
               "ecosystem/appkit/concepts/sign-data",
               "ecosystem/appkit/concepts/swaps",
               "ecosystem/appkit/concepts/staking",
-              "ecosystem/appkit/concepts/onramp",
               "ecosystem/appkit/concepts/streaming",
-              "ecosystem/appkit/concepts/gasless",
               "ecosystem/appkit/concepts/networks",
               "ecosystem/appkit/concepts/ui-widgets"
             ]
@@ -849,16 +846,9 @@
             "pages": [
               "ecosystem/appkit/reference",
               "ecosystem/appkit/reference/appkit",
-              "ecosystem/appkit/reference/appkit-react",
-              "ecosystem/appkit/reference/actions",
-              "ecosystem/appkit/reference/components",
-              "ecosystem/appkit/reference/queries",
-              "ecosystem/appkit/reference/types",
-              "ecosystem/appkit/reference/defi-providers",
-              "ecosystem/appkit/reference/errors"
+              "ecosystem/appkit/reference/appkit-react"
             ]
-          },
-          "ecosystem/appkit/faq-troubleshooting"
+          }
         ]
       }
     ]

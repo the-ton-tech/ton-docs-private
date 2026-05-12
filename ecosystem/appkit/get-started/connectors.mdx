@@ -4,9 +4,7 @@ sidebarTitle: "Connectors"
 icon: plug
 ---
 
-A connector is the transport AppKit uses to talk to a wallet. The `AppKit` instance is created with one or more connectors and at least one network.
-
-A connector is not a wallet and does not sign. Signing always happens inside the user's wallet application; the connector only carries requests to it and responses back. AppKit cares about the connector's `id`, `type`, `metadata`, and the methods it exposes (`connectWallet`, `disconnectWallet`, `getConnectedWallets`, `destroy`) — what protocol it uses underneath is hidden by the interface.
+A connector is the transport AppKit uses to talk to a wallet. The `AppKit` instance is created with one or more connectors and at least one network. AppKit cares about the connector's `id`, `type`, `metadata`, and the methods it exposes (`connectWallet`, `disconnectWallet`, `getConnectedWallets`, `destroy`) — what protocol it uses underneath is hidden by the interface. See [Wallets and connectors concept](/ecosystem/appkit/concepts/wallets-and-connectors) for the model.
 
 ## Before you begin
 
@@ -53,8 +51,6 @@ export const appKit = new AppKit({
 The button below assumes the React providers are already mounted around your tree — see [Installation → Set up React providers](/ecosystem/appkit/get-started/installation/react-app#set-up-react-providers).
 
 For most apps, the drop-in component is the right starting point. `<TonConnectButton />` from `@ton/appkit-react` owns the connect modal, the session lifecycle (open, restore on reload, expire), and the connected-address display — and it is the same component the official example app mounts in its layout. When you need a tailored UI (logo per wallet, custom copy, conditional connectors), use `useConnectors` and `useConnect` directly; that pattern is documented in [How to → Connect to a wallet](/ecosystem/appkit/howto/connect-to-a-wallet).
-
-The drop-in `<TonConnectButton />` from `@ton/appkit-react` handles the modal, session, and address display.
 
 ```tsx
 import { TonConnectButton } from '@ton/appkit-react';

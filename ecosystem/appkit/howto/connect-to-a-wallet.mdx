@@ -71,6 +71,27 @@ import { useAddress } from '@ton/appkit-react';
 const { data: address } = useAddress();
 ```
 
+## Register a connector after construction
+
+When the connector configuration depends on values that aren't available at construction time — a user-scoped manifest URL, a feature flag, a dynamically chosen wallet set — register it with the `addConnector` action. It accepts a `Connector` instance or a factory and returns an unregister function.
+
+```ts
+import { addConnector, createTonConnectConnector } from '@ton/appkit';
+import { appKit } from './appkit';
+
+const unregister = addConnector(
+  appKit,
+  createTonConnectConnector({
+    tonConnectOptions: { manifestUrl: 'https://example.com/tonconnect-manifest.json' },
+  }),
+);
+
+// Later, to remove and destroy the connector:
+unregister();
+```
+
+Connector ids are singletons. Registering a second connector with the same id calls `destroy()` on the previous one before installing the new.
+
 ## Connect from vanilla JS
 
 ```ts
@@ -97,5 +118,5 @@ Wrap every action in try/catch and convert errors with `getErrorMessage` from `@
 ## Related
 
 - [Connectors concept](/ecosystem/appkit/concepts/wallets-and-connectors)
-- [React reference](/ecosystem/appkit/reference/react)
+- [`@ton/appkit-react` reference](/ecosystem/appkit/reference/appkit-react)
 - [Use UI widgets](/ecosystem/appkit/howto/use-ui-widgets)
