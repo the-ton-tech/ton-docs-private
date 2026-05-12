@@ -787,34 +787,26 @@
           "ecosystem/appkit/faq",
           "ecosystem/appkit/releases",
           {
-            "group": "Start",
+            "group": "Get started",
             "icon": "rocket",
             "expanded": true,
             "pages": [
-              "ecosystem/appkit/start",
-              "ecosystem/appkit/start/installation",
-              "ecosystem/appkit/start/quick-start",
-              "ecosystem/appkit/start/configuration",
-              "ecosystem/appkit/start/wallet-connection",
-              "ecosystem/appkit/start/first-transaction",
-              "ecosystem/appkit/start/production"
+              "ecosystem/appkit/get-started/installation"
             ]
           },
           {
             "group": "Concepts",
             "icon": "diagram-project",
+            "expanded": true,
             "pages": [
-              "ecosystem/appkit/concepts",
-              "ecosystem/appkit/concepts/what-appkit-does",
-              "ecosystem/appkit/concepts/appkit-instance",
+              "ecosystem/appkit/concepts/appkit",
               "ecosystem/appkit/concepts/wallets-and-connectors",
-              "ecosystem/appkit/concepts/sessions",
-              "ecosystem/appkit/concepts/networks",
               "ecosystem/appkit/concepts/providers",
-              "ecosystem/appkit/concepts/transactions",
-              "ecosystem/appkit/concepts/assets",
-              "ecosystem/appkit/concepts/react-integration",
-              "ecosystem/appkit/concepts/errors"
+              "ecosystem/appkit/concepts/work-with-toncoin",
+              "ecosystem/appkit/concepts/work-with-jettons",
+              "ecosystem/appkit/concepts/work-with-nfts",
+              "ecosystem/appkit/concepts/sign-data",
+              "ecosystem/appkit/concepts/networks"
             ]
           },
           {

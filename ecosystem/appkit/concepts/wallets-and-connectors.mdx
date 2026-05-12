@@ -129,6 +129,10 @@ Mutation hooks return TanStack Query's `{ mutate, mutateAsync, isPending, error 
 
 For the complete hook surface, see [`@ton/appkit-react/docs/hooks.md`](https://github.com/ton-connect/kit/tree/main/packages/appkit-react/docs). For the underlying core actions, see [`@ton/appkit/docs/actions.md`](https://github.com/ton-connect/kit/tree/main/packages/appkit/docs).
 
+`setSelectedWalletId` updates the stored id but does not emit `wallets:selection-changed`. The selection event fires only when the connected wallet list changes — through `connect`, `disconnect`, `addConnector`, or the auto-select that runs when the previously selected wallet drops off. After calling `setSelectedWalletId` directly, call `refetch()` on any query hooks that depend on the selected wallet.
+
+If the `connectorId` you pass to `connect` is not registered, the action throws `Connector with id "<id>" not found`. Call `getConnectors` (or `useConnectors` in React) to confirm what's registered before invoking `connect`.
+
 ## Rules
 
 - Do not call mutations or signing actions while `getSelectedWallet` is `null`. The action will throw.

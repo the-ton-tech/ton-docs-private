@@ -4,9 +4,23 @@ sidebarTitle: "AppKit"
 icon: cube
 ---
 
-AppKit is the application layer for TON wallet interactions. It manages wallet connection state, transaction and signing requests, asset helpers, and DeFi provider integrations for TON web apps.
+TON Connect's **AppKit** is an open-source SDK that integrates web2 and web3 applications with TON. It enables wallet connection, authorization, balance tracking, asset transfers, and data signing.
 
 The framework-independent core lives in `@ton/appkit`. React bindings live in `@ton/appkit-react` and wrap the same actions with hooks.
+
+## Features
+
+- TON Connect protocol compliance: integrate with the standard wallet infrastructure for TON.
+- Wallet management: access connected TON wallets from registered providers.
+- Asset support: work with Toncoin (TON), jettons (tokens, i.e., USDT), and NFTs.
+- React: use hooks and ready-made UI components for common cases.
+- DeFi: make on-chain Toncoin and jetton swaps through different providers.
+
+## Use cases
+
+- **Web2 apps** that need TON for authorization, payments, NFT rewards, or other common needs.
+- **Web3 apps** that need to integrate TON wallets.
+- **Telegram Mini Apps** that use TON Blockchain to provide services for Telegram users.
 
 ## What it owns
 
@@ -37,6 +51,12 @@ setDefaultNetwork(appKit, { network: Network.mainnet() });
 
 `setDefaultNetwork` defines the network that connectors should require when a wallet connects. Pass `undefined` to allow wallets from any network. Set `ssr: true` in `AppKitConfig` when constructing AppKit in a server-rendered environment such as Next.js.
 
+Get a mainnet API key from [t.me/toncenter](https://t.me/toncenter) to access higher rate limits. Asset reads issue many requests; without a key, expect frequent 429 responses. See the full setup on the [Installation page](/ecosystem/appkit/get-started/installation).
+
+<Note>
+  If `networks` is omitted entirely, AppKit constructs a **mainnet-only** `ApiClientToncenter` with no API key. Fine for quick prototyping; expect rate limits on real workloads. Testnet apps must declare `networks` explicitly.
+</Note>
+
 ## Lifecycle
 
 ```text
@@ -57,6 +77,8 @@ if (wallet) {
 ```
 
 Actions use three patterns. **Queries** read state synchronously or with a one-shot async call (`getSelectedWallet`, `getBalance`). **Watchers** subscribe to changes and return an unsubscribe function (`watchSelectedWallet`, `watchBalance`). **Mutations** trigger side effects and return a promise (`connect`, `transferTon`, `sendTransaction`).
+
+Read actions that target the selected wallet (`getBalance`, `getJettons`, `getNfts`, …) return **`null`** when no wallet is selected. Mutation and signing actions (`transferTon`, `sendTransaction`, `signText`, …) **throw** `Error('Wallet not connected')` in the same case. Check for a selected wallet — or be ready for the throw — before calling a mutation.
 
 ## React integration
 
