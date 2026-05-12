@@ -24,27 +24,27 @@ export function Header() {
 
 ## Custom connector picker
 
-When you need a tailored UI, render the connector list yourself. Iterate `useConnectors`, then call `connect.mutate({ connector })`. The display name lives at `connector.metadata.name`.
+When you need a tailored UI, render the connector list yourself. Iterate `useConnectors`, then call `connect.mutate({ connectorId: connector.id })`. The display name lives at `connector.metadata.name`.
 
 ```tsx
 import { useConnect, useConnectors, useDisconnect, useSelectedWallet } from '@ton/appkit-react';
 
 export function ConnectPanel() {
-  const { data: connectors = [] } = useConnectors();
+  const connectors = useConnectors();
   const [wallet] = useSelectedWallet();
   const connect = useConnect();
   const disconnect = useDisconnect();
 
   if (wallet) {
     return (
-      <button onClick={() => disconnect.mutate()}>
+      <button onClick={() => disconnect.mutate({ connectorId: wallet.connectorId })}>
         Disconnect {wallet.getAddress()}
       </button>
     );
   }
 
   return connectors.map((connector) => (
-    <button key={connector.id} onClick={() => connect.mutate({ connector })}>
+    <button key={connector.id} onClick={() => connect.mutate({ connectorId: connector.id })}>
       Connect {connector.metadata.name}
     </button>
   ));
@@ -68,7 +68,7 @@ For just the address string, `useAddress` is the convenience hook:
 ```tsx
 import { useAddress } from '@ton/appkit-react';
 
-const { data: address } = useAddress();
+const address = useAddress(); // string | undefined
 ```
 
 ## Register a connector after construction

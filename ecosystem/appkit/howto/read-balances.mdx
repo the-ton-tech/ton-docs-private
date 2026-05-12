@@ -35,20 +35,14 @@ export function Balances() {
 
   return (
     <section>
-      <p>TON: {ton.data?.value}</p>
+      <p>TON: {ton.data ?? '0'}</p>
       <p>Jettons: {jettons.data?.jettons.length ?? 0}</p>
     </section>
   );
 }
 ```
 
-`ton.data.value` is a string in nanotons. Convert with `fromNano` from `@ton/core` for display:
-
-```tsx
-import { fromNano } from '@ton/core';
-
-<p>TON: {ton.data ? fromNano(ton.data.value) : '0'}</p>
-```
+`ton.data` is a fractional-Toncoin string (already formatted — e.g. `'1.25'` for 1.25 TON), or `null` if no wallet is selected. No `fromNano` conversion needed for display.
 
 ## Read by address
 
@@ -60,7 +54,7 @@ import { useBalanceByAddress, useJettonsByAddress } from '@ton/appkit-react';
 export function ProfileBalances({ address }: { address: string }) {
   const ton = useBalanceByAddress({ address });
   const jettons = useJettonsByAddress({ address });
-  return <p>TON: {ton.data?.value}</p>;
+  return <p>TON: {ton.data ?? '0'}</p>;
 }
 ```
 

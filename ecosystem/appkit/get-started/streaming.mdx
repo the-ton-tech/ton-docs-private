@@ -8,7 +8,7 @@ Streaming is the live channel of AppKit: a per-network subscription layer that t
 
 ## Before you begin
 
-You need a streaming provider registered on the AppKit instance before any watcher will fire. See [Providers → Streaming providers](/ecosystem/appkit/get-started/providers#provider-types) for the registration pattern, and use `hasStreamingProvider(appKit)` from `@ton/appkit` as the runtime check before subscribing.
+You need a streaming provider registered on the AppKit instance before any watcher will fire. See [Providers → Streaming providers](/ecosystem/appkit/get-started/providers#provider-types) for the registration pattern, and use `hasStreamingProvider(appKit, network)` from `@ton/appkit` as the runtime check before subscribing — the check is per-network, so pass the network you intend to watch.
 
 ## Mount global watchers
 
