@@ -820,6 +820,7 @@
               "ecosystem/appkit/howto/send-jettons",
               "ecosystem/appkit/howto/nfts",
               "ecosystem/appkit/howto/sign-data",
+              "ecosystem/appkit/howto/sign-message",
               "ecosystem/appkit/howto/streaming",
               "ecosystem/appkit/howto/swaps",
               "ecosystem/appkit/howto/staking",
