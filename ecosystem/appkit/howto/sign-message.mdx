@@ -98,7 +98,7 @@ Each `TransactionRequestMessage`:
 | `payload`   | `Base64String`       | No       | Base64-encoded BoC for the message body.         |
 | `stateInit` | `Base64String`       | No       | Base64-encoded BoC for contract deployment.      |
 
-{/* TODO(docs/sdk): the adapter currently hard-codes `bounce: true` when building the internal cell. Once `bounce?: boolean` lands on `TransactionRequestMessage` (see GASLESS-DEEP-REVIEW.md → improvement #9), add a row here and call out the default. */}
+{/* TODO(docs/sdk): the adapter currently hard-codes `bounce: true` when building the internal cell. Once `bounce?: boolean` lands on `TransactionRequestMessage` (see GASLESS-BRIEF.md → A1), add a row here and call out the default. */}
 
 ## Response
 
@@ -108,7 +108,7 @@ Each `TransactionRequestMessage`:
 
 `internalBoc` is a base64-encoded relaxed internal message ready to be wrapped in an external envelope by a relayer. The user has signed it, but it is **not yet on chain** — no funds move until somebody submits the BoC.
 
-{/* TODO(docs/sdk): improvement #1 plans to also return `internalHash` and echo `validUntil`. Document them here once shipped — they are the canonical handles for settlement tracking. */}
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → A7. Once the action returns `internalHash` and echoes `validUntil`, document them here — they are the canonical handles for settlement tracking. */}
 
 ## Feature detection
 
@@ -128,13 +128,13 @@ if (!supportsSignMessage) {
 
 `getSupportedFeatures()` returns `undefined` when the connector cannot report capabilities at all — treat that the same as "feature missing" for safety.
 
-{/* TODO(docs/sdk): once improvement #4 lands (action-level guard throwing `GaslessError(NOT_SUPPORTED)`), document the typed throw here and explain when to rely on it vs. the manual check. */}
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → A3. Once the action-level guard throws a typed error before the popup, document it here and explain when to rely on it vs. the manual check. */}
 
 ## Track settlement
 
 `signMessage` does not produce an external-message hash, because nothing is broadcast yet. After the BoC is relayed, settlement is tracked the same way as any other transfer: subscribe to the sender's address via [Streaming](/ecosystem/appkit/howto/streaming) and watch for the resulting internal message on chain. The relayer's response carries the external-message hash, which is a separate handle.
 
-{/* TODO(docs/sdk): improvement #1 returns `internalHash` from the action. Once shipped, link `useWatchTransactionsByAddress` consumers to that field for one-step tracking. */}
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → A7. Once `internalHash` ships, link `useWatchTransactionsByAddress` consumers to that field for one-step tracking. */}
 
 ## Use with Gasless
 
@@ -168,8 +168,8 @@ Reach for `signMessage` directly when you need a custom relayer, want to display
 | Expired window   | `validUntil` was too short by the time the wallet returned the BoC. Increase the window before re-signing.             |
 | Too many messages| The wallet's `SignMessage` feature advertises a `maxMessages` limit (typically 4). Split the bundle and re-sign.       |
 
-{/* TODO(docs/sdk): once improvement #6 lands (typed `GaslessError` / `WalletNotConnectedError` with codes), add an `error.code` column and replace the prose with the typed values. */}
-{/* TODO(docs/sdk): improvement #14 plans to enforce `maxMessages` at the action layer. Once enforced, the "Too many messages" row will surface as a typed error instead of a wallet rejection. */}
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → B1. Once typed errors with codes land, add an `error.code` column and replace the prose with the typed values. */}
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → A10. Once `maxMessages` is enforced at the action layer, the "Too many messages" row will surface as a typed error instead of a wallet rejection. */}
 
 ## Next steps
 

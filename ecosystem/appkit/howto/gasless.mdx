@@ -38,7 +38,7 @@ await sendGaslessTransaction(appKit, {
 
 Show the chosen gas jetton and estimated fee before opening the wallet. The wallet signs the message set; the relayer handles broadcast after that signature exists.
 
-{/* TODO(docs/sdk): `sendGaslessTransaction` currently re-estimates internally, so the fee shown from `estimateGasless` may not exactly match what the relayer charges at send. Once the `{ estimate }` overload lands (see GASLESS-TECH-LEAD-BRIEF.md → A8), prefer `sendGaslessTransaction(appKit, { estimate })` and drop the second `feeJettonMaster`/`messages` pair. */}
+{/* TODO(docs/sdk): `sendGaslessTransaction` currently re-estimates internally, so the fee shown from `estimateGasless` may not exactly match what the relayer charges at send. Once the `{ estimate }` overload lands (see GASLESS-BRIEF.md → A8), prefer `sendGaslessTransaction(appKit, { estimate })` and drop the second `feeJettonMaster`/`messages` pair. */}
 
 ## Failure boundaries
 
