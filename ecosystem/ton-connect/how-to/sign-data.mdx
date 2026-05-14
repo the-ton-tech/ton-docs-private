@@ -9,11 +9,11 @@ sidebarTitle: "Sign data"
 
 Three payload variants cover three use cases:
 
-| Variant   | Use it when                                                                                  |
-|-----------|----------------------------------------------------------------------------------------------|
-| `text`    | The data is human-readable text. The wallet shows it verbatim, monospace.                    |
-| `binary`  | The data is opaque bytes. The wallet warns the user the content is unknown.                  |
-| `cell`    | The signature will be verified on-chain. The wallet may parse a TL-B schema and show a structured preview. |
+| Variant  | Use it when                                                                                                |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
+| `text`   | The data is human-readable text. The wallet shows it verbatim, monospace.                                  |
+| `binary` | The data is opaque bytes. The wallet warns the user the content is unknown.                                |
+| `cell`   | The signature will be verified on-chain. The wallet may parse a TL-B schema and show a structured preview. |
 
 ## Calling `signData`
 
@@ -306,13 +306,13 @@ The `SCHEMA_HASH` constant is the CRC-32 of the exact UTF-8 schema string the dA
 
 ## Errors
 
-| Code | Name                     | Description                |
-|------|--------------------------|----------------------------|
-| 0    | `UNKNOWN_ERROR`          | Unknown error.             |
-| 1    | `BAD_REQUEST_ERROR`      | Bad request.               |
-| 100  | `UNKNOWN_APP_ERROR`      | Unknown app.               |
-| 300  | `USER_REJECTS_ERROR`     | User declined the request. |
-| 400  | `METHOD_NOT_SUPPORTED`   | Method not supported.      |
+| Code | Name                   | Description                |
+| ---- | ---------------------- | -------------------------- |
+| 0    | `UNKNOWN_ERROR`        | Unknown error.             |
+| 1    | `BAD_REQUEST_ERROR`    | Bad request.               |
+| 100  | `UNKNOWN_APP_ERROR`    | Unknown app.               |
+| 300  | `USER_REJECTS_ERROR`   | User declined the request. |
+| 400  | `METHOD_NOT_SUPPORTED` | Method not supported.      |
 
 ## See also
 

@@ -193,12 +193,12 @@ async function retry<T>(
 
 ## Differences from `sendTransaction`
 
-| | `sendTransaction` | `signMessage` |
-|---|---|---|
-| Wallet broadcasts | Yes | No |
-| Wallet deducts gas | Yes | No |
-| Result | BoC of the broadcast transaction | `{ internalBoc }` — signed internal message |
-| Use case | Standard transfer | Gasless / sponsored / custom relayer |
+|                    | `sendTransaction`                | `signMessage`                               |
+| ------------------ | -------------------------------- | ------------------------------------------- |
+| Wallet broadcasts  | Yes                              | No                                          |
+| Wallet deducts gas | Yes                              | No                                          |
+| Result             | BoC of the broadcast transaction | `{ internalBoc }` — signed internal message |
+| Use case           | Standard transfer                | Gasless / sponsored / custom relayer        |
 
 ## Preconditions and error handling
 
@@ -231,13 +231,13 @@ To filter the wallet picker to only wallets that support `signMessage`, see [Fil
 
 ## Errors
 
-| Code | Name                     | Description                |
-|------|--------------------------|----------------------------|
-| 0    | `UNKNOWN_ERROR`          | Unknown error.             |
-| 1    | `BAD_REQUEST_ERROR`      | Bad request.               |
-| 100  | `UNKNOWN_APP_ERROR`      | Unknown app.               |
-| 300  | `USER_REJECTS_ERROR`     | User declined the request. |
-| 400  | `METHOD_NOT_SUPPORTED`   | Method not supported.      |
+| Code | Name                   | Description                |
+| ---- | ---------------------- | -------------------------- |
+| 0    | `UNKNOWN_ERROR`        | Unknown error.             |
+| 1    | `BAD_REQUEST_ERROR`    | Bad request.               |
+| 100  | `UNKNOWN_APP_ERROR`    | Unknown app.               |
+| 300  | `USER_REJECTS_ERROR`   | User declined the request. |
+| 400  | `METHOD_NOT_SUPPORTED` | Method not supported.      |
 
 ## See also
 

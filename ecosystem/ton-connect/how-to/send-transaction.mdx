@@ -285,12 +285,12 @@ Prefer **`messages`** today unless you control the wallet list. Many wallets sti
 
 If you build on **`items`** (simpler jetton and NFT flows, no jetton-wallet resolution in the dApp), restrict the connect UI to wallets that declare the features you need. See [Filter wallets by required features](/ecosystem/ton-connect/how-to/filter-wallets).
 
-| Prefer `messages` when                              | Prefer `items` when (with wallet filtering)     |
-|-----------------------------------------------------|-------------------------------------------------|
-| Default path for maximum compatibility            | The wallet advertises the needed `itemTypes`   |
-| Custom op codes or non-standard payloads           | Standard TON / jetton / NFT transfers only      |
-| You already resolve jetton wallet addresses        | You want the wallet to build TEP-74 / TEP-62 bodies |
-| You cannot filter the wallet picker                | You filter wallets — [Filter wallets by required features](/ecosystem/ton-connect/how-to/filter-wallets) |
+| Prefer `messages` when                      | Prefer `items` when (with wallet filtering)                                                              |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Default path for maximum compatibility      | The wallet advertises the needed `itemTypes`                                                             |
+| Custom op codes or non-standard payloads    | Standard TON / jetton / NFT transfers only                                                               |
+| You already resolve jetton wallet addresses | You want the wallet to build TEP-74 / TEP-62 bodies                                                      |
+| You cannot filter the wallet picker         | You filter wallets — [Filter wallets by required features](/ecosystem/ton-connect/how-to/filter-wallets) |
 
 ## Response
 
@@ -311,13 +311,13 @@ Use the returned BoC to look up the transaction on-chain.
 
 ## Errors
 
-| Code | Name                     | Description                |
-|------|--------------------------|----------------------------|
-| 0    | `UNKNOWN_ERROR`          | Unknown error.             |
-| 1    | `BAD_REQUEST_ERROR`      | Bad request.               |
-| 100  | `UNKNOWN_APP_ERROR`      | Unknown app.               |
-| 300  | `USER_REJECTS_ERROR`     | User declined the request. |
-| 400  | `METHOD_NOT_SUPPORTED`   | Method not supported.      |
+| Code | Name                   | Description                |
+| ---- | ---------------------- | -------------------------- |
+| 0    | `UNKNOWN_ERROR`        | Unknown error.             |
+| 1    | `BAD_REQUEST_ERROR`    | Bad request.               |
+| 100  | `UNKNOWN_APP_ERROR`    | Unknown app.               |
+| 300  | `USER_REJECTS_ERROR`   | User declined the request. |
+| 400  | `METHOD_NOT_SUPPORTED` | Method not supported.      |
 
 ## See also
 

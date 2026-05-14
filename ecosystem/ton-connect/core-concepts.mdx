@@ -24,7 +24,6 @@ Two transports carry the protocol:
 - The **HTTP bridge** — used when the app and the wallet are on different devices or in different browsers. Messages are end-to-end encrypted; the bridge sees only ciphertext.
 - The **JS bridge** — used when the app runs inside the wallet's webview, or the wallet is a browser extension. Both sides share the device, so messages are exchanged in plaintext.
 
-
 <Image
   src="/resources/images/ton-connect/basic-schema.svg"
   darkSrc="/resources/images/ton-connect/basic-schema-dark.svg"
@@ -79,9 +78,9 @@ For wire-level details, see the [protocol specification overview](https://github
 
 A bridge is the transport that carries TON Connect messages between an app and a wallet. The protocol defines two types.
 
-| Type        | When it is used                                                        | Encryption               |
-|-------------|------------------------------------------------------------------------|--------------------------|
-| HTTP bridge | App and wallet on different devices or in different browsers           | End-to-end (NaCl)        |
+| Type        | When it is used                                                            | Encryption               |
+| ----------- | -------------------------------------------------------------------------- | ------------------------ |
+| HTTP bridge | App and wallet on different devices or in different browsers               | End-to-end (NaCl)        |
 | JS bridge   | App runs inside the wallet's webview, or the wallet is a browser extension | Not needed (same device) |
 
 Both bridges deliver the same protocol messages — `ConnectRequest`, `ConnectEvent`, `AppRequest`, `WalletResponse`, `WalletEvent`. The transport is invisible to most dApp code thanks to the SDK.
@@ -111,15 +110,15 @@ The JS bridge does not use these keys — see [Bridges](#bridges).
 
 ### What is persisted
 
-| Persisted (dApp side)                           | Not persisted        |
-|-------------------------------------------------|----------------------|
-| Session keypair (`a`, `A`)                      | RPC request bodies   |
-| Wallet's `client_id` (`B`)                      | RPC response bodies  |
-| Wallet's bridge URL                             | Encryption nonces    |
-| `DeviceInfo` from the connect event             | Connect modal state  |
-| Wallet account info (`address`, `chain`, `walletStateInit`, `publicKey`) |  |
-| Last SSE event ID (`lastWalletEventId`) for resumable reconnects |  |
-| Next outgoing RPC request ID (`nextRpcRequestId`) |                    |
+| Persisted (dApp side)                                                    | Not persisted       |
+| ------------------------------------------------------------------------ | ------------------- |
+| Session keypair (`a`, `A`)                                               | RPC request bodies  |
+| Wallet's `client_id` (`B`)                                               | RPC response bodies |
+| Wallet's bridge URL                                                      | Encryption nonces   |
+| `DeviceInfo` from the connect event                                      | Connect modal state |
+| Wallet account info (`address`, `chain`, `walletStateInit`, `publicKey`) |                     |
+| Last SSE event ID (`lastWalletEventId`) for resumable reconnects         |                     |
+| Next outgoing RPC request ID (`nextRpcRequestId`)                        |                     |
 
 The wallet keeps the corresponding state on its side: its keypair `(b, B)`, the dApp's `client_id` `A`, the manifest URL it approved, and any per-session UI state. Browser SDKs default to `localStorage`; headless or server-side flows pass an `IStorage` implementation.
 
@@ -170,13 +169,13 @@ tc://?v=2&id=<client_id>&r=<ConnectRequest>&ret=back
 
 ### Parameters
 
-| Param      | Required | Meaning |
-|------------|----------|---------|
-| `v`        | yes      | Protocol version (`2`). |
-| `id`       | yes      | dApp's `client_id` as hex (no `0x` prefix). |
-| `r`        | yes      | URL-safe JSON of `ConnectRequest`. |
-| `ret`      | no       | Return strategy: `back` (default), `none`, or a URL. |
-| `e`        | no       | Embedded RPC request, base64-URL JSON. Requires `EmbeddedRequest` feature. |
+| Param      | Required | Meaning                                                                                                                                                                                                              |
+| ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v`        | yes      | Protocol version (`2`).                                                                                                                                                                                              |
+| `id`       | yes      | dApp's `client_id` as hex (no `0x` prefix).                                                                                                                                                                          |
+| `r`        | yes      | URL-safe JSON of `ConnectRequest`.                                                                                                                                                                                   |
+| `ret`      | no       | Return strategy: `back` (default), `none`, or a URL.                                                                                                                                                                 |
+| `e`        | no       | Embedded RPC request, base64-URL JSON. Requires `EmbeddedRequest` feature.                                                                                                                                           |
 | `trace_id` | no       | UUID (UUIDv7 recommended) for end-to-end analytics correlation across dApp, bridge, and wallet. Echoed by tracing-aware bridges in the `BridgeMessage` envelope, and reused by tracing-aware wallets on their reply. |
 
 The `e` parameter packs an RPC request into the connect URL so the wallet handles connection and action in a single tap. Wallets that support this advertise `EmbeddedRequest` in their feature list; wallets that do not silently ignore `e` and the SDK falls back to the two-step flow. See [Connect-and-act in one tap](/ecosystem/ton-connect/how-to/embedded-request).
@@ -193,13 +192,13 @@ The dApp passes the URL as `manifestUrl` in the connect request. By convention t
 
 ### Fields
 
-| Field              | Required | Description                                                      |
-|--------------------|----------|------------------------------------------------------------------|
-| `url`              | yes      | App URL. Used as the dApp identifier. No trailing slash.         |
-| `name`             | yes      | Display name shown to the user.                                  |
+| Field              | Required | Description                                                          |
+| ------------------ | -------- | -------------------------------------------------------------------- |
+| `url`              | yes      | App URL. Used as the dApp identifier. No trailing slash.             |
+| `name`             | yes      | Display name shown to the user.                                      |
 | `iconUrl`          | yes      | App icon URL. PNG or ICO, 180×180 px recommended. SVG not supported. |
-| `termsOfUseUrl`    | no       | URL to terms of use.                                             |
-| `privacyPolicyUrl` | no       | URL to privacy policy.                                           |
+| `termsOfUseUrl`    | no       | URL to terms of use.                                                 |
+| `privacyPolicyUrl` | no       | URL to privacy policy.                                               |
 
 The manifest must be reachable with a `GET` from any origin, without CORS restrictions, without auth and without a proxy challenge. It must be served over HTTPS — wallets do not guarantee they will fetch a manifest served over plain HTTP. If the wallet cannot fetch it, the connect flow returns `MANIFEST_NOT_FOUND_ERROR` (code 2) or `MANIFEST_CONTENT_ERROR` (code 3). See [Manifest 404 and CORS](/ecosystem/ton-connect/troubleshooting#manifest-404-and-cors).
 
@@ -245,15 +244,15 @@ For example, the Tonkeeper entry:
 The SDK loads `wallets-v2.json` and prepares the list before rendering the modal:
 
 1. **Platform handling.** The UI uses `platforms` as a display and connection hint. Mobile views show `ios`/`android` wallets; desktop views can still show mobile wallets because QR-code connection is a desktop flow.
-2. **Feature handling.** When the dApp declares required capabilities via [`walletsRequiredFeatures`](/ecosystem/ton-connect/how-to/filter-wallets), the UI checks each entry's `features` array. Once a session opens, the SDK checks the runtime `DeviceInfo.features`, which is authoritative.
-3. **Injected detection.** For entries that list a `js` bridge, the SDK probes `window[<bridge.key>]`. If present, that wallet is marked as injected.
+1. **Feature handling.** When the dApp declares required capabilities via [`walletsRequiredFeatures`](/ecosystem/ton-connect/how-to/filter-wallets), the UI checks each entry's `features` array. Once a session opens, the SDK checks the runtime `DeviceInfo.features`, which is authoritative.
+1. **Injected detection.** For entries that list a `js` bridge, the SDK probes `window[<bridge.key>]`. If present, that wallet is marked as injected.
 
 ### How a wallet gets listed
 
 1. Implement TON Connect — at minimum the connect handshake and `sendTransaction`. See the [wallet developer guide](https://github.com/the-ton-tech/ton-connect/blob/feature/refine-protocol/spec/guides/wallet-guidelines.md).
-2. Deploy an HTTP bridge according to the [bridge spec](https://github.com/the-ton-tech/ton-connect/blob/feature/refine-protocol/spec/bridge.md), expose a JS bridge, or both.
-3. Open a pull request against [`ton-connect/wallets-list`](https://github.com/ton-connect/wallets-list) with your entry appended to `wallets-v2.json`.
-4. CI validates the entry against the [wallets list JSON schema](https://github.com/ton-connect/wallets-list/blob/main/wallets-v2.schema.json).
+1. Deploy an HTTP bridge according to the [bridge spec](https://github.com/the-ton-tech/ton-connect/blob/feature/refine-protocol/spec/bridge.md), expose a JS bridge, or both.
+1. Open a pull request against [`ton-connect/wallets-list`](https://github.com/ton-connect/wallets-list) with your entry appended to `wallets-v2.json`.
+1. CI validates the entry against the [wallets list JSON schema](https://github.com/ton-connect/wallets-list/blob/main/wallets-v2.schema.json).
 
 dApps may also add wallets directly through the SDK, bypassing the registry — useful for staging or partner integrations.
 
@@ -267,12 +266,12 @@ TON Connect uses explicit feature flags. When a wallet sends a `ConnectEvent`, i
 
 ### Feature entries
 
-| Feature           | Meaning                                                              |
-|-------------------|----------------------------------------------------------------------|
+| Feature           | Meaning                                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `SendTransaction` | The wallet accepts `sendTransaction`. Includes `maxMessages` and optional `itemTypes`, `extraCurrencySupported`. |
-| `SignData`        | The wallet accepts `signData` for the listed payload `types` (`text`, `binary`, `cell`). |
-| `SignMessage`     | The wallet accepts `signMessage` (sign without broadcast). Same shape as `SendTransaction`. |
-| `EmbeddedRequest` | The wallet processes the `e` URL parameter for one-tap connect-and-act. |
+| `SignData`        | The wallet accepts `signData` for the listed payload `types` (`text`, `binary`, `cell`).                         |
+| `SignMessage`     | The wallet accepts `signMessage` (sign without broadcast). Same shape as `SendTransaction`.                      |
+| `EmbeddedRequest` | The wallet processes the `e` URL parameter for one-tap connect-and-act.                                          |
 
 The `features` in the registry are static (what the binary supports). The runtime `DeviceInfo.features` from the connect event is authoritative — the SDK refuses methods not in the runtime list, even if the registry entry claims support.
 

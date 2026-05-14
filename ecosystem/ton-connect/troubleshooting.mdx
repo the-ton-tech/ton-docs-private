@@ -39,13 +39,13 @@ Causes:
 - The user's network blocks the bridge domain.
 - The wallet never reconnected its SSE channel after backgrounding.
 
-**Action.** The SDK already retries: it reconnects the SSE channel with a fixed 2-second delay and resends every `POST /message` every 5 seconds. The resend loop runs indefinitely unless the dApp passes an explicit `attempts` count or an `AbortSignal` to the request — set one if you need a give-up policy. Surface a *Connection problem* state in the UI and offer to reconnect. Each wallet entry in [`wallets-v2.json`](https://github.com/ton-connect/wallets-list) lists at most one SSE bridge URL — there is no fallback inside the entry, so a permanently broken bridge has to be fixed by the wallet provider.
+**Action.** The SDK already retries: it reconnects the SSE channel with a fixed 2-second delay and resends every `POST /message` every 5 seconds. The resend loop runs indefinitely unless the dApp passes an explicit `attempts` count or an `AbortSignal` to the request — set one if you need a give-up policy. Surface a _Connection problem_ state in the UI and offer to reconnect. Each wallet entry in [`wallets-v2.json`](https://github.com/ton-connect/wallets-list) lists at most one SSE bridge URL — there is no fallback inside the entry, so a permanently broken bridge has to be fixed by the wallet provider.
 
 ### `USER_REJECTS_ERROR` — code 300
 
 The user tapped Cancel in the wallet, or closed the wallet before signing. Surfaces on `sendTransaction`, `signMessage`, `signData`, and as a `connect_error` event. It does not surface on `disconnect` — that method has no user-cancel path ([`disconnect` RPC specification](https://github.com/the-ton-tech/ton-connect/blob/feature/refine-protocol/spec/rpc.md#disconnect)).
 
-**Action.** Treat this as the *user changed their mind* path. Show a soft message ("Transaction cancelled") and let them retry. Do not log it as a system error.
+**Action.** Treat this as the _user changed their mind_ path. Show a soft message ("Transaction cancelled") and let them retry. Do not log it as a system error.
 
 ### `BAD_REQUEST_ERROR` — code 1
 
@@ -63,16 +63,16 @@ The wallet rejected the payload as malformed. Surfaces on every RPC method and i
 
 The wallet does not implement the requested method, or it does not advertise the feature the request relies on. The same code is reused per-item by [connect item codes](https://github.com/the-ton-tech/ton-connect/blob/feature/refine-protocol/spec/connect.md#connect-item-error-codes) when the wallet cannot honour an individual `ConnectItem` such as `ton_proof`.
 
-| Method or item                      | Required feature                                                |
-|-------------------------------------|-----------------------------------------------------------------|
-| `sendTransaction`                   | `SendTransaction`                                               |
-| `signMessage`                       | `SignMessage`                                                   |
-| `signData` (text)                   | `SignData` with `'text'` in `types`                             |
-| `signData` (binary)                 | `SignData` with `'binary'` in `types`                           |
-| `signData` (cell)                   | `SignData` with `'cell'` in `types`                             |
-| Embedded request (`e` URL parameter)| `EmbeddedRequest`                                               |
-| Structured `items`                  | `SendTransaction` or `SignMessage` with `itemTypes` covering each item |
-| `ton_proof` connect item            | per-item code 400 in the `ConnectItemReply`                     |
+| Method or item                       | Required feature                                                       |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| `sendTransaction`                    | `SendTransaction`                                                      |
+| `signMessage`                        | `SignMessage`                                                          |
+| `signData` (text)                    | `SignData` with `'text'` in `types`                                    |
+| `signData` (binary)                  | `SignData` with `'binary'` in `types`                                  |
+| `signData` (cell)                    | `SignData` with `'cell'` in `types`                                    |
+| Embedded request (`e` URL parameter) | `EmbeddedRequest`                                                      |
+| Structured `items`                   | `SendTransaction` or `SignMessage` with `itemTypes` covering each item |
+| `ton_proof` connect item             | per-item code 400 in the `ConnectItemReply`                            |
 
 **Action.** Either fall back to a supported method, or use [`walletsRequiredFeatures`](/ecosystem/ton-connect/how-to/filter-wallets) to hide wallets that lack the feature before the user reaches the connect modal.
 

@@ -19,16 +19,16 @@ WalletConnect is not available inside Telegram Mini Apps. The wallet picker hide
 
 WalletConnect exposes a subset of TON Connect's surface — connect, disconnect, `sendTransaction`, `signData`, and `ton_proof`. Newer or wallet-specific features stay on the native bridge.
 
-| Feature                             | Native TON Connect | WalletConnect               |
-|-------------------------------------|--------------------|-----------------------------|
-| `sendTransaction`                   | yes                | yes (capped at 4 messages)  |
-| `extraCurrency` in messages         | yes                | no                          |
-| `signData` (`text`, `binary`, `cell`) | yes              | yes                         |
-| Gasless `signMessage`               | yes                | no                          |
-| `ton_proof`                         | yes                | yes                         |
-| Embedded requests (`e` parameter)   | yes                | no                          |
-| Wallet picker UX                    | TON Connect modal  | Reown WalletConnect modal   |
-| Telegram Mini Apps                  | yes                | no                          |
+| Feature                               | Native TON Connect | WalletConnect              |
+| ------------------------------------- | ------------------ | -------------------------- |
+| `sendTransaction`                     | yes                | yes (capped at 4 messages) |
+| `extraCurrency` in messages           | yes                | no                         |
+| `signData` (`text`, `binary`, `cell`) | yes                | yes                        |
+| Gasless `signMessage`                 | yes                | no                         |
+| `ton_proof`                           | yes                | yes                        |
+| Embedded requests (`e` parameter)     | yes                | no                         |
+| Wallet picker UX                      | TON Connect modal  | Reown WalletConnect modal  |
+| Telegram Mini Apps                    | yes                | no                         |
 
 ## Setup
 

@@ -5,7 +5,7 @@ sidebarTitle: "Embedded request"
 
 {/* TODO(spec-merge): spec links point to `the-ton-tech/ton-connect` (`feature/refine-protocol`); switch to `ton-blockchain/ton-connect` once merged. */}
 
-An *embedded request* packs an action — `sendTransaction`, `signMessage`, or `signData` — into the wallet's connect URL via the `e` query parameter. The wallet handles connection and the action in a single tap, eliminating the connect → act round-trip.
+An _embedded request_ packs an action — `sendTransaction`, `signMessage`, or `signData` — into the wallet's connect URL via the `e` query parameter. The wallet handles connection and the action in a single tap, eliminating the connect → act round-trip.
 
 This optimisation applies to mobile deep links and universal links. Desktop QR scans and the in-wallet JS bridge fall back to the standard two-step flow automatically.
 
@@ -178,19 +178,19 @@ function PayButton() {
 The SDK embeds the request only when all four conditions hold:
 
 1. The wallet is not yet connected.
-2. `onConnected` is provided in the request options.
-3. The user picks a wallet whose `DeviceInfo.features` lists `EmbeddedRequest`.
-4. The encoded URL fits within the SDK's URL length budget (currently 1024 characters).
+1. `onConnected` is provided in the request options.
+1. The user picks a wallet whose `DeviceInfo.features` lists `EmbeddedRequest`.
+1. The encoded URL fits within the SDK's URL length budget (currently 1024 characters).
 
 If any condition fails, the SDK opens the wallet without `e` and either calls `onConnected` with `dispatched: false` or, when `onConnected` is omitted, throws.
 
-| Scenario                                                | Behaviour                                                                                                                              |
-|---------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| Embedded result delivered in the `connect` event        | Promise resolves from that payload; `onConnected` not used                                                                             |
-| Selected wallet does not advertise `EmbeddedRequest`    | `e` is omitted; `onConnected` called with `dispatched: false`                                                                          |
-| Encoded URL exceeds the length budget                   | `e` is dropped; `onConnected` called with `dispatched: false`                                                                          |
-| Wallet receives `e` but returns no embedded response    | `onConnected` called with `dispatched: true` — verify on-chain, otherwise prompt the user before re-sending to avoid a double-send  |
-| `onConnected` omitted while the wallet is disconnected  | SDK throws `TonConnectUIError`                                                                                                         |
+| Scenario                                               | Behaviour                                                                                                                          |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Embedded result delivered in the `connect` event       | Promise resolves from that payload; `onConnected` not used                                                                         |
+| Selected wallet does not advertise `EmbeddedRequest`   | `e` is omitted; `onConnected` called with `dispatched: false`                                                                      |
+| Encoded URL exceeds the length budget                  | `e` is dropped; `onConnected` called with `dispatched: false`                                                                      |
+| Wallet receives `e` but returns no embedded response   | `onConnected` called with `dispatched: true` — verify on-chain, otherwise prompt the user before re-sending to avoid a double-send |
+| `onConnected` omitted while the wallet is disconnected | SDK throws `TonConnectUIError`                                                                                                     |
 
 ## When not to use embedded requests
 
