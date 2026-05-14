@@ -1,9 +1,0 @@
-{
-  "pages": [
-    "estimate-fee",
-    "get-address-information",
-    "get-wallet-information",
-    "run-get-method",
-    "send-message"
-  ]
-}
