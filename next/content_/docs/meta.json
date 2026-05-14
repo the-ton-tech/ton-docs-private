@@ -1,0 +1,25 @@
+{
+  "title": "TON overview",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "start-here",
+    "ecosystem",
+    "get-support",
+    "---Wallet apps---",
+    "...wallets",
+    "---Infrastructure---",
+    "...infrastructure",
+    "---AI in TON---",
+    "...ai",
+    "---Learn more---",
+    "foundations",
+    "from-ethereum",
+    "more-tutorials",
+    "external:[Old documentation](https://old-docs.ton.org/)",
+    "---Contribute---",
+    "...contribute",
+    "appkit",
+    "tools"
+  ]
+}
