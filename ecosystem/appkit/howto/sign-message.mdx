@@ -1,0 +1,178 @@
+---
+title: "Sign a message"
+sidebarTitle: "Sign a message"
+---
+
+Ask the connected wallet to sign a transaction-shaped payload **without broadcasting it**. The wallet returns a signed internal-message BoC that the app — or a third party such as a [Gasless](/ecosystem/appkit/howto/gasless) relayer — can submit on chain later.
+
+## How it works
+
+`sendTransaction` produces an external message that the wallet immediately submits to the network. `signMessage` produces an internal message: the wallet signs the same `TransactionRequest` shape, but returns the BoC to the app instead of broadcasting it. Nothing moves on chain until somebody submits that BoC.
+
+The result is a single base64 BoC (`internalBoc`) with the wallet's signature baked in. Its freshness is bounded by `validUntil`; after that timestamp, the BoC is rejected by every wallet contract that respects the window.
+
+<Note>
+  `signMessage` requires the connected wallet to advertise the `SignMessage` capability. See [Feature detection](#feature-detection) before exposing the entry point.
+</Note>
+
+## Before you begin
+
+- A connected wallet. See [Connect to a wallet](/ecosystem/appkit/howto/connect-to-a-wallet).
+- The React provider mounted, if you use the hook.
+- A wallet that advertises the `SignMessage` feature. Older wallets may not.
+
+## Pick the right call
+
+| Style       | Symbol                            | Returns                                       |
+| ----------- | --------------------------------- | --------------------------------------------- |
+| Hook        | `useSignMessage()`                | `{ mutate, mutateAsync, isPending, data, error }` |
+| Core action | `signMessage(appKit, parameters)` | `Promise<{ internalBoc: string }>`            |
+
+## Hook
+
+```tsx
+import { useState } from 'react';
+import { useSignMessage, useSelectedWallet } from '@ton/appkit-react';
+import { getErrorMessage } from '@ton/appkit';
+
+export function RelayedTransfer() {
+  const [boc, setBoc] = useState<string | null>(null);
+  const [wallet] = useSelectedWallet();
+
+  const { mutate: signMessage, isPending } = useSignMessage({
+    mutation: {
+      onSuccess: (result) => setBoc(result.internalBoc),
+      onError: (error) => console.error(getErrorMessage(error)),
+    },
+  });
+
+  const handleSign = () =>
+    signMessage({
+      validUntil: Math.floor(Date.now() / 1000) + 600, // 10 minutes
+      messages: [
+        {
+          address: 'EQAA...',
+          amount: '100000000', // 0.1 TON in nanotons
+        },
+      ],
+    });
+
+  return (
+    <div>
+      <button onClick={handleSign} disabled={!wallet || isPending}>
+        {isPending ? 'Signing…' : 'Sign'}
+      </button>
+      {boc && <code>{boc}</code>}
+    </div>
+  );
+}
+```
+
+## Core action
+
+```ts
+import { signMessage } from '@ton/appkit';
+
+const { internalBoc } = await signMessage(appKit, {
+  validUntil: Math.floor(Date.now() / 1000) + 600,
+  messages: [{ address: 'EQAA...', amount: '100000000' }],
+});
+```
+
+## Parameters
+
+The request shape is identical to [`sendTransaction`](/ecosystem/appkit/howto/send-toncoin).
+
+| Field        | Type                          | Required | Notes                                                                                                              |
+| ------------ | ----------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| `messages`   | `TransactionRequestMessage[]` | Yes      | Internal messages to sign. Up to four per request.                                                                 |
+| `validUntil` | `number`                      | No       | Unix seconds. Defaults to a wallet-supplied window. Set it explicitly for relayed flows so the freshness contract is visible. |
+| `network`    | `Network`                     | No       | Defaults to the wallet's current network.                                                                          |
+
+Each `TransactionRequestMessage`:
+
+| Field       | Type                 | Required | Notes                                            |
+| ----------- | -------------------- | -------- | ------------------------------------------------ |
+| `address`   | `string`             | Yes      | Recipient address in user-friendly form.         |
+| `amount`    | `string` \| `bigint` | Yes      | Amount in nanotons.                              |
+| `payload`   | `Base64String`       | No       | Base64-encoded BoC for the message body.         |
+| `stateInit` | `Base64String`       | No       | Base64-encoded BoC for contract deployment.      |
+
+{/* TODO(docs/sdk): the adapter currently hard-codes `bounce: true` when building the internal cell. Once `bounce?: boolean` lands on `TransactionRequestMessage` (see GASLESS-BRIEF.md → A1), add a row here and call out the default. */}
+
+## Response
+
+```ts
+{ internalBoc: Base64String }
+```
+
+`internalBoc` is a base64-encoded relaxed internal message ready to be wrapped in an external envelope by a relayer. The user has signed it, but it is **not yet on chain** — no funds move until somebody submits the BoC.
+
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → A7. Once the action returns `internalHash` and echoes `validUntil`, document them here — they are the canonical handles for settlement tracking. */}
+
+## Feature detection
+
+Not every wallet supports `SignMessage`. Gate the UI on the connected wallet's advertised features so users on older wallets never see a button they cannot use:
+
+```tsx
+import { useSelectedWallet } from '@ton/appkit-react';
+
+const [wallet] = useSelectedWallet();
+const supportsSignMessage =
+  wallet?.getSupportedFeatures()?.some((feature) => feature.name === 'SignMessage') ?? false;
+
+if (!supportsSignMessage) {
+  // Hide the relayed/gasless entry point or fall back to sendTransaction.
+}
+```
+
+`getSupportedFeatures()` returns `undefined` when the connector cannot report capabilities at all — treat that the same as "feature missing" for safety.
+
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → A3. Once the action-level guard throws a typed error before the popup, document it here and explain when to rely on it vs. the manual check. */}
+
+## Track settlement
+
+`signMessage` does not produce an external-message hash, because nothing is broadcast yet. After the BoC is relayed, settlement is tracked the same way as any other transfer: subscribe to the sender's address via [Streaming](/ecosystem/appkit/howto/streaming) and watch for the resulting internal message on chain. The relayer's response carries the external-message hash, which is a separate handle.
+
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → A7. Once `internalHash` ships, link `useWatchTransactionsByAddress` consumers to that field for one-step tracking. */}
+
+## Use with Gasless
+
+For the common case — sign once, let a relayer broadcast and pay gas in a jetton — use [`sendGaslessTransaction`](/ecosystem/appkit/howto/gasless). It orchestrates `estimate` → `signMessage` → relay in a single call so you don't have to wire the steps yourself.
+
+```ts
+import { sendGaslessTransaction } from '@ton/appkit';
+
+await sendGaslessTransaction(appKit, {
+  feeJettonMaster: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs', // USDT master
+  messages: [{ address: 'EQAA...', amount: '100000000' }],
+});
+```
+
+Reach for `signMessage` directly when you need a custom relayer, want to display the signed BoC, or have to split sign-time from broadcast-time across systems.
+
+## Rules
+
+- **Always set `validUntil`.** Relayers reject expired BoCs; the wallet's default window may not match your UX.
+- **Treat the returned BoC as "user signed", not "settled".** Settlement happens on chain after the BoC is relayed. Verify with backend state before delivering value.
+- **Feature-detect before exposing the entry point.** A user on a wallet without `SignMessage` should never see the button.
+- **Keep `amount` as a string or bigint until you display it.** Floating-point math loses precision at TON's nine decimal places.
+
+## Common failures
+
+| Failure          | Meaning                                                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| User rejected    | The user closed or rejected the wallet request.                                                                        |
+| Feature missing  | The connected wallet does not advertise `SignMessage`. Feature-detect before calling.                                  |
+| Invalid address  | A `messages[].address` is malformed or for the wrong network.                                                          |
+| Expired window   | `validUntil` was too short by the time the wallet returned the BoC. Increase the window before re-signing.             |
+| Too many messages| The wallet's `SignMessage` feature advertises a `maxMessages` limit (typically 4). Split the bundle and re-sign.       |
+
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → B1. Once typed errors with codes land, add an `error.code` column and replace the prose with the typed values. */}
+{/* TODO(docs/sdk): see GASLESS-BRIEF.md → A10. Once `maxMessages` is enforced at the action layer, the "Too many messages" row will surface as a typed error instead of a wallet rejection. */}
+
+## Next steps
+
+- [Gasless](/ecosystem/appkit/howto/gasless) — the relayed flow built on top of `signMessage`.
+- [Send Toncoin](/ecosystem/appkit/howto/send-toncoin) — the broadcast equivalent.
+- [Streaming](/ecosystem/appkit/howto/streaming) — track the relayed message on chain after submission.
