@@ -1,6 +1,5 @@
 {
   "title": "TON Center",
-  "defaultOpen": true,
   "pages": [
     "introduction",
     "rate-limit",

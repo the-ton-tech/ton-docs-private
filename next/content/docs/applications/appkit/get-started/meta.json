@@ -1,7 +1,5 @@
 {
   "title": "Get Started",
-  "icon": "rocket",
-  "defaultOpen": true,
   "pages": [
     "installation",
     "connectors",
@@ -11,6 +9,5 @@
     "streaming",
     "providers",
     "using-ui-widgets"
-  ],
-  "collapsible": false
+  ]
 }

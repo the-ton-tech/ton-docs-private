@@ -4,6 +4,5 @@
   "pages": [
     "appkit",
     "appkit-react"
-  ],
-  "collapsible": false
+  ]
 }

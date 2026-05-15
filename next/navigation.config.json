@@ -843,7 +843,6 @@
                 },
                 {
                   "group": "Language",
-                  "expanded": true,
                   "pages": [
                     {
                       "id": "languages/func/comments"
@@ -865,7 +864,6 @@
                     },
                     {
                       "group": "Program declarations",
-                      "expanded": true,
                       "pages": [
                         {
                           "id": "languages/func/declarations-overview"
@@ -897,7 +895,6 @@
                 },
                 {
                   "group": "Libraries",
-                  "expanded": true,
                   "pages": [
                     {
                       "id": "languages/func/stdlib"
@@ -1328,8 +1325,7 @@
           "group": "AppKit",
           "pages": [
             {
-              "id": "ecosystem/appkit/overview",
-              "icon": "rocket"
+              "id": "ecosystem/appkit/overview"
             },
             {
               "id": "ecosystem/appkit/changelog"
@@ -1337,20 +1333,16 @@
             {
               "slug": "get-started",
               "group": "Get Started",
-              "icon": "rocket",
-              "expanded": true,
               "pages": [
                 {
-                  "id": "ecosystem/appkit/get-started",
-                  "slug": ""
+                  "id": "ecosystem/appkit/get-started"
                 },
                 {
                   "slug": "installation",
                   "group": "Installation",
                   "pages": [
                     {
-                      "id": "ecosystem/appkit/get-started/installation",
-                      "slug": ""
+                      "id": "ecosystem/appkit/get-started/installation"
                     },
                     {
                       "id": "ecosystem/appkit/get-started/installation/react-app"
@@ -1388,8 +1380,7 @@
               "group": "How to",
               "pages": [
                 {
-                  "id": "ecosystem/appkit/howto",
-                  "slug": ""
+                  "id": "ecosystem/appkit/howto"
                 },
                 {
                   "id": "ecosystem/appkit/howto/appkit"
@@ -1444,8 +1435,7 @@
               "icon": "book",
               "pages": [
                 {
-                  "id": "ecosystem/appkit/reference",
-                  "slug": ""
+                  "id": "ecosystem/appkit/reference"
                 },
                 {
                   "id": "ecosystem/appkit/reference/appkit"
@@ -1620,7 +1610,6 @@
             {
               "slug": "toncenter",
               "group": "TON Center",
-              "expanded": true,
               "pages": [
                 {
                   "id": "ecosystem/api/toncenter/introduction"

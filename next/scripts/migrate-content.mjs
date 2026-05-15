@@ -136,15 +136,10 @@ function patchFrontmatter(source, slug) {
   fm = fm.replace(/^"og:image":/m, "ogImage:")
   fm = fm.replace(/^"twitter:image":/m, "twitterImage:")
 
-  // Skip slug-based title injection for OpenAPI operation pages — fumadocs-openapi
-  // derives the page title from the spec, and injecting `title: "${slug}"` here
-  // means every nav reshuffle rewrites the field and `npm run sync` re-renames
-  // hundreds of pages.
-  const hasOpenapi = /^openapi:/m.test(fm)
-  if (!hasOpenapi && !/^description:/m.test(fm) && !/^title:/m.test(fm)) {
+  if (!/^description:/m.test(fm) && !/^title:/m.test(fm)) {
     fm = `title: "${slug}"\n${fm}`
   }
-  if (!hasOpenapi && !/^description:/m.test(fm)) {
+  if (!/^description:/m.test(fm)) {
     fm += '\ndescription: ""'
   }
 
