@@ -1,5 +1,6 @@
 {
   "title": "Foundations",
+  "icon": "layers",
   "root": true,
   "pages": [
     "core-concepts",

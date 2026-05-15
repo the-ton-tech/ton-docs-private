@@ -1,5 +1,6 @@
 {
   "title": "TON overview",
+  "icon": "compass",
   "root": true,
   "pages": [
     "---Introduction---",

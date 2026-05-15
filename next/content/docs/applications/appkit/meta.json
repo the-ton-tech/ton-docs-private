@@ -1,0 +1,11 @@
+{
+  "title": "AppKit",
+  "pages": [
+    "overview",
+    "changelog",
+    "get-started",
+    "howto",
+    "reference",
+    "faq-troubleshooting"
+  ]
+}

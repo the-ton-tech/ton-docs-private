@@ -1,0 +1,16 @@
+{
+  "title": "Applications",
+  "icon": "box",
+  "root": true,
+  "pages": [
+    "---AppKit---",
+    "...appkit",
+    "---TON Pay---",
+    "...ton-pay",
+    "---WalletKit---",
+    "...walletkit",
+    "---APIs---",
+    "...api",
+    "sdks"
+  ]
+}
