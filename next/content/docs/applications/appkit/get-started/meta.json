@@ -1,6 +1,7 @@
 {
   "title": "Get Started",
   "pages": [
+    "get-started",
     "installation",
     "connectors",
     "networks",

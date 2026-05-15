@@ -2,6 +2,7 @@
   "title": "Reference",
   "icon": "book",
   "pages": [
+    "reference",
     "appkit",
     "appkit-react"
   ]

@@ -1,6 +1,7 @@
 {
   "title": "How to",
   "pages": [
+    "howto",
     "appkit",
     "connect-to-a-wallet",
     "providers",

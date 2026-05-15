@@ -191,92 +191,6 @@
           ]
         },
         {
-          "slug": "ton-connect",
-          "group": "TON Connect",
-          "pages": [
-            {
-              "id": "ecosystem/ton-connect/overview",
-              "slug": "overview"
-            },
-            {
-              "id": "ecosystem/ton-connect/get-started",
-              "slug": "get-started"
-            },
-            {
-              "slug": "how-to",
-              "group": "How to",
-              "pages": [
-                {
-                  "id": "ecosystem/ton-connect/how-to/connect",
-                  "slug": "connect"
-                },
-                {
-                  "id": "ecosystem/ton-connect/how-to/disconnect",
-                  "slug": "disconnect"
-                },
-                {
-                  "id": "ecosystem/ton-connect/how-to/send-transaction",
-                  "slug": "send-transaction"
-                },
-                {
-                  "id": "ecosystem/ton-connect/how-to/sign-data",
-                  "slug": "sign-data"
-                },
-                {
-                  "id": "ecosystem/ton-connect/how-to/sign-message-gasless",
-                  "slug": "sign-message-gasless"
-                },
-                {
-                  "id": "ecosystem/ton-connect/how-to/embedded-request",
-                  "slug": "embedded-request"
-                },
-                {
-                  "id": "ecosystem/ton-connect/how-to/filter-wallets",
-                  "slug": "filter-wallets"
-                },
-                {
-                  "id": "ecosystem/ton-connect/how-to/walletconnect-support",
-                  "slug": "walletconnect-support"
-                }
-              ]
-            },
-            {
-              "id": "ecosystem/ton-connect/core-concepts",
-              "slug": "core-concepts"
-            },
-            {
-              "slug": "api-reference",
-              "group": "API reference",
-              "pages": [
-                {
-                  "id": "ecosystem/ton-connect/api-reference/ui-react",
-                  "slug": "ui-react"
-                },
-                {
-                  "id": "ecosystem/ton-connect/api-reference/ui",
-                  "slug": "ui"
-                },
-                {
-                  "id": "ecosystem/ton-connect/api-reference/sdk",
-                  "slug": "sdk"
-                },
-                {
-                  "id": "ecosystem/ton-connect/api-reference/protocol",
-                  "slug": "protocol"
-                }
-              ]
-            },
-            {
-              "id": "ecosystem/ton-connect/troubleshooting",
-              "slug": "troubleshooting"
-            },
-            {
-              "id": "ecosystem/ton-connect/faq",
-              "slug": "faq"
-            }
-          ]
-        },
-        {
           "slug": "standard",
           "group": "Standard contracts",
           "pages": [
@@ -1600,6 +1514,93 @@
             }
           ]
         },
+        {
+          "slug": "ton-connect",
+          "group": "TON Connect",
+          "pages": [
+            {
+              "id": "ecosystem/ton-connect/overview",
+              "slug": "overview"
+            },
+            {
+              "id": "ecosystem/ton-connect/get-started",
+              "slug": "get-started"
+            },
+            {
+              "slug": "how-to",
+              "group": "How to",
+              "pages": [
+                {
+                  "id": "ecosystem/ton-connect/how-to/connect",
+                  "slug": "connect"
+                },
+                {
+                  "id": "ecosystem/ton-connect/how-to/disconnect",
+                  "slug": "disconnect"
+                },
+                {
+                  "id": "ecosystem/ton-connect/how-to/send-transaction",
+                  "slug": "send-transaction"
+                },
+                {
+                  "id": "ecosystem/ton-connect/how-to/sign-data",
+                  "slug": "sign-data"
+                },
+                {
+                  "id": "ecosystem/ton-connect/how-to/sign-message-gasless",
+                  "slug": "sign-message-gasless"
+                },
+                {
+                  "id": "ecosystem/ton-connect/how-to/embedded-request",
+                  "slug": "embedded-request"
+                },
+                {
+                  "id": "ecosystem/ton-connect/how-to/filter-wallets",
+                  "slug": "filter-wallets"
+                },
+                {
+                  "id": "ecosystem/ton-connect/how-to/walletconnect-support",
+                  "slug": "walletconnect-support"
+                }
+              ]
+            },
+            {
+              "id": "ecosystem/ton-connect/core-concepts",
+              "slug": "core-concepts"
+            },
+            {
+              "slug": "api-reference",
+              "group": "API reference",
+              "pages": [
+                {
+                  "id": "ecosystem/ton-connect/api-reference/ui-react",
+                  "slug": "ui-react"
+                },
+                {
+                  "id": "ecosystem/ton-connect/api-reference/ui",
+                  "slug": "ui"
+                },
+                {
+                  "id": "ecosystem/ton-connect/api-reference/sdk",
+                  "slug": "sdk"
+                },
+                {
+                  "id": "ecosystem/ton-connect/api-reference/protocol",
+                  "slug": "protocol"
+                }
+              ]
+            },
+            {
+              "id": "ecosystem/ton-connect/troubleshooting",
+              "slug": "troubleshooting"
+            },
+            {
+              "id": "ecosystem/ton-connect/faq",
+              "slug": "faq"
+            }
+          ]
+        },
+
         {
           "slug": "api",
           "group": "APIs",

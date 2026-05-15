@@ -171,6 +171,111 @@ export const redirects = [
     "permanent": true
   },
   {
+    "source": "/applications/appkit/get-started",
+    "destination": "/applications/appkit/get-started/get-started",
+    "permanent": true
+  },
+  {
+    "source": "/applications/appkit/get-started/installation",
+    "destination": "/applications/appkit/get-started/installation/installation",
+    "permanent": true
+  },
+  {
+    "source": "/applications/appkit/howto",
+    "destination": "/applications/appkit/howto/howto",
+    "permanent": true
+  },
+  {
+    "source": "/applications/appkit/reference",
+    "destination": "/applications/appkit/reference/reference",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/api-reference/protocol",
+    "destination": "/ecosystem/ton-connect/api-reference/protocol",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/api-reference/sdk",
+    "destination": "/ecosystem/ton-connect/api-reference/sdk",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/api-reference/ui",
+    "destination": "/ecosystem/ton-connect/api-reference/ui",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/api-reference/ui-react",
+    "destination": "/ecosystem/ton-connect/api-reference/ui-react",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/core-concepts",
+    "destination": "/ecosystem/ton-connect/core-concepts",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/faq",
+    "destination": "/ecosystem/ton-connect/faq",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/get-started",
+    "destination": "/ecosystem/ton-connect/get-started",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/how-to/connect",
+    "destination": "/ecosystem/ton-connect/how-to/connect",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/how-to/disconnect",
+    "destination": "/ecosystem/ton-connect/how-to/disconnect",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/how-to/embedded-request",
+    "destination": "/ecosystem/ton-connect/how-to/embedded-request",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/how-to/filter-wallets",
+    "destination": "/ecosystem/ton-connect/how-to/filter-wallets",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/how-to/send-transaction",
+    "destination": "/ecosystem/ton-connect/how-to/send-transaction",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/how-to/sign-data",
+    "destination": "/ecosystem/ton-connect/how-to/sign-data",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/how-to/sign-message-gasless",
+    "destination": "/ecosystem/ton-connect/how-to/sign-message-gasless",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/how-to/walletconnect-support",
+    "destination": "/ecosystem/ton-connect/how-to/walletconnect-support",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/overview",
+    "destination": "/ecosystem/ton-connect/overview",
+    "permanent": true
+  },
+  {
+    "source": "/applications/ton-connect/troubleshooting",
+    "destination": "/ecosystem/ton-connect/troubleshooting",
+    "permanent": true
+  },
+  {
     "source": "/contract-dev/contract-sharding",
     "destination": "/contract-dev/techniques/contract-sharding",
     "permanent": true

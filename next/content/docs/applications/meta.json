@@ -9,6 +9,8 @@
     "...ton-pay",
     "---WalletKit---",
     "...walletkit",
+    "---TON Connect---",
+    "...ton-connect",
     "---APIs---",
     "...api",
     "sdks"
