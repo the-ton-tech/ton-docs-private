@@ -1,5 +1,6 @@
 {
   "title": "TON Connect",
+  "icon": "link",
   "pages": [
     "overview",
     "get-started",

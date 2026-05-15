@@ -1,5 +1,6 @@
 {
   "title": "AppKit",
+  "icon": "rocket",
   "pages": [
     "overview",
     "changelog",

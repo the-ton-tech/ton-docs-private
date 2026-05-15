@@ -9,6 +9,7 @@
       "pages": [
         {
           "group": "Introduction",
+          "icon": "play",
           "pages": [
             {
               "id": "start-here"
@@ -25,6 +26,7 @@
         {
           "slug": "wallets",
           "group": "Wallet apps",
+          "icon": "smartphone",
           "pages": [
             {
               "id": "ecosystem/wallet-apps/web",
@@ -51,6 +53,7 @@
         {
           "slug": "infrastructure",
           "group": "Infrastructure",
+          "icon": "server",
           "pages": [
             {
               "slug": "explorers",
@@ -93,6 +96,7 @@
         {
           "slug": "ai",
           "group": "AI in TON",
+          "icon": "sparkles",
           "pages": [
             {
               "id": "ecosystem/ai/overview",
@@ -111,6 +115,7 @@
         {
           "slug": "learn-more",
           "group": "Learn more",
+          "icon": "graduation-cap",
           "pages": [
             {
               "id": "learn-more/glossary",
@@ -132,6 +137,7 @@
         {
           "slug": "contribute",
           "group": "Contribute",
+          "icon": "git-pull-request",
           "pages": [
             {
               "id": "contribute/style-guide"
@@ -173,11 +179,13 @@
       "pages": [
         {
           "id": "foundations/core-concepts",
-          "slug": "core-concepts"
+          "slug": "core-concepts",
+          "icon": "lightbulb"
         },
         {
           "slug": "payments",
           "group": "Payment processing",
+          "icon": "credit-card",
           "pages": [
             {
               "id": "payments/overview"
@@ -193,6 +201,7 @@
         {
           "slug": "standard",
           "group": "Standard contracts",
+          "icon": "file-text",
           "pages": [
             {
               "id": "standard/overview"
@@ -400,6 +409,7 @@
         {
           "slug": "contract-dev",
           "group": "Smart contract development",
+          "icon": "terminal",
           "pages": [
             {
               "id": "contract-dev/introduction"
@@ -522,6 +532,7 @@
           "slug": "tolk",
           "group": "Tolk language",
           "tag": "recommended",
+          "icon": "braces",
           "pages": [
             {
               "id": "tolk/overview"
@@ -699,6 +710,7 @@
         {
           "slug": "languages",
           "group": "Other languages",
+          "icon": "languages",
           "pages": [
             {
               "slug": "tl-b",
@@ -834,6 +846,7 @@
         {
           "slug": "tvm",
           "group": "TVM: TON Virtual Machine",
+          "icon": "cpu",
           "pages": [
             {
               "id": "tvm/overview"
@@ -885,6 +898,7 @@
         {
           "slug": "nodes",
           "group": "Nodes",
+          "icon": "network",
           "pages": [
             {
               "id": "ecosystem/nodes/overview",
@@ -1038,6 +1052,7 @@
         {
           "slug": "primitives",
           "group": "Primitives",
+          "icon": "atom",
           "pages": [
             {
               "slug": "serialization",
@@ -1203,6 +1218,7 @@
         {
           "slug": "whitepapers",
           "group": "Whitepapers",
+          "icon": "scroll",
           "pages": [
             {
               "id": "foundations/whitepapers/overview",
@@ -1237,6 +1253,7 @@
         {
           "slug": "appkit",
           "group": "AppKit",
+          "icon": "rocket",
           "pages": [
             {
               "id": "ecosystem/appkit/overview"
@@ -1367,6 +1384,7 @@
         {
           "slug": "ton-pay",
           "group": "TON Pay",
+          "icon": "coins",
           "pages": [
             {
               "id": "ecosystem/ton-pay/overview"
@@ -1418,6 +1436,7 @@
         {
           "slug": "walletkit",
           "group": "WalletKit",
+          "icon": "wallet",
           "pages": [
             {
               "id": "ecosystem/walletkit/overview"
@@ -1517,6 +1536,7 @@
         {
           "slug": "ton-connect",
           "group": "TON Connect",
+          "icon": "link",
           "pages": [
             {
               "id": "ecosystem/ton-connect/overview",
@@ -1604,6 +1624,7 @@
         {
           "slug": "api",
           "group": "APIs",
+          "icon": "webhook",
           "pages": [
             {
               "id": "ecosystem/api/overview"
@@ -2004,7 +2025,8 @@
           ]
         },
         {
-          "id": "ecosystem/sdks"
+          "id": "ecosystem/sdks",
+          "icon": "package"
         }
       ]
     }

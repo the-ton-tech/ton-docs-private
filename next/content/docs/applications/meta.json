@@ -3,15 +3,15 @@
   "icon": "box",
   "root": true,
   "pages": [
-    "---AppKit---",
+    "---[rocket]AppKit---",
     "...appkit",
-    "---TON Pay---",
+    "---[coins]TON Pay---",
     "...ton-pay",
-    "---WalletKit---",
+    "---[wallet]WalletKit---",
     "...walletkit",
-    "---TON Connect---",
+    "---[link]TON Connect---",
     "...ton-connect",
-    "---APIs---",
+    "---[webhook]APIs---",
     "...api",
     "sdks"
   ]

@@ -1,5 +1,6 @@
 {
   "title": "WalletKit",
+  "icon": "wallet",
   "pages": [
     "overview",
     "web",
