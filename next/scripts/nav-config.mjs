@@ -22,7 +22,7 @@
  * @typedef {InternalTab | ExternalTab} Tab
  * @typedef {{version: 1, tabs: Tab[], navbarLinks?: LinkRef[]}} NavConfig
  */
-import {promises as fs} from "node:fs"
+import {existsSync, promises as fs} from "node:fs"
 import path from "node:path"
 import {fileURLToPath} from "node:url"
 
@@ -30,10 +30,20 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export const NEXT_ROOT = path.resolve(__dirname, "..")
-export const REPO_ROOT = path.resolve(NEXT_ROOT, "..")
+
+// Adaptive root resolution: pre-cutover, the upstream Mintlify tree lives in
+// `<NEXT_ROOT>/..` and exposes `docs.json` + sibling `.mdx` files. Post-cutover
+// the entire `next/` folder is promoted to repo root and upstream is gone — in
+// that layout REPO_ROOT collapses onto NEXT_ROOT and the legacy inputs are
+// absent. Every reader downstream branches on HAS_LEGACY_DOCS instead of
+// re-deriving the layout.
+const NEXT_ROOT_PARENT = path.resolve(NEXT_ROOT, "..")
+const LEGACY_DOCS_JSON_PATH = path.join(NEXT_ROOT_PARENT, "docs.json")
+export const HAS_LEGACY_DOCS = existsSync(LEGACY_DOCS_JSON_PATH)
+export const REPO_ROOT = HAS_LEGACY_DOCS ? NEXT_ROOT_PARENT : NEXT_ROOT
 export const CONTENT_ROOT = path.join(NEXT_ROOT, "content", "docs")
 export const NAV_CONFIG_PATH = path.join(NEXT_ROOT, "navigation.config.json")
-export const DOCS_JSON_PATH = path.join(REPO_ROOT, "docs.json")
+export const DOCS_JSON_PATH = LEGACY_DOCS_JSON_PATH
 export const REDIRECTS_PATH = path.join(NEXT_ROOT, "redirects.mjs")
 export const NAV_BACKUP_DIR = path.join(NEXT_ROOT, ".nav-editor-backups")
 // Sidecar that ships tags fumadocs' meta.json can't represent. Lives outside
