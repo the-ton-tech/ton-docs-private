@@ -1,6 +1,8 @@
 {
   "title": "Standard contracts",
+  "icon": "file-text",
   "pages": [
+    "overview",
     "wallets",
     "tokens",
     "vesting"
