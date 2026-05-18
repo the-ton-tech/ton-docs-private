@@ -18,15 +18,6 @@ interface JourneyProps {
 
 const JOURNEYS: JourneyProps[] = [
   {
-    title: "Beginner",
-    description: "TON fundamentals for newcomers entering Web3 through TON.",
-    steps: [
-      {title: "How to read this documentation?", href: "/overview/start-here"},
-      {title: "Using a TON wallet", href: "/overview/wallets/wallet-apps/tonkeeper"},
-      {title: "Introduction to Tolk", href: "/blockchain-basics/tolk/overview"},
-    ],
-  },
-  {
     title: "Smart contracts",
     description: "Build, debug, and deploy smart contracts on TON.",
     steps: [
