@@ -56,7 +56,7 @@ The [TON wallet](/blockchain-basics/standard/wallets/comparison) smart contract 
 
 In Ethereum, it's possible to store any amount of data in a single contract. Unbounded maps and arrays are considered standard practice. TON sets a limit to the amount of data a contract can store. This means that ERC-20-like fungible tokens cannot be implemented in the same way as in an EVM chain, using a single map within a single contract.
 
-[The limit](/foundations/config) for contract storage is 65,536 unique cells contract storage, where a cell [stores up to](/blockchain-basics/primitives/serialization/cells) 1,023 bits. Messages are constrained by two size limits: 8,192 cells or 2<sup>21</sup> bits among them, whichever is smaller.
+[The limit](/blockchain-basics/primitives/config) for contract storage is 65,536 unique cells contract storage, where a cell [stores up to](/blockchain-basics/primitives/serialization/cells) 1,023 bits. Messages are constrained by two size limits: 8,192 cells or 2<sup>21</sup> bits among them, whichever is smaller.
 
 <Aside
   type="danger"

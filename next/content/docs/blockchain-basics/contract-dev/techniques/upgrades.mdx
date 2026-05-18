@@ -4,7 +4,7 @@ title: "Upgrading contracts"
 description: ""
 ---
 
-The address of a contract is determined by its [initial code and state](/foundations/status). A contract can upgrade its code while preserving its address. This is useful for fixing bugs, adding features, or adapting to protocol changes without migrating to a new address.
+The address of a contract is determined by its [initial code and state](/blockchain-basics/primitives/status). A contract can upgrade its code while preserving its address. This is useful for fixing bugs, adding features, or adapting to protocol changes without migrating to a new address.
 
 Upgrades are critical when other contracts reference the contract being upgraded. For example, [NFT items](/blockchain-basics/standard/tokens/nft/how-it-works) reference their collection contract. The collection admin cannot modify these references stored in existing NFT items. Without upgrades, fixing bugs or adding features would require deploying a new collection and migrating all items—an expensive and complex process. Upgrades solve this by allowing the collection contract to evolve in place while preserving all existing references.
 

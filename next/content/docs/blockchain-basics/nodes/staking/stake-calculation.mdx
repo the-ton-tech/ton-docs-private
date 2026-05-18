@@ -23,8 +23,8 @@ The calculation draws on several sources:
 | Operator setting                                                 | `stakePercent`         | Percentage of balance to stake. Defaults to `100` when unset.                                                     |
 | Wallet state                                                     | `balance`              | Current TON balance of the staking account (validator wallet, pool, or controller).                               |
 | Validator console                                                | Active validator count | Number of validators currently running on this node. Determines whether the node is new or already participating. |
-| [On-chain config #17](/foundations/config#param-17-stake-limits) | `minStake`             | Network minimum stake. Submissions below this value are rejected by the elector.                                  |
-| [On-chain config #17](/foundations/config#param-17-stake-limits) | `maxStake`             | Network maximum stake. Submissions above this value are clamped.                                                  |
+| [On-chain config #17](/blockchain-basics/primitives/config#param-17-stake-limits) | `minStake`             | Network minimum stake. Submissions below this value are rejected by the elector.                                  |
+| [On-chain config #17](/blockchain-basics/primitives/config#param-17-stake-limits) | `maxStake`             | Network maximum stake. Submissions above this value are clamped.                                                  |
 | Node configuration                                               | Staking mode           | Whether the node uses a nominator pool, single nominator pool, liquid staking controller, or direct staking.      |
 
 Configure `stake` and `stakePercent` with the [`set`](/blockchain-basics/nodes/cpp/mytonctrl/core#set) command:

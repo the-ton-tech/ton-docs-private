@@ -14,7 +14,7 @@ The platform runs on a set of servers, called [nodes](/blockchain-basics/nodes/o
 
 ## Network communication
 
-The nodes that run the blockchain interact via the [ADNL](/blockchain-basics/whitepapers/ton#3-1-abstract-datagram-network-layer) protocol. User-facing applications usually use [servers](/applications/api/overview) that proxy JSON HTTP requests into the ADNL network. The official version of such a proxy server is provided by the [liteserver](/ecosystem/node/overview#full-node-modes) software. There are public instances of liteserver, so developers are not required to host one on their own servers.
+The nodes that run the blockchain interact via the [ADNL](/blockchain-basics/whitepapers/ton#3-1-abstract-datagram-network-layer) protocol. User-facing applications usually use [servers](/applications/api/overview) that proxy JSON HTTP requests into the ADNL network. The official version of such a proxy server is provided by the [liteserver](/blockchain-basics/nodes/overview#full-node-modes) software. There are public instances of liteserver, so developers are not required to host one on their own servers.
 
 ## Toncoin and fees
 
@@ -28,7 +28,7 @@ _Mainnet_ is the "real" network. It's where actual payments in Toncoin are made.
 
 The other network is _testnet_, and it is used by TON developers to check that their applications work correctly before deploying them to mainnet. It uses "test coins" that barely have any value.
 
-Usually, when the TON blockchain gets an update, it is first deployed to testnet, and then to mainnet after a brief period of testing, so sometimes they may run different software. Also, their [configuration](/foundations/config), availability, and throughput might be different.
+Usually, when the TON blockchain gets an update, it is first deployed to testnet, and then to mainnet after a brief period of testing, so sometimes they may run different software. Also, their [configuration](/blockchain-basics/primitives/config), availability, and throughput might be different.
 
 ## Workchains and shards
 
@@ -51,7 +51,7 @@ It's easiest to visualize the blockchain as a set of [accounts](/blockchain-basi
 
 ### Account statuses
 
-Over its lifetime, an account changes its [status](/foundations/status) among four values:
+Over its lifetime, an account changes its [status](/blockchain-basics/primitives/status) among four values:
 
 - `nonexist`: There wasn't a single operation with the account, or it was removed. It has neither a balance, nor code.
 - `uninit`: If some Toncoin is transferred to an account, it now exists, but there is still no smart contract code on it. It now has a balance.
@@ -110,7 +110,7 @@ The execution follows a process whose steps are called [phases](/blockchain-basi
 
 ### Gas
 
-Execution cost is first measured in _gas_ units, then converted to Toncoin. This unit is separate so that if code execution becomes computationally cheaper (or more expensive), validators can vote to change the [price of gas](/foundations/config#param-20-and-21:-gas-prices) in Toncoin.
+Execution cost is first measured in _gas_ units, then converted to Toncoin. This unit is separate so that if code execution becomes computationally cheaper (or more expensive), validators can vote to change the [price of gas](/blockchain-basics/primitives/config#param-20-and-21:-gas-prices) in Toncoin.
 
 ### Exit codes
 

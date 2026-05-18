@@ -7,7 +7,7 @@ description: ""
 `StateInit` is a data structure sent as part of a message, either internal or incoming external, used to
 
 - deploy a smart contract, for which it stores the initial code and data of a contract;
-- [unfreeze](/foundations/status#status-transitions) a contract, where its last committed code and data are used.
+- [unfreeze](/blockchain-basics/primitives/status#status-transitions) a contract, where its last committed code and data are used.
 
 This structure can be appended in-place or as a referenced cell to every message:
 
@@ -75,4 +75,4 @@ To put `S` into the same shard as `D`, set `fixed_prefix_length` to 8 and send t
 
 ### Limits
 
-The largest value for `fixed_prefix_length` is set in the blockchain config ([param 43](/foundations/config#param-43%3A-account-and-message-limits)), and at the moment is `8`, i.e. discrepancy in only eight bits of address can be ignored.
+The largest value for `fixed_prefix_length` is set in the blockchain config ([param 43](/blockchain-basics/primitives/config#param-43%3A-account-and-message-limits)), and at the moment is `8`, i.e. discrepancy in only eight bits of address can be ignored.

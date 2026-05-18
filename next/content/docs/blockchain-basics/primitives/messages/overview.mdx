@@ -65,7 +65,7 @@ Transactions implement the concept of `AccountChain` described in the [TON Block
 
 Because transactions form the `AccountChain`, each one carries a logical timestamp, `lt`, that strictly increases with every new transaction of the account. The `now` field stores the Unix time when the transaction was created.
 
-The `state_update` field is a [Merkle update](/blockchain-basics/primitives/serialization/merkle-update) that captures the difference between the previous and current state of the account. The [contract status](/foundations/status) before and after the transaction is duplicated for convenience.
+The `state_update` field is a [Merkle update](/blockchain-basics/primitives/serialization/merkle-update) that captures the difference between the previous and current state of the account. The [contract status](/blockchain-basics/primitives/status) before and after the transaction is duplicated for convenience.
 
 Other fields, such as `in_msg`, `out_msgs`, and `outmsg_cnt`, relate to the [messages](/blockchain-basics/primitives/messages/overview) processed and emitted during the transaction. A trace may start from a transaction rather than a message, in which case `in_msg` is `Nothing`. However, a trace cannot continue without messages: if it contains `n` transactions it must contain at least `n-1` messages. Consequently, a trace can include at most one non-ordinary transaction, because messages can trigger only an [ordinary transaction](/blockchain-basics/primitives/messages/ordinary-tx).
 
