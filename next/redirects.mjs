@@ -702,7 +702,7 @@ export const redirects = [
   },
   {
     "source": "/develop/howto/blockchain-configs",
-    "destination": "/v3/documentation/network/config-params/overview",
+    "destination": "/blockchain-basics/primitives/config",
     "permanent": true
   },
   {
@@ -3907,7 +3907,7 @@ export const redirects = [
   },
   {
     "source": "/v3/documentation/network/config-params/overview",
-    "destination": "/foundations/config",
+    "destination": "/blockchain-basics/primitives/config",
     "permanent": true
   },
   {
@@ -3917,7 +3917,7 @@ export const redirects = [
   },
   {
     "source": "/v3/documentation/network/configs/blockchain-configs",
-    "destination": "/v3/documentation/network/config-params/overview",
+    "destination": "/blockchain-basics/primitives/config",
     "permanent": true
   },
   {
@@ -4052,7 +4052,7 @@ export const redirects = [
   },
   {
     "source": "/v3/documentation/smart-contracts/addresses/address-states",
-    "destination": "/foundations/status",
+    "destination": "/blockchain-basics/primitives/status",
     "permanent": true
   },
   {
