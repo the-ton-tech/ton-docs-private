@@ -77,6 +77,15 @@ interface StaleLinkReport {
   line: number
   href: string
   finalHref: string
+  /**
+   * Why we believe `finalHref` is the right replacement:
+   *   - `chain`: redirect chain terminated cleanly at a real page.
+   *   - `fuzzy`: chain ended at a non-page (or looped); we found the page by
+   *     basename + path-suffix matching (unambiguous).
+   *   - `broken`: link had no redirect entry at all, but a single page with
+   *     the same basename + best path-suffix exists.
+   */
+  origin: "chain" | "fuzzy" | "broken"
 }
 
 interface FrontmatterDiff {
@@ -129,6 +138,7 @@ interface RunFlags {
   fixInternal: boolean
   enforcePermanent: boolean
   fixFrontmatter: boolean
+  repairRedirects: boolean
   // Misc
   baseline: number
   verbose: boolean
@@ -201,6 +211,7 @@ function parseFlags(argv: string[]): RunFlags {
     fixInternal: has("--fix-internal"),
     enforcePermanent: has("--enforce-permanent"),
     fixFrontmatter: has("--fix-frontmatter"),
+    repairRedirects: has("--repair-redirects"),
     baseline: intArg("--baseline", Number.parseInt(process.env.LINKS_BASELINE ?? "345", 10)),
     verbose: has("--verbose"),
   }
@@ -225,11 +236,18 @@ Audit scopes (narrow the run; default is all):
 Mutations (each touches one surface; default is none):
   --fix                    Additively append missing redirects
   --flatten-chains         Rewrite A->B->C in redirects.mjs as A->C
-  --fix-internal           Rewrite MDX links that go through a redirect
+  --fix-internal           Rewrite MDX links that go through a redirect or
+                           point at a non-existent page. Uses basename +
+                           longest-common-suffix matching to find the right
+                           page when the redirect's destination is broken.
   --enforce-permanent      Upgrade any permanent:false entries to true
   --fix-frontmatter        Strip auto-injected title/description fields when
                            upstream had them absent or empty (restores Pass E
                            parity without touching human edits)
+  --repair-redirects       Rewrite the destination of redirects whose chain
+                           lands on a non-page or loops. Picks the real page
+                           by matching the source's basename + path suffix
+                           against pages on disk. Skips ambiguous matches.
 
 Other:
   --baseline N             Allow N broken internal links (LINKS_BASELINE compat, default 313)
@@ -482,6 +500,90 @@ function resolveRedirectChain(start: string, redirectMap: Map<string, Redirect>)
 
 function isExternalUrl(value: string): boolean {
   return /^(?:https?:|mailto:|tel:|\/\/)/i.test(value)
+}
+
+// ---------------------------------------------------------------------------
+// Fuzzy page resolver (basename + longest-common-suffix matching)
+// ---------------------------------------------------------------------------
+
+/**
+ * Cache: basename → page slugs that end with `/${basename}`. Built lazily
+ * the first time `findRealTarget` is called for a given pageSlugs set.
+ */
+const basenameIndexCache = new WeakMap<Set<string>, Map<string, string[]>>()
+
+function getBasenameIndex(pageSlugs: Set<string>): Map<string, string[]> {
+  const cached = basenameIndexCache.get(pageSlugs)
+  if (cached) return cached
+  const idx = new Map<string, string[]>()
+  for (const slug of pageSlugs) {
+    const parts = slug.split("/").filter(Boolean)
+    const basename = parts[parts.length - 1] ?? ""
+    if (!basename) continue
+    const list = idx.get(basename)
+    if (list) list.push(slug)
+    else idx.set(basename, [slug])
+  }
+  basenameIndexCache.set(pageSlugs, idx)
+  return idx
+}
+
+interface FuzzyMatch {
+  slug: string
+  /** Number of trailing path segments shared with the broken path. */
+  suffix: number
+  /** True when a single page tied for the best suffix score (high-confidence). */
+  unique: boolean
+}
+
+/**
+ * Given a path that does not resolve to a real page, try to find the page that
+ * is most likely the intended target by matching trailing path segments.
+ *
+ * Algorithm:
+ *   1. Take the basename (final segment) of `brokenPath`.
+ *   2. Collect every page slug that ends with `/${basename}`.
+ *   3. Among those, score each by the count of trailing path segments that
+ *      match between the candidate and `brokenPath`.
+ *   4. Return the candidate with the highest score. Mark `unique: false` when
+ *      multiple candidates tie at the top score — callers can choose to
+ *      accept (aggressive) or skip (conservative) ambiguous matches.
+ *
+ * Returns undefined when no candidate shares even the basename.
+ */
+function findRealTarget(brokenPath: string, pageSlugs: Set<string>): FuzzyMatch | undefined {
+  const normalised = normalizeSlug(brokenPath)
+  if (pageSlugs.has(normalised)) return {slug: normalised, suffix: Infinity, unique: true}
+
+  const parts = normalised.split("/").filter(Boolean)
+  const basename = parts[parts.length - 1]
+  if (!basename) return undefined
+
+  const candidates = getBasenameIndex(pageSlugs).get(basename) ?? []
+  if (candidates.length === 0) return undefined
+  if (candidates.length === 1) return {slug: candidates[0], suffix: 1, unique: true}
+
+  let bestScore = 0
+  let bestSlugs: string[] = []
+  for (const cand of candidates) {
+    const candParts = cand.split("/").filter(Boolean)
+    let score = 0
+    let i = parts.length - 1
+    let j = candParts.length - 1
+    while (i >= 0 && j >= 0 && parts[i] === candParts[j]) {
+      score++
+      i--
+      j--
+    }
+    if (score > bestScore) {
+      bestScore = score
+      bestSlugs = [cand]
+    } else if (score === bestScore) {
+      bestSlugs.push(cand)
+    }
+  }
+  if (bestSlugs.length === 0) return undefined
+  return {slug: bestSlugs[0], suffix: bestScore, unique: bestSlugs.length === 1}
 }
 
 // ---------------------------------------------------------------------------
@@ -948,15 +1050,25 @@ function runPassC(idx: Indices): {
 }
 
 /**
- * Pass D — stale internal links.
+ * Pass D — stale and broken internal links.
  *
- * Walk every MDX link in `content/docs/`. If the resolved path is a `source`
- * in `redirectMap`, the link is stale: visiting it forces a redirect, which
- * dilutes internal authority. The proposed rewrite preserves the original
- * anchor: `/old/path#frag` → `<chain.final>#frag`. Only single-link rewrites
- * are emitted; chains that loop or dead-end on a non-page are skipped (the
- * regular link is already covered by Pass A's "redirect lands on non-page"
- * error, no point double-counting it here).
+ * Walks every MDX link inside `content/docs/` and emits a replacement when one
+ * can be derived. Three cases (`origin`):
+ *
+ *   - `chain` — link resolves to a redirect source; the chain terminates at a
+ *     real page or an external URL. Replace with the chain's final
+ *     destination so internal navigation skips the 308 hop.
+ *   - `fuzzy` — link resolves to a redirect source, but the chain ends at a
+ *     non-page or loops. Find the real page via basename + path-suffix
+ *     matching and rewrite directly. This is the case the user complained
+ *     about: previously the pass would silently skip these.
+ *   - `broken` — link has no redirect entry at all and the page does not
+ *     exist. We still attempt basename matching so MDX links rotted by
+ *     out-of-band moves can be repaired in one pass.
+ *
+ * Anchor preservation: `/old/path#frag` → `<resolved>#frag`. Ambiguous fuzzy
+ * matches (multiple candidates tied for best suffix score) are skipped so we
+ * never silently rewrite to the wrong page.
  */
 function runPassD(idx: Indices): {stale: StaleLinkReport[]} {
   const stale: StaleLinkReport[] = []
@@ -975,17 +1087,124 @@ function runPassD(idx: Indices): {stale: StaleLinkReport[]} {
         resolved = normalizeSlug(path.posix.normalize(path.posix.join(ownDir, targetPath)))
       }
       if (looksLikeAsset(resolved)) continue
-      if (!redirectMap.has(resolved)) continue
-      const chain = resolveRedirectChain(resolved, redirectMap)
-      if (chain.isLoop) continue
-      const final = chain.destination
-      if (!isExternalUrl(final) && !pageSlugs.has(final)) continue
-      if (final === resolved) continue
-      const finalHref = anchor ? `${final}#${anchor}` : final
-      stale.push({file: page.rel, line: link.line, href: raw, finalHref})
+      if (pageSlugs.has(resolved)) continue // already pointing at a real page
+
+      let finalHref: string | undefined
+      let origin: StaleLinkReport["origin"] | undefined
+
+      if (redirectMap.has(resolved)) {
+        // Case A/B: link goes through a redirect.
+        const chain = resolveRedirectChain(resolved, redirectMap)
+        const final = chain.destination
+        if (!chain.isLoop && (isExternalUrl(final) || pageSlugs.has(final)) && final !== resolved) {
+          // Case A — chain ended cleanly.
+          finalHref = anchor ? `${final}#${anchor}` : final
+          origin = "chain"
+        } else {
+          // Case B — chain looped or ended on a non-page. Try fuzzy matching
+          // against the original link target (most semantically meaningful
+          // path the author wrote).
+          const match = findRealTarget(resolved, pageSlugs)
+          if (match && match.unique && match.slug !== resolved) {
+            finalHref = anchor ? `${match.slug}#${anchor}` : match.slug
+            origin = "fuzzy"
+          }
+        }
+      } else {
+        // Case C: no redirect at all. The link is broken in MDX directly.
+        const match = findRealTarget(resolved, pageSlugs)
+        if (match && match.unique && match.slug !== resolved) {
+          finalHref = anchor ? `${match.slug}#${anchor}` : match.slug
+          origin = "broken"
+        }
+      }
+
+      if (!finalHref || !origin) continue
+      stale.push({file: page.rel, line: link.line, href: raw, finalHref, origin})
     }
   }
   return {stale}
+}
+
+/**
+ * Pass R — redirect repair.
+ *
+ * For every redirect whose destination does not currently resolve (chain
+ * terminates at a non-page, or the chain loops), try to find the page the
+ * author originally intended by basename + longest-common-suffix matching on
+ * the redirect **source** (which represents the legacy URL — typically the
+ * closest hint to the real destination path).
+ *
+ * Returns one entry per redirect that we know how to fix and the set of
+ * source paths we could not resolve so the caller can surface them.
+ */
+interface RedirectRepair {
+  source: string
+  oldDestination: string
+  newDestination: string
+  reason: "loop" | "dead-end"
+  suffix: number
+}
+
+interface UnrepairableRedirect {
+  source: string
+  destination: string
+  reason: string
+}
+
+function runPassR(idx: Indices): {
+  repairs: RedirectRepair[]
+  drops: string[]
+  unresolvable: UnrepairableRedirect[]
+} {
+  const {redirectMap, pageSlugs} = idx
+  const repairs: RedirectRepair[] = []
+  const drops: string[] = []
+  const unresolvable: UnrepairableRedirect[] = []
+
+  for (const [source, entry] of redirectMap) {
+    // Source is itself a real page — this redirect should not exist at all.
+    // It either steals traffic from the page (when chain ends elsewhere) or
+    // creates a `A → B → A` loop when B redirects back. Mark for deletion.
+    if (pageSlugs.has(source)) {
+      drops.push(source)
+      continue
+    }
+
+    const chain = resolveRedirectChain(source, redirectMap)
+
+    let reason: RedirectRepair["reason"] | undefined
+    if (chain.isLoop) {
+      reason = "loop"
+    } else {
+      const final = chain.destination
+      if (!isExternalUrl(final) && !pageSlugs.has(final)) {
+        reason = "dead-end"
+      }
+    }
+    if (!reason) continue // chain resolves correctly, nothing to repair
+
+    const match = findRealTarget(source, pageSlugs)
+    if (!match || !match.unique) {
+      unresolvable.push({
+        source,
+        destination: entry.destination,
+        reason:
+          match === undefined
+            ? "no page with matching basename"
+            : `ambiguous basename match (suffix=${match.suffix})`,
+      })
+      continue
+    }
+    repairs.push({
+      source,
+      oldDestination: entry.destination,
+      newDestination: match.slug,
+      reason,
+      suffix: match.suffix === Infinity ? -1 : match.suffix,
+    })
+  }
+  return {repairs, drops, unresolvable}
 }
 
 /**
@@ -1322,17 +1541,57 @@ async function main(): Promise<void> {
     )
   }
 
+  // Pass R runs whenever --repair-redirects is set, regardless of which
+  // check scopes are active — it operates only on redirects.mjs and is the
+  // most useful starting point for users staring down a wall of "lands on
+  // X which is not a page" errors.
+  let passRRepairs: RedirectRepair[] = []
+  let passRDrops: string[] = []
+  let passRUnresolvable: UnrepairableRedirect[] = []
+  if (flags.repairRedirects) {
+    const {repairs, drops, unresolvable} = runPassR(idx)
+    passRRepairs = repairs
+    passRDrops = drops
+    passRUnresolvable = unresolvable
+    if (flags.verbose) {
+      for (const r of repairs.slice(0, 25)) {
+        console.log(
+          `    ↻ ${r.source}: ${r.oldDestination} -> ${r.newDestination}  (${r.reason})`,
+        )
+      }
+      if (repairs.length > 25) console.log(`    ... and ${repairs.length - 25} more`)
+      for (const d of drops.slice(0, 10)) {
+        console.log(`    🗑 ${d}  (source is already a real page)`)
+      }
+      if (drops.length > 10) console.log(`    ... and ${drops.length - 10} more drops`)
+      for (const u of unresolvable.slice(0, 10)) {
+        console.warn(`    ✗ ${u.source}: ${u.destination} (${u.reason})`)
+      }
+      if (unresolvable.length > 10) {
+        console.warn(`    ... and ${unresolvable.length - 10} more`)
+      }
+    }
+    console.log(
+      `  repairs: ${repairs.length} fixable, ${drops.length} to drop, ${unresolvable.length} unresolved`,
+    )
+  }
+
   if (flags.checkInternalStale) {
     const {stale} = runPassD(idx)
     passDStale = stale
     if (stale.length > 0 && !flags.fixInternal) regressionCount += stale.length
     if (flags.verbose && stale.length > 0) {
+      const byOrigin = {chain: 0, fuzzy: 0, broken: 0}
+      for (const s of stale) byOrigin[s.origin]++
       for (const s of stale.slice(0, 10)) {
-        console.log(`    ${s.file}:${s.line}  ${s.href}  →  ${s.finalHref}`)
+        console.log(`    [${s.origin}] ${s.file}:${s.line}  ${s.href}  →  ${s.finalHref}`)
       }
       if (stale.length > 10) console.log(`    ... and ${stale.length - 10} more`)
+      console.log(
+        `    breakdown: ${byOrigin.chain} chain, ${byOrigin.fuzzy} fuzzy, ${byOrigin.broken} broken`,
+      )
     }
-    console.log(`  stale-internal: ${stale.length} link(s) go through a redirect`)
+    console.log(`  stale-internal: ${stale.length} link(s) need rewriting`)
   }
 
   if (flags.checkFrontmatter) {
@@ -1386,12 +1645,18 @@ async function main(): Promise<void> {
       verbose: flags.verbose,
     })
   }
+  if (flags.repairRedirects && (passRRepairs.length > 0 || passRDrops.length > 0)) {
+    await applyRedirectRepairs(idx, passRRepairs, passRDrops, flags.verbose)
+  }
   if (flags.fixInternal && passDStale.length > 0) {
     await applyStaleLinkRewrites(passDStale, flags.verbose)
   }
   if (flags.fixFrontmatter && passEDiffs.length > 0) {
     await applyFrontmatterRestores(idx, passEDiffs, flags.verbose)
   }
+  // Silence "unused" warnings on unresolvables — they are surfaced to stdout
+  // for human review but not currently fed into further mutators.
+  void passRUnresolvable
 
   if (hardError) {
     console.error("\nFAIL (hard SEO regression: loops or permanent:false)")
@@ -1465,6 +1730,44 @@ async function applyRedirectMutations(
     for (const a of additive.slice(0, 5)) console.log(`    + ${a.source} -> ${a.destination}`)
     for (const f of flatten.slice(0, 5)) console.log(`    ~ ${f.source} -> ${f.finalDestination}`)
     for (const u of upgradedRows.slice(0, 5)) console.log(`    ⇧ ${u.source} (permanent:true)`)
+  }
+}
+
+/**
+ * Apply repaired destinations to `redirects.mjs`. Only the `destination`
+ * field of an existing entry is rewritten — `source` and `permanent` are
+ * preserved. Existing `writeRedirects` semantics (dedupe + sort) still apply.
+ */
+async function applyRedirectRepairs(
+  idx: Indices,
+  repairs: RedirectRepair[],
+  drops: string[],
+  verbose: boolean,
+): Promise<void> {
+  if (repairs.length === 0 && drops.length === 0) return
+  const repairMap = new Map(repairs.map(r => [r.source, r]))
+  const dropSet = new Set(drops)
+  const existing = Array.from(idx.redirectMap.values())
+  const next: Redirect[] = existing
+    .filter(r => !dropSet.has(r.source))
+    .map(r => {
+      const repair = repairMap.get(r.source)
+      if (!repair) return r
+      return {source: r.source, destination: repair.newDestination, permanent: r.permanent ?? true}
+    })
+  await writeRedirects(next)
+  console.log(
+    `  redirects.mjs: ${repairs.length} repaired, ${drops.length} dropped (source already a real page)`,
+  )
+  if (verbose) {
+    for (const r of repairs.slice(0, 10)) {
+      console.log(`    ↻ ${r.source}: ${r.oldDestination} -> ${r.newDestination}  (${r.reason})`)
+    }
+    if (repairs.length > 10) console.log(`    ... and ${repairs.length - 10} more repairs`)
+    for (const d of drops.slice(0, 5)) {
+      console.log(`    🗑 ${d}  (source is already a real page)`)
+    }
+    if (drops.length > 5) console.log(`    ... and ${drops.length - 5} more drops`)
   }
 }
 
