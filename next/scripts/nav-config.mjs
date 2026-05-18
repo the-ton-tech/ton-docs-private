@@ -22,6 +22,7 @@
  * @typedef {InternalTab | ExternalTab} Tab
  * @typedef {{version: 1, tabs: Tab[], navbarLinks?: LinkRef[]}} NavConfig
  */
+import { stableStringify } from "../src/lib/stable-stringify"
 import {existsSync, promises as fs} from "node:fs"
 import path from "node:path"
 import {fileURLToPath} from "node:url"
@@ -94,118 +95,6 @@ export function isExternalTab(tab) {
 /** @param {Tab} tab @returns {tab is InternalTab} */
 export function isInternalTab(tab) {
   return !isExternalTab(tab)
-}
-
-// ---------------------------------------------------------------------------
-// Tab list normalization (one-time migration of legacy `navbarLinks`)
-// ---------------------------------------------------------------------------
-
-/**
- * Return the effective tab list. If `config.navbarLinks` is populated, fold
- * each entry into the tab list as an `ExternalTab` (appended). On the next
- * save the editor persists the merged list and drops `navbarLinks`, so this
- * is effectively a one-time migration.
- *
- * @param {NavConfig} config
- * @returns {Tab[]}
- */
-export function getEffectiveTabs(config) {
-  const baseTabs = Array.isArray(config.tabs) ? config.tabs : []
-  const legacy = Array.isArray(config.navbarLinks) ? config.navbarLinks : []
-  if (legacy.length === 0) return baseTabs
-  const usedIds = new Set(baseTabs.map(t => t.id))
-  // Dedupe against any external tab whose URL already matches a legacy
-  // entry — keeps the merge idempotent if both fields are transiently
-  // populated (e.g. a stale module-level `navConfig` cache vs. the
-  // freshly-saved file on disk).
-  const usedUrls = new Set(
-    baseTabs.filter(isExternalTab).map(t => /** @type {ExternalTab} */ (t).url),
-  )
-  /** @type {ExternalTab[]} */
-  const extras = []
-  for (const link of legacy) {
-    if (usedUrls.has(link.url)) continue
-    const id = uniqueTabId(makeTabId(link.name ?? link.url ?? "external"), usedIds)
-    usedIds.add(id)
-    usedUrls.add(link.url)
-    /** @type {ExternalTab} */
-    const tab = {id, title: link.name, url: link.url, external: true}
-    if (link.icon) tab.icon = link.icon
-    if (link.tag) tab.tag = link.tag
-    extras.push(tab)
-  }
-  return [...baseTabs, ...extras]
-}
-
-/** @param {string} base @param {Set<string>} used */
-function uniqueTabId(base, used) {
-  if (!used.has(base)) return base
-  let i = 2
-  while (used.has(`${base}-${i}`)) i += 1
-  return `${base}-${i}`
-}
-
-// ---------------------------------------------------------------------------
-// Stable JSON serializer
-// ---------------------------------------------------------------------------
-
-const KEY_PRIORITY = [
-  "version",
-  "type",
-  "id",
-  "slug",
-  "title",
-  "group",
-  "name",
-  "icon",
-  "tag",
-  "expanded",
-  "flatten",
-  "external",
-  "defaultOpen",
-  "root",
-  "openapi",
-  "url",
-  "source",
-  "destination",
-  "permanent",
-  "directory",
-  "pages",
-  "tabs",
-  "navbarLinks",
-]
-
-function keyOrder(a, b) {
-  const ia = KEY_PRIORITY.indexOf(a)
-  const ib = KEY_PRIORITY.indexOf(b)
-  if (ia !== -1 && ib !== -1) return ia - ib
-  if (ia !== -1) return -1
-  if (ib !== -1) return 1
-  return a < b ? -1 : a > b ? 1 : 0
-}
-
-/**
- * Deterministic JSON serializer. Object keys are ordered by `KEY_PRIORITY` then
- * lexicographic; output ends with a trailing newline.
- * @param {unknown} value
- * @returns {string}
- */
-export function stableStringify(value) {
-  return (
-    JSON.stringify(
-      value,
-      (_key, val) => {
-        if (val && typeof val === "object" && !Array.isArray(val)) {
-          const sorted = /** @type {Record<string, unknown>} */ ({})
-          const obj = /** @type {Record<string, unknown>} */ (val)
-          for (const k of Object.keys(obj).sort(keyOrder)) sorted[k] = obj[k]
-          return sorted
-        }
-        return val
-      },
-      2,
-    ) + "\n"
-  )
 }
 
 // ---------------------------------------------------------------------------
