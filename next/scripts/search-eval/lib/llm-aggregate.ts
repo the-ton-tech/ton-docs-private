@@ -9,6 +9,7 @@ import {join} from "node:path"
 import {readAndValidate, type ValidationResult} from "./llm-validate"
 import {
   haikuOutputSchema,
+  haikuQuerySchema,
   opusRankingOutputSchema,
   redTeamOutputSchema,
   sonnetOutputSchema,
@@ -53,16 +54,62 @@ function aggregate<Raw, Out>(
 }
 
 export function aggregateHaiku(dir: string): AggregationSummary<CandidateRecord> {
-  return aggregate<HaikuOutput, CandidateRecord>(dir, haikuOutputSchema, raw =>
-    raw.queries.map(q => ({
-      page_url: raw.page_url,
-      q: q.q,
-      intent: q.intent,
-      persona: q.persona,
-      length: q.length,
-      rationale: q.rationale,
-    })),
-  )
+  // Lenient per-query validation: a Haiku batch occasionally emits one query
+  // with a bad enum label (e.g. "explorer" used as intent instead of persona);
+  // dropping just the bad query — not the whole file — recovers the other 9
+  // valid candidates from those files. We do this by:
+  //   1. Trying full file validation first (cheapest, covers 95%+ of files).
+  //   2. On failure, parsing as { queries: unknown[], page_url: ... } and
+  //      filtering queries individually with haikuQuerySchema.
+  const files = jsonFilesIn(dir)
+  const valid: CandidateRecord[] = []
+  const errors: {file: string; error: string}[] = []
+  for (const f of files) {
+    const strict = readAndValidate(f, haikuOutputSchema)
+    if (strict.ok) {
+      for (const q of strict.value.queries) {
+        valid.push({
+          page_url: strict.value.page_url,
+          q: q.q,
+          intent: q.intent,
+          persona: q.persona,
+          length: q.length,
+          rationale: q.rationale,
+        })
+      }
+      continue
+    }
+    // Per-query fallback. Read raw, find queries[], validate each query.
+    let raw: unknown
+    try {
+      raw = JSON.parse(readFileSync(f, "utf8"))
+    } catch {
+      errors.push({file: f, error: strict.error})
+      continue
+    }
+    const obj = raw as {page_url?: unknown; queries?: unknown[]}
+    if (typeof obj.page_url !== "string" || !Array.isArray(obj.queries)) {
+      errors.push({file: f, error: strict.error})
+      continue
+    }
+    const page_url = obj.page_url
+    let kept = 0
+    let dropped = 0
+    for (const q of obj.queries) {
+      const r = haikuQuerySchema.safeParse(q)
+      if (r.success) {
+        valid.push({page_url, q: r.data.q, intent: r.data.intent, persona: r.data.persona, length: r.data.length, rationale: r.data.rationale})
+        kept += 1
+      } else {
+        dropped += 1
+      }
+    }
+    if (kept === 0) errors.push({file: f, error: strict.error})
+    else if (dropped > 0) {
+      errors.push({file: f, error: `partial: ${dropped} of ${obj.queries.length} queries dropped (${strict.error})`})
+    }
+  }
+  return {valid, errors, total: files.length}
 }
 
 export interface ValidatedQuery {
