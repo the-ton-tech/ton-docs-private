@@ -79,7 +79,10 @@ export const redTeamCaseSchema = z.object({
   intent: z.enum(INTENT_LABELS),
   should_rank_first: z.string().startsWith("/"),
   failure_category: z.enum(FAILURE_CLASSES),
-  hypothesis: z.string().min(10).max(800),
+  // Hypotheses cite specific pipeline mechanisms; 1500 chars accommodates a
+  // multi-sentence justification without rejecting the whole session for one
+  // verbose case (the original 800-char bound dropped 30 cases on session 2).
+  hypothesis: z.string().min(10).max(1500),
 })
 export const redTeamOutputSchema = z.object({
   session_id: z.number().int().min(1),
