@@ -1,4 +1,6 @@
-# Auto-generated sub-agent outputs — regenerable, not committed
-# (Aggregated final files at scripts/search-eval/{llm-candidates,llm-validated,gold-evalset,hard-cases}.json ARE committed.)
+# Auto-generated sub-agent outputs and batch prompt files — all regenerable, not committed.
+# Aggregated final files at scripts/search-eval/{llm-candidates,llm-validated,gold-evalset,hard-cases}.json
+# ARE committed.
 *.json
+*.prompt.txt
 !.gitignore
