@@ -1,0 +1,2218 @@
+{
+  "total_queries": 126,
+  "parsed": 126,
+  "top1_agreement": 0.9761904761904762,
+  "recall_at_expect": 0.9920634920634921,
+  "false_3_rate": 0.023809523809523808,
+  "gate": {
+    "top1_threshold": 0.85,
+    "recall_threshold": 0.95,
+    "passed": true
+  },
+  "queryDetails": [
+    {
+      "q": "ton connect",
+      "expect": [
+        "/applications/ton-connect/overview"
+      ],
+      "top1": {
+        "url": "/applications/ton-connect/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/ton-connect/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tonconnect",
+      "expect": [
+        "/applications/ton-connect/overview"
+      ],
+      "top1": {
+        "url": "/applications/ton-connect/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/ton-connect/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "jetton",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "jettons",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "nft",
+      "expect": [
+        "/blockchain-basics/standard/tokens/nft/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/nft/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/nft/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tvm",
+      "expect": [
+        "/blockchain-basics/tvm/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tolk",
+      "expect": [
+        "/blockchain-basics/tolk/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tolk/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tolk/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "func",
+      "expect": [
+        "/blockchain-basics/languages/func/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/languages/func/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/languages/func/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "fift",
+      "expect": [
+        "/blockchain-basics/languages/fift/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/languages/fift/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/languages/fift/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tl-b",
+      "expect": [
+        "/blockchain-basics/languages/tl-b/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/languages/tl-b/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/languages/tl-b/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "blueprint",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tvm instructions",
+      "expect": [
+        "/blockchain-basics/tvm/instructions"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/instructions",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/instructions",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "glossary",
+      "expect": [
+        "/foundations/glossary",
+        "/overview/learn-more/glossary"
+      ],
+      "top1": {
+        "url": "/foundations/glossary",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/foundations/glossary",
+          "grade": 3
+        },
+        {
+          "url": "/overview/learn-more/glossary",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "start here",
+      "expect": [
+        "/overview/start-here"
+      ],
+      "top1": {
+        "url": "/overview/start-here",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/start-here",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tonkeeper",
+      "expect": [
+        "/overview/wallets/wallet-apps/tonkeeper"
+      ],
+      "top1": {
+        "url": "/overview/wallets/wallet-apps/tonkeeper",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/wallets/wallet-apps/tonkeeper",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "toolset",
+      "expect": [
+        "/overview/toolset"
+      ],
+      "top1": {
+        "url": "/overview/toolset",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/toolset",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tvm overview",
+      "expect": [
+        "/blockchain-basics/tvm/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "wallets",
+      "expect": [
+        "/blockchain-basics/standard/wallets/how-it-works",
+        "/blockchain-basics/standard/wallets/comparison"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/how-it-works",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/comparison",
+          "grade": 2
+        },
+        {
+          "url": "/blockchain-basics/standard/wallets/how-it-works",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "transaction fees",
+      "expect": [
+        "/blockchain-basics/primitives/fees"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/fees",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/fees",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "internal messages",
+      "expect": [
+        "/blockchain-basics/primitives/messages/internal"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/messages/internal",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/messages/internal",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "exit codes",
+      "expect": [
+        "/blockchain-basics/tvm/exit-codes"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/exit-codes",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/exit-codes",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "bag of cells",
+      "expect": [
+        "/blockchain-basics/primitives/serialization/boc"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/serialization/boc",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/serialization/boc",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "blockchain sharding",
+      "expect": [
+        "/blockchain-basics/primitives/shards"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/shards",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/shards",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "wallet v5",
+      "expect": [
+        "/blockchain-basics/standard/wallets/v5"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/v5",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/v5",
+          "grade": 3
+        }
+      ],
+      "false3Urls": [
+        "/blockchain-basics/standard/wallets/v5-api"
+      ]
+    },
+    {
+      "q": "wallet v4",
+      "expect": [
+        "/blockchain-basics/standard/wallets/v4"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/v4",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/v4",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "get methods",
+      "expect": [
+        "/blockchain-basics/tvm/get-method"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/get-method",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/get-method",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "highload wallets",
+      "expect": [
+        "/blockchain-basics/standard/wallets/highload/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/highload/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/highload/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "nominator pool contracts",
+      "expect": [
+        "/blockchain-basics/nodes/staking/nominator-pools"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/nodes/staking/nominator-pools",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/nodes/staking/nominator-pools",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "security best practices",
+      "expect": [
+        "/blockchain-basics/contract-dev/techniques/security"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/techniques/security",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/techniques/security",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "random number generation",
+      "expect": [
+        "/blockchain-basics/contract-dev/techniques/random"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/techniques/random",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/techniques/random",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "core concepts",
+      "expect": [
+        "/blockchain-basics/core-concepts"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/core-concepts",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/core-concepts",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "ton dns",
+      "expect": [
+        "/blockchain-basics/primitives/web3/ton-dns"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/web3/ton-dns",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/web3/ton-dns",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "ton storage",
+      "expect": [
+        "/blockchain-basics/primitives/web3/ton-storage"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/web3/ton-storage",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/web3/ton-storage",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "execution phases",
+      "expect": [
+        "/blockchain-basics/primitives/phases"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/phases",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/phases",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "merkle proofs",
+      "expect": [
+        "/blockchain-basics/primitives/serialization/merkle"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/serialization/merkle",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/serialization/merkle",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "addresses overview",
+      "expect": [
+        "/blockchain-basics/primitives/addresses/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/addresses/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/addresses/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "staking overview",
+      "expect": [
+        "/blockchain-basics/nodes/staking/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/nodes/staking/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/nodes/staking/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "account status",
+      "expect": [
+        "/blockchain-basics/primitives/status"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/status",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/status",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "blockchain limits",
+      "expect": [
+        "/blockchain-basics/primitives/limits"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/limits",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/limits",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to deploy a smart contract",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/first-smart-contract",
+        "/blockchain-basics/contract-dev/blueprint/deploy"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/deploy",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/deploy",
+          "grade": 3
+        },
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/first-smart-contract",
+          "grade": 2
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how do I write my first smart contract",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/first-smart-contract"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/first-smart-contract",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/first-smart-contract",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to transfer jettons",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/transfer"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/transfer",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/transfer",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to mint new jettons",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/mint"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/mint",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/mint",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to burn jettons",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/burn"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/burn",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/burn",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to get jetton wallet data",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/wallet-data"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/wallet-data",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/wallet-data",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to find jetton wallet",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/find"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/find",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/find",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to transfer an nft item",
+      "expect": [
+        "/blockchain-basics/standard/tokens/nft/transfer"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/nft/transfer",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/nft/transfer",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to deploy an nft item",
+      "expect": [
+        "/blockchain-basics/standard/tokens/nft/deploy"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/nft/deploy",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/nft/deploy",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "estimate gas usage in contracts",
+      "expect": [
+        "/blockchain-basics/contract-dev/techniques/gas"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/techniques/gas",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/techniques/gas",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "upgrading contracts",
+      "expect": [
+        "/blockchain-basics/contract-dev/techniques/upgrades"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/techniques/upgrades",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/techniques/upgrades",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "sign data with ton connect",
+      "expect": [
+        "/applications/ton-connect/how-to/sign-data"
+      ],
+      "top1": {
+        "url": "/applications/ton-connect/how-to/sign-data",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/ton-connect/how-to/sign-data",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "send a transaction with ton connect",
+      "expect": [
+        "/applications/ton-connect/how-to/send-transaction"
+      ],
+      "top1": {
+        "url": "/applications/ton-connect/how-to/send-transaction",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/ton-connect/how-to/send-transaction",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "connect a wallet",
+      "expect": [
+        "/applications/ton-connect/how-to/connect",
+        "/applications/appkit/howto/connect-to-a-wallet"
+      ],
+      "top1": {
+        "url": "/applications/appkit/howto/connect-to-a-wallet",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/appkit/howto/connect-to-a-wallet",
+          "grade": 3
+        },
+        {
+          "url": "/applications/ton-connect/how-to/connect",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "run a validator",
+      "expect": [
+        "/blockchain-basics/nodes/cpp/run-validator"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/nodes/cpp/run-validator",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/nodes/cpp/run-validator",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "debug smart contracts",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/debug"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/debug",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/debug",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "test smart contracts with blueprint",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/testing/overview",
+        "/blockchain-basics/contract-dev/blueprint/testing/reference"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/testing/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/testing/overview",
+          "grade": 3
+        },
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/testing/reference",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to get coins on testnet",
+      "expect": [
+        "/overview/wallets/wallet-apps/get-coins"
+      ],
+      "top1": {
+        "url": "/overview/wallets/wallet-apps/get-coins",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/wallets/wallet-apps/get-coins",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to use a vanity contract",
+      "expect": [
+        "/blockchain-basics/contract-dev/techniques/vanity"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/techniques/vanity",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/techniques/vanity",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "zero knowledge proofs",
+      "expect": [
+        "/blockchain-basics/contract-dev/techniques/zero-knowledge"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/techniques/zero-knowledge",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/techniques/zero-knowledge",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how do ton wallets work",
+      "expect": [
+        "/blockchain-basics/standard/wallets/how-it-works"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/how-it-works",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/how-it-works",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "coming from ethereum",
+      "expect": [
+        "/overview/learn-more/from-ethereum"
+      ],
+      "top1": {
+        "url": "/overview/learn-more/from-ethereum",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/learn-more/from-ethereum",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to send messages in tolk",
+      "expect": [
+        "/blockchain-basics/tolk/features/message-sending"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tolk/features/message-sending",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tolk/features/message-sending",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "set code action",
+      "expect": [
+        "/blockchain-basics/primitives/actions/set-code"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/actions/set-code",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/actions/set-code",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "send message primitive",
+      "expect": [
+        "/blockchain-basics/primitives/actions/send"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/actions/send",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/actions/send",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "internal address formats",
+      "expect": [
+        "/blockchain-basics/primitives/addresses/formats"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/addresses/formats",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/addresses/formats",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "deriving addresses",
+      "expect": [
+        "/blockchain-basics/primitives/addresses/derive"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/addresses/derive",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/addresses/derive",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "liquid staking contracts",
+      "expect": [
+        "/blockchain-basics/nodes/staking/liquid-staking"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/nodes/staking/liquid-staking",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/nodes/staking/liquid-staking",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "single nominator pool",
+      "expect": [
+        "/blockchain-basics/nodes/staking/single-nominator"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/nodes/staking/single-nominator",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/nodes/staking/single-nominator",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "stake calculation",
+      "expect": [
+        "/blockchain-basics/nodes/staking/stake-calculation"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/nodes/staking/stake-calculation",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/nodes/staking/stake-calculation",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "jetton interface messages and get methods",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/api"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/api",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/api",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "nft interface get methods",
+      "expect": [
+        "/blockchain-basics/standard/tokens/nft/api"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/nft/api",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/nft/api",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "wallet v5 interface get methods",
+      "expect": [
+        "/blockchain-basics/standard/wallets/v5-api"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/v5-api",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/v5-api",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "highload wallet v3 specification",
+      "expect": [
+        "/blockchain-basics/standard/wallets/highload/v3/specification"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/highload/v3/specification",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/highload/v3/specification",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "rust node quick start",
+      "expect": [
+        "/blockchain-basics/nodes/rust/quick-start"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/nodes/rust/quick-start",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/nodes/rust/quick-start",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "blueprint typescript api",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/api"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/api",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/api",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "blueprint cli reference",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/cli"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/cli",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/cli",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "on chain jetton processing",
+      "expect": [
+        "/blockchain-basics/contract-dev/techniques/on-chain-jetton-processing"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/techniques/on-chain-jetton-processing",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/techniques/on-chain-jetton-processing",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "telegram open network blockchain specification",
+      "expect": [
+        "/blockchain-basics/whitepapers/tblkch"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/whitepapers/tblkch",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/whitepapers/tblkch",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "toncenter api key",
+      "expect": [
+        "/applications/api/toncenter/get-api-key"
+      ],
+      "top1": {
+        "url": "/applications/api/toncenter/get-api-key",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/api/toncenter/get-api-key",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "toncenter rate limits",
+      "expect": [
+        "/applications/api/toncenter/rate-limit"
+      ],
+      "top1": {
+        "url": "/applications/api/toncenter/rate-limit",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/api/toncenter/rate-limit",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "toncenter streaming api overview",
+      "expect": [
+        "/applications/api/toncenter/streaming/overview"
+      ],
+      "top1": {
+        "url": "/applications/api/toncenter/streaming/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/api/toncenter/streaming/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "how to send a batch of transfers highload",
+      "expect": [
+        "/blockchain-basics/standard/wallets/highload/v3/send-batch-transfers"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/highload/v3/send-batch-transfers",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/highload/v3/send-batch-transfers",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "OP_SENDMSG opcode",
+      "expect": [
+        "/blockchain-basics/tvm/instructions"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/instructions",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/instructions",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "SENDRAWMSG",
+      "expect": [
+        "/blockchain-basics/tvm/instructions",
+        "/blockchain-basics/primitives/messages/modes"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/instructions",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/messages/modes",
+          "grade": 2
+        },
+        {
+          "url": "/blockchain-basics/tvm/instructions",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "loadUint",
+      "expect": [
+        "/blockchain-basics/tvm/builders-and-slices"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/languages/func/stdlib",
+        "grade": 2
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/builders-and-slices",
+          "grade": 1
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "get nominator method",
+      "expect": [
+        "/applications/api/toncenter/smc-index/get-nominator-method"
+      ],
+      "top1": {
+        "url": "/applications/api/toncenter/smc-index/get-nominator-method",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/applications/api/toncenter/smc-index/get-nominator-method",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tl-b syntax and semantics",
+      "expect": [
+        "/blockchain-basics/languages/tl-b/syntax-and-semantics"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/languages/tl-b/syntax-and-semantics",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/languages/tl-b/syntax-and-semantics",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "func stdlib",
+      "expect": [
+        "/blockchain-basics/languages/func/stdlib"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/languages/func/stdlib",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/languages/func/stdlib",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "func built-ins",
+      "expect": [
+        "/blockchain-basics/languages/func/built-ins"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/languages/func/built-ins",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/languages/func/built-ins",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "func asm functions",
+      "expect": [
+        "/blockchain-basics/languages/func/asm-functions"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/languages/func/asm-functions",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/languages/func/asm-functions",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tolk nullable types",
+      "expect": [
+        "/blockchain-basics/tolk/types/nullable"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tolk/types/nullable",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tolk/types/nullable",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tolk pattern matching",
+      "expect": [
+        "/blockchain-basics/tolk/syntax/pattern-matching"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tolk/syntax/pattern-matching",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tolk/syntax/pattern-matching",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tolk generic structs",
+      "expect": [
+        "/blockchain-basics/tolk/types/generics"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tolk/types/generics",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tolk/types/generics",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tvm registers",
+      "expect": [
+        "/blockchain-basics/tvm/registers"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/registers",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/registers",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "sbt soulbound",
+      "expect": [
+        "/blockchain-basics/standard/tokens/nft/sbt"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/nft/sbt",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/nft/sbt",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "boc",
+      "expect": [
+        "/blockchain-basics/primitives/serialization/boc"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/serialization/boc",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/serialization/boc",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "wallet mnemonics",
+      "expect": [
+        "/blockchain-basics/standard/wallets/mnemonics"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/mnemonics",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/mnemonics",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "txtracer",
+      "expect": [
+        "/blockchain-basics/tvm/tools/txtracer"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/tools/txtracer",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/tools/txtracer",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "ton decompiler",
+      "expect": [
+        "/blockchain-basics/tvm/tools/ton-decompiler"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tvm/tools/ton-decompiler",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/tvm/tools/ton-decompiler",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "sending modes",
+      "expect": [
+        "/blockchain-basics/primitives/messages/modes"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/messages/modes",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/messages/modes",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "jeton",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/how-it-works",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": [
+        "/blockchain-basics/standard/tokens/jettons/how-it-works"
+      ]
+    },
+    {
+      "q": "jetton transfor",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/transfer"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/transfer",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/transfer",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "transcation fees",
+      "expect": [
+        "/blockchain-basics/primitives/fees"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/fees",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/fees",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "depoly smart contract",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/deploy",
+        "/blockchain-basics/contract-dev/blueprint/first-smart-contract"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/deploy",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/deploy",
+          "grade": 3
+        },
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/first-smart-contract",
+          "grade": 2
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "smrt contract introduction",
+      "expect": [
+        "/blockchain-basics/contract-dev/introduction"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/introduction",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/introduction",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "walet v5",
+      "expect": [
+        "/blockchain-basics/standard/wallets/v5"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/v5",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/v5",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "blueprnt overview",
+      "expect": [
+        "/blockchain-basics/contract-dev/blueprint/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/blueprint/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/blueprint/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "blockchian sharding",
+      "expect": [
+        "/blockchain-basics/primitives/shards"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/shards",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/shards",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "contrat upgrades",
+      "expect": [
+        "/blockchain-basics/contract-dev/techniques/upgrades"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/contract-dev/techniques/upgrades",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/contract-dev/techniques/upgrades",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "tonkeper",
+      "expect": [
+        "/overview/wallets/wallet-apps/tonkeeper"
+      ],
+      "top1": {
+        "url": "/overview/wallets/wallet-apps/tonkeeper",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/wallets/wallet-apps/tonkeeper",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "merkel proofs",
+      "expect": [
+        "/blockchain-basics/primitives/serialization/merkle"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/serialization/merkle",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/serialization/merkle",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "excution phases",
+      "expect": [
+        "/blockchain-basics/primitives/phases"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/phases",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/phases",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "fungible token",
+      "expect": [
+        "/blockchain-basics/standard/tokens/jettons/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/jettons/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "non fungible token",
+      "expect": [
+        "/blockchain-basics/standard/tokens/nft/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/nft/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/nft/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "token standard overview",
+      "expect": [
+        "/blockchain-basics/standard/tokens/overview",
+        "/blockchain-basics/standard/tokens/jettons/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/jettons/overview",
+          "grade": 2
+        },
+        {
+          "url": "/blockchain-basics/standard/tokens/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "smart contract programming language",
+      "expect": [
+        "/blockchain-basics/tolk/overview",
+        "/blockchain-basics/languages/func/overview"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/tolk/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/languages/func/overview",
+          "grade": 2
+        },
+        {
+          "url": "/blockchain-basics/tolk/overview",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "gas fees",
+      "expect": [
+        "/blockchain-basics/tvm/gas",
+        "/blockchain-basics/primitives/fees"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/fees",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/fees",
+          "grade": 3
+        },
+        {
+          "url": "/blockchain-basics/tvm/gas",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "soulbound token",
+      "expect": [
+        "/blockchain-basics/standard/tokens/nft/sbt"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/nft/sbt",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/nft/sbt",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "wallet seed phrase",
+      "expect": [
+        "/blockchain-basics/standard/wallets/mnemonics"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/wallets/mnemonics",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/wallets/mnemonics",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "decentralized website hosting",
+      "expect": [
+        "/blockchain-basics/primitives/web3/ton-sites"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/web3/ton-sites",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/web3/ton-sites",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "domain naming service",
+      "expect": [
+        "/blockchain-basics/primitives/web3/ton-dns"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/web3/ton-dns",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/web3/ton-dns",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "decentralized file storage",
+      "expect": [
+        "/blockchain-basics/primitives/web3/ton-storage"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/primitives/web3/ton-storage",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/primitives/web3/ton-storage",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "block explorer",
+      "expect": [
+        "/overview/infrastructure/explorers/overview",
+        "/overview/infrastructure/explorers/tonviewer"
+      ],
+      "top1": {
+        "url": "/overview/infrastructure/explorers/overview",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/infrastructure/explorers/overview",
+          "grade": 3
+        },
+        {
+          "url": "/overview/infrastructure/explorers/tonviewer",
+          "grade": 2
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "price feed oracle",
+      "expect": [
+        "/overview/infrastructure/oracles/overview"
+      ],
+      "top1": {
+        "url": "/overview/infrastructure/oracles/pyth",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/infrastructure/oracles/overview",
+          "grade": 2
+        }
+      ],
+      "false3Urls": [
+        "/overview/infrastructure/oracles/pyth",
+        "/overview/infrastructure/oracles/redstone"
+      ]
+    },
+    {
+      "q": "cross chain bridge",
+      "expect": [
+        "/overview/infrastructure/bridges"
+      ],
+      "top1": {
+        "url": "/overview/infrastructure/bridges",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/overview/infrastructure/bridges",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    },
+    {
+      "q": "airdrop tokens",
+      "expect": [
+        "/blockchain-basics/standard/tokens/airdrop"
+      ],
+      "top1": {
+        "url": "/blockchain-basics/standard/tokens/airdrop",
+        "grade": 3
+      },
+      "expectGrades": [
+        {
+          "url": "/blockchain-basics/standard/tokens/airdrop",
+          "grade": 3
+        }
+      ],
+      "false3Urls": []
+    }
+  ]
+}
