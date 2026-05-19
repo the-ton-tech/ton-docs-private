@@ -65,9 +65,7 @@ async function main(): Promise<void> {
   const curated = readEvalSet(CURATED_PATH)
   // Curated set hard-validates (original contract): a moved URL is a bug to
   // fix, not to silently prune.
-  const badCurated = curated.flatMap(q =>
-    q.expect.every(u => !pageUrls.has(u)) ? [q.q] : [],
-  )
+  const badCurated = curated.flatMap(q => (q.expect.every(u => !pageUrls.has(u)) ? [q.q] : []))
   if (badCurated.length > 0) {
     console.error(`\n✗ curated eval references missing URLs: ${badCurated.join(", ")}`)
     process.exit(1)
@@ -121,7 +119,9 @@ async function main(): Promise<void> {
 
   for (const slice of SLICES) {
     if (sets[slice].length === 0) continue
-    console.log(`\n================ ${slice.toUpperCase()} (n=${sets[slice].length}) ================`)
+    console.log(
+      `\n================ ${slice.toUpperCase()} (n=${sets[slice].length}) ================`,
+    )
     for (const name of Object.keys(variants)) {
       console.log(fmtAggregate(name, results[name][slice].overall))
     }
@@ -134,9 +134,7 @@ async function main(): Promise<void> {
       console.log(
         "  " +
           name.padEnd(22) +
-          intents
-            .map(i => (bi[i] ? bi[i].ndcg10.toFixed(3) : "-").padStart(10))
-            .join(""),
+          intents.map(i => (bi[i] ? bi[i].ndcg10.toFixed(3) : "-").padStart(10)).join(""),
       )
     }
   }

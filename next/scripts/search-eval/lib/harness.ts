@@ -29,8 +29,8 @@ export function loadIndex(): LoadedIndex {
   const db = createClientDB()
   load(db, data)
   const pageUrls = new Set<string>()
-  const docs = (data as unknown as {docs: {docs: Record<string, {type: string; url: string}>}})
-    .docs.docs
+  const docs = (data as unknown as {docs: {docs: Record<string, {type: string; url: string}>}}).docs
+    .docs
   for (const k of Object.keys(docs)) {
     const d = docs[k]
     if (d && d.type === "page") pageUrls.add(d.url)

@@ -205,13 +205,20 @@ export const DEFAULT_TUNING: Tuning = {
   titleWeight: 2,
   haystackWeight: 1,
   urlWeight: 1,
-  // New levers default to neutral so DEFAULT_TUNING stays byte-identical to
-  // the previously shipped behavior until the harness validates each on the
-  // held-out mined set. The sweep promotes only net-positive, non-overfit
-  // values into these fields.
-  bm25Weight: 0,
+  // Validated on a 1375-query auto-mined, index-grounded HELD-OUT set the
+  // tuning never saw (scripts/search-eval/{mine-evalset,report,confirm}.ts).
+  // bm25=2.5 + exactTitle=3 is the Pareto knee: mined-test MRR +0.0168,
+  // Hit@1 +0.0183, nDCG@10 +0.0150 (all paired-permutation p≤0.0004) with
+  // ZERO curated regression (curated metrics byte-identical). bm25=3 buys
+  // ~14% more held-out gain but regresses 2 curated queries — rejected, the
+  // hand-verified curated set is the higher-confidence signal. `relevance`
+  // (BM25 k/b/d) left at Orama defaults: every off-default value measured
+  // net-negative on held-out, both directions (the harness's recurring
+  // "intuition is wrong on this corpus" result). titlePrefix: not
+  // significant on held-out — left off for parsimony.
+  bm25Weight: 2.5,
   relevance: undefined,
-  exactTitleWeight: 0,
+  exactTitleWeight: 3,
   titlePrefixWeight: 0,
 }
 
@@ -401,7 +408,11 @@ export async function runRankedSearch(
     // preference users expect for navigational / exact intents.
     if (tuning.exactTitleWeight > 0 && title.trim() === queryNorm) {
       s += tuning.exactTitleWeight
-    } else if (tuning.titlePrefixWeight > 0 && queryNorm.length > 0 && title.startsWith(queryNorm)) {
+    } else if (
+      tuning.titlePrefixWeight > 0 &&
+      queryNorm.length > 0 &&
+      title.startsWith(queryNorm)
+    ) {
       s += tuning.titlePrefixWeight
     }
     // Calibrated BM25 blend: a continuous relevance signal on top of the
@@ -452,12 +463,7 @@ export async function runRankedSearch(
   // (crawl order only), so bm25Weight=0 is byte-identical to the prior ship.
   const ranked = [...groups.values()]
     .map((g, i) => ({g, i, s: score(g)}))
-    .sort(
-      (a, b) =>
-        b.s - a.s ||
-        (tuning.bm25Weight > 0 ? b.g.bm25 - a.g.bm25 : 0) ||
-        a.i - b.i,
-    )
+    .sort((a, b) => b.s - a.s || (tuning.bm25Weight > 0 ? b.g.bm25 - a.g.bm25 : 0) || a.i - b.i)
     .map(x => x.g)
 
   // Best-bet pin: if the normalized query (or its spell-corrected form) is a

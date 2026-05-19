@@ -116,7 +116,17 @@ export function aggregate(scores: QueryScore[]): Aggregate {
   const n = scores.length
   const sum = (f: (s: QueryScore) => number) => scores.reduce((a, s) => a + f(s), 0)
   if (n === 0) {
-    return {n: 0, hit1: 0, hit5: 0, cov10: 0, mrr: 0, ndcg10: 0, recall10: 0, precision10: 0, map: 0}
+    return {
+      n: 0,
+      hit1: 0,
+      hit5: 0,
+      cov10: 0,
+      mrr: 0,
+      ndcg10: 0,
+      recall10: 0,
+      precision10: 0,
+      map: 0,
+    }
   }
   return {
     n,

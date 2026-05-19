@@ -31,11 +31,33 @@ const OUT = resolve(HERE, "mined-evalset.json")
 // because dozens of pages share them. Uniqueness filtering catches most; this
 // kills the highest-frequency offenders up front (and their typo/path forms).
 const STOP_PHRASES = new Set([
-  "overview", "introduction", "intro", "faq", "faqs", "examples", "example",
-  "summary", "conclusion", "prerequisites", "see also", "next steps", "notes",
-  "how it works", "use cases", "usage", "getting started", "references",
-  "reference", "table of contents", "in this article", "what's next",
-  "before you begin", "requirements", "result", "results", "background",
+  "overview",
+  "introduction",
+  "intro",
+  "faq",
+  "faqs",
+  "examples",
+  "example",
+  "summary",
+  "conclusion",
+  "prerequisites",
+  "see also",
+  "next steps",
+  "notes",
+  "how it works",
+  "use cases",
+  "usage",
+  "getting started",
+  "references",
+  "reference",
+  "table of contents",
+  "in this article",
+  "what's next",
+  "before you begin",
+  "requirements",
+  "result",
+  "results",
+  "background",
 ])
 
 function walk(dir: string): string[] {
@@ -52,7 +74,9 @@ function walk(dir: string): string[] {
  * URL = "/" + path sans .mdx; an `index` basename collapses to its parent;
  * `overview` is a literal segment, not special). */
 function fileToUrl(file: string): string {
-  let rel = relative(DOCS_ROOT, file).replace(/\\/g, "/").replace(/\.mdx$/, "")
+  let rel = relative(DOCS_ROOT, file)
+    .replace(/\\/g, "/")
+    .replace(/\.mdx$/, "")
   rel = rel.replace(/\/index$/, "")
   return "/" + rel
 }
@@ -167,7 +191,10 @@ function main(): void {
     }
     // G7 — last two path segments as words (multiword), drop trailing 'overview'
     const segs = p.url.split("/").filter(Boolean)
-    while (segs.length && (segs[segs.length - 1] === "overview" || /^v\d+$/.test(segs[segs.length - 1])))
+    while (
+      segs.length &&
+      (segs[segs.length - 1] === "overview" || /^v\d+$/.test(segs[segs.length - 1]))
+    )
       segs.pop()
     if (segs.length >= 2) {
       const q = norm(segs.slice(-2).join(" ").replace(/-/g, " "))
@@ -231,7 +258,10 @@ function main(): void {
   )
 
   // Aggregate by normalized query → union of target URLs.
-  const byQ = new Map<string, {urls: Set<string>; intents: Map<string, number>; gens: Set<string>}>()
+  const byQ = new Map<
+    string,
+    {urls: Set<string>; intents: Map<string, number>; gens: Set<string>}
+  >()
   for (const c of cands) {
     if (curated.has(c.q) || junky(c.q)) continue
     const e = byQ.get(c.q) ?? {urls: new Set(), intents: new Map(), gens: new Set()}
@@ -266,8 +296,7 @@ function main(): void {
       droppedAmbig++
       continue
     }
-    const intent =
-      INTENT_PRIORITY.find(i => e.intents.has(i)) ?? [...e.intents.keys()][0]
+    const intent = INTENT_PRIORITY.find(i => e.intents.has(i)) ?? [...e.intents.keys()][0]
     queries.push({q, intent, expect: urls.sort(), gen: [...e.gens].sort().join("+")})
   }
 

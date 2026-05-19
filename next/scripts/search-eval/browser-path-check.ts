@@ -21,7 +21,11 @@ const BASE = process.env.BASE ?? "http://127.0.0.1:4399"
 const PROBES: {q: string; want: string; note: string}[] = [
   {q: "ton connect", want: "/applications/ton-connect/overview", note: "pin"},
   {q: "jeton", want: "/blockchain-basics/standard/tokens/jettons/overview", note: "spell→pin"},
-  {q: "soulbound token", want: "/blockchain-basics/standard/tokens/nft/sbt", note: "keyword synonym"},
+  {
+    q: "soulbound token",
+    want: "/blockchain-basics/standard/tokens/nft/sbt",
+    note: "keyword synonym",
+  },
   {
     q: "how to deploy a smart contract",
     want: "/blockchain-basics/contract-dev/blueprint/first-smart-contract",

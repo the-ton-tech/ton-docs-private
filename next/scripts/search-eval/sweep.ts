@@ -88,7 +88,9 @@ async function main(): Promise<void> {
 
   // Baseline = shipped DEFAULT_TUNING.
   const baseTrain = await obj(DEFAULT_TUNING, train)
-  console.log(`DEFAULT  train obj=${objective(baseTrain).toFixed(4)}  (${fmtTuning(DEFAULT_TUNING)})\n`)
+  console.log(
+    `DEFAULT  train obj=${objective(baseTrain).toFixed(4)}  (${fmtTuning(DEFAULT_TUNING)})\n`,
+  )
 
   let best: Tuning = {...DEFAULT_TUNING}
   let bestObj = objective(baseTrain)
@@ -137,9 +139,11 @@ async function main(): Promise<void> {
   const line = (lbl: string, a: Aggregate) =>
     `  ${lbl.padEnd(12)} obj=${objective(a).toFixed(4)}  hit@1=${a.hit1.toFixed(4)}  ` +
     `mrr=${a.mrr.toFixed(4)}  ndcg@10=${a.ndcg10.toFixed(4)}  map=${a.map.toFixed(4)}`
-  console.log(`\nobjective: train=${objective(finalTrain).toFixed(4)} ` +
-    `test=${objective(finalTest).toFixed(4)} ` +
-    `(gap=${(objective(finalTrain) - objective(finalTest)).toFixed(4)} — large ⇒ overfit)`)
+  console.log(
+    `\nobjective: train=${objective(finalTrain).toFixed(4)} ` +
+      `test=${objective(finalTest).toFixed(4)} ` +
+      `(gap=${(objective(finalTrain) - objective(finalTest)).toFixed(4)} — large ⇒ overfit)`,
+  )
   console.log("\nDEFAULT:")
   console.log(line("mined-test", baseTest))
   console.log(line("curated", baseCur))
