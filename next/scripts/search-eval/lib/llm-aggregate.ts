@@ -20,10 +20,13 @@ import {
   type SonnetOutput,
 } from "./llm-types"
 
-function jsonFilesIn(dir: string): string[] {
+/** List sub-agent OUTPUT files in `dir`. Filters by `suffix` so an
+ * orchestrator's input files (e.g. `*.candidates.json`) co-located with the
+ * verdict files (`*.verdict.json`) aren't validated as sub-agent outputs. */
+function jsonFilesIn(dir: string, suffix = ".json"): string[] {
   try {
     return readdirSync(dir)
-      .filter(f => f.endsWith(".json"))
+      .filter(f => f.endsWith(suffix))
       .map(f => join(dir, f))
       .sort()
   } catch {
@@ -41,8 +44,9 @@ function aggregate<Raw, Out>(
   dir: string,
   schema: Parameters<typeof readAndValidate<Raw>>[1],
   flatten: (raw: Raw, file: string) => Out[],
+  suffix = ".json",
 ): AggregationSummary<Out> {
-  const files = jsonFilesIn(dir)
+  const files = jsonFilesIn(dir, suffix)
   const valid: Out[] = []
   const errors: {file: string; error: string}[] = []
   for (const f of files) {
@@ -132,6 +136,9 @@ export function aggregateSonnet(dir: string): AggregationSummary<ValidatedQuery>
   // request so the aggregator can join. The candidate file is co-located
   // with the verdict file: <name>.verdict.json + <name>.candidates.json.
   const summary = aggregate<SonnetOutput, ValidatedQuery>(dir, sonnetOutputSchema, (raw, file) => {
+    // Sub-agent OUTPUTS are *.verdict.json; the orchestrator's INPUT
+    // *.candidates.json files live in the same directory.
+
     observations.push({category_path: raw.category_path, note: raw.category_observations})
     const candPath = file.replace(/\.verdict\.json$/, ".candidates.json")
     let cands: {id: number; q: string}[] = []
@@ -160,7 +167,7 @@ export function aggregateSonnet(dir: string): AggregationSummary<ValidatedQuery>
       })
     }
     return out
-  })
+  }, ".verdict.json")
   return {...summary, drops, observations}
 }
 
