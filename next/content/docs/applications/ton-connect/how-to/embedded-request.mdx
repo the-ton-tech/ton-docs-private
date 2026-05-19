@@ -14,10 +14,10 @@ This optimisation applies to mobile deep links and universal links. Desktop QR s
 ## How it works
 
 1. The dApp calls `sendTransaction`, `signMessage` or `signData` with `enableEmbeddedRequest: true`.
-1. The SDK opens the wallet selection modal.
-1. If the user picks a wallet that advertises the `EmbeddedRequest` feature, the SDK encodes the request as `e=base64url(JSON.stringify(WireEmbeddedRequest))` on that wallet's universal link.
-1. The user taps the link. The wallet opens with both the connect request and the embedded action.
-1. The wallet returns the signed result inside the connect event. The SDK resolves the action promise with `{ hasResponse: true, response }`.
+2. The SDK opens the wallet selection modal.
+3. If the user picks a wallet that advertises the `EmbeddedRequest` feature, the SDK encodes the request as `e=base64url(JSON.stringify(WireEmbeddedRequest))` on that wallet's universal link.
+4. The user taps the link. The wallet opens with both the connect request and the embedded action.
+5. The wallet returns the signed result inside the connect event. The SDK resolves the action promise with `{ hasResponse: true, response }`.
 
 If no embedded result comes back — the wallet ignored `e`, the SDK never attached it or the wallet returned only the connect event — the session is connected but the action did not land. The SDK resolves with `{ hasResponse: false, connectResult: { dispatched } }` so the dApp can decide what to do next.
 
@@ -56,13 +56,13 @@ The envelope is the same shape regardless of whether the wallet was already conn
 
 ### Behaviour matrix
 
-| Wallet state at call time      | `enableEmbeddedRequest` | Behaviour                                                                         | Return                                                                 |
-| ------------------------------ | ----------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Connected                      | not set                 | Bridge flow (existing behaviour).                                                 | `SendTransactionResponse` / `SignDataResponse` / `SignMessageResponse` |
-| Connected                      | `true`                  | Bridge flow, wrapped in the envelope.                                             | `{ hasResponse: true, response }`                                      |
-| Not connected                  | not set                 | Throws `TonConnectUIError('Connect wallet to …')`.                                | —                                                                      |
-| Not connected, wallet folds it | `true`                  | Connect URL carries `e=…`; the wallet returns connect and signed result together. | `{ hasResponse: true, response }`                                      |
-| Not connected, no fold         | `true`                  | Wallet returns connect only; the request may or may not have been delivered.      | `{ hasResponse: false, connectResult: { dispatched } }`                |
+| Wallet state at call time      | `enableEmbeddedRequest` | Behaviour                                                                                            | Return                                                          |
+| ------------------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Connected                      | not set                 | Bridge flow (existing behaviour).                                                                    | `SendTransactionResponse` / `SignDataResponse` / `SignMessageResponse` |
+| Connected                      | `true`                  | Bridge flow, wrapped in the envelope.                                                                | `{ hasResponse: true, response }`                               |
+| Not connected                  | not set                 | Throws `TonConnectUIError('Connect wallet to …')`.                                                   | —                                                               |
+| Not connected, wallet folds it | `true`                  | Connect URL carries `e=…`; the wallet returns connect and signed result together.                    | `{ hasResponse: true, response }`                               |
+| Not connected, no fold         | `true`                  | Wallet returns connect only; the request may or may not have been delivered.                         | `{ hasResponse: false, connectResult: { dispatched } }`         |
 
 ### Meaning of `dispatched`
 
@@ -107,9 +107,9 @@ The retry control calls the same invocation with the flag still on. The wallet i
 The SDK embeds the request only when all four conditions hold:
 
 1. The wallet is not yet connected.
-1. `enableEmbeddedRequest: true` is set on the call.
-1. The user picks a wallet whose `DeviceInfo.features` lists `EmbeddedRequest`.
-1. The encoded URL fits within the SDK's URL length budget.
+2. `enableEmbeddedRequest: true` is set on the call.
+3. The user picks a wallet whose `DeviceInfo.features` lists `EmbeddedRequest`.
+4. The encoded URL fits within the SDK's URL length budget.
 
 If any condition fails, the SDK opens the wallet without `e` and either returns `{ hasResponse: false, connectResult: { dispatched: false } }` (when the flag is set) or throws `TonConnectUIError` (when it is not).
 

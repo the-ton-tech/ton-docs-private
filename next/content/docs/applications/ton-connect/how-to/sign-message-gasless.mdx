@@ -51,10 +51,10 @@ The most common use is a gasless jetton transfer: the relayer takes its fee in t
 The flow:
 
 1. Resolve the user's jetton wallet address on-chain.
-1. Build the jetton transfer cell to pass to the estimator.
-1. Call `gaslessEstimate` — the relayer returns the exact messages to sign (main transfer plus the relay fee).
-1. Call `signMessage` with those messages — the wallet signs but does not broadcast.
-1. Wrap the signed BoC in an external message and submit via `gaslessSend`.
+2. Build the jetton transfer cell to pass to the estimator.
+3. Call `gaslessEstimate` — the relayer returns the exact messages to sign (main transfer plus the relay fee).
+4. Call `signMessage` with those messages — the wallet signs but does not broadcast.
+5. Wrap the signed BoC in an external message and submit via `gaslessSend`.
 
 ```mermaid
 sequenceDiagram
