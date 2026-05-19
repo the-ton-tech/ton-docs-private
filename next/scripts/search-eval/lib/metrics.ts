@@ -157,3 +157,133 @@ export function fmtAggregate(label: string, a: Aggregate): string {
     `rec@10=${p(a.recall10)}  prec@10=${p(a.precision10)}  map=${p(a.map)}`
   )
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Graded relevance (Phase 7 of the LLM-augmented harness). The gold slice
+// will carry per-page grades 0–3 from multi-session Opus rankers; binary
+// metrics above still apply (any grade ≥ 2 collapses to "relevant"), but
+// graded nDCG / ERR resolve cases binary cannot — "perfect first vs.
+// acceptable first when a perfect existed". Kept in the same module so the
+// harness has one canonical scoring surface.
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Maximum grade used by the gold slice. Burges/ERR formulas key off this so
+ * raising the scale later is a single-point change. */
+export const MAX_GRADE = 3
+
+export type GradedExpect = readonly {url: string; grade: number}[]
+
+export interface GradedQueryScore extends QueryScore {
+  /** Burges-formula nDCG@10 with gain = 2^grade − 1, IDCG built from the
+   * sorted-descending grades of the expect list. Distinguishes a grade-3
+   * page at #1 from a grade-2 page at #1; binary nDCG cannot. */
+  gNdcg10: number
+  /** Expected Reciprocal Rank @10 (Chapelle et al.): cascade-user model
+   * where a user stops at the first satisfying document. Higher = better. */
+  err10: number
+  /** Grade of the page at rank 1 (0 if no expect-listed page in retrieved
+   * results). Useful "did we put the best page first?" lens. */
+  gradeAt1: number
+}
+
+function dcgBurges(grades: number[], k: number): number {
+  // Burges (2005): DCG = Σ (2^g_i − 1) / log2(i + 1). 0-graded positions
+  // contribute zero so we can pass the full top-k including misses.
+  let dcg = 0
+  for (let i = 0; i < Math.min(grades.length, k); i++) {
+    if (grades[i] > 0) dcg += (Math.pow(2, grades[i]) - 1) / Math.log2(i + 2)
+  }
+  return dcg
+}
+
+export function gradedScoreQuery(ranks: string[], expect: GradedExpect): GradedQueryScore {
+  // Binary projection: grade ≥ 2 counts as relevant. Keeps Hit@1/MRR etc.
+  // semantically consistent with the rest of the harness so a graded slice
+  // can be reported alongside binary slices using identical metric names.
+  const binaryExpect: string[] = []
+  const gradeByUrl = new Map<string, number>()
+  for (const e of expect) {
+    gradeByUrl.set(e.url, e.grade)
+    if (e.grade >= 2) binaryExpect.push(e.url)
+  }
+  const binary = scoreQuery(ranks, binaryExpect)
+
+  const retrievedGrades = ranks.slice(0, 10).map(u => gradeByUrl.get(u) ?? 0)
+  const idealGrades = [...gradeByUrl.values()].sort((a, b) => b - a).slice(0, 10)
+  const idcg = dcgBurges(idealGrades, 10)
+  const gNdcg10 = idcg === 0 ? 0 : dcgBurges(retrievedGrades, 10) / idcg
+
+  // ERR with normalized gain R_i = (2^g − 1) / 2^MAX_GRADE.
+  let err10 = 0
+  let stopProb = 1
+  const normGain = (g: number) => (Math.pow(2, g) - 1) / Math.pow(2, MAX_GRADE)
+  for (let i = 0; i < Math.min(retrievedGrades.length, 10); i++) {
+    const r = normGain(retrievedGrades[i])
+    err10 += (stopProb * r) / (i + 1)
+    stopProb *= 1 - r
+  }
+
+  return {...binary, gNdcg10, err10, gradeAt1: retrievedGrades[0] ?? 0}
+}
+
+/**
+ * Krippendorff's α for ordinal ratings (3+ raters, possibly missing).
+ * `ratings` is a matrix indexed [unit][rater] (NaN = missing). Returns α in
+ * (−∞, 1]: 1 = perfect agreement, 0 = no better than random, < 0 = worse than
+ * random. The Phase 5 protocol drops queries with α < 0.5, sends 0.5–0.7 to a
+ * tiebreaker session. Uses the squared-difference distance metric (canonical
+ * for ordinal data per Krippendorff 2004).
+ */
+export function krippendorffAlphaOrdinal(ratings: readonly (readonly number[])[]): number {
+  // Flatten valid (unit, value) pairs to compute the value-by-value coincidence
+  // matrix, then the standard formula α = 1 − D_o / D_e.
+  const allValues: number[] = []
+  for (const unit of ratings) {
+    for (const v of unit) if (Number.isFinite(v)) allValues.push(v)
+  }
+  if (allValues.length < 2) return Number.NaN
+
+  // Observed disagreement: average squared diff over all ordered rater pairs
+  // within each unit, weighted by 1 / (n_unit − 1) per Krippendorff.
+  let nPairsInUnit = 0
+  let sumSqInUnit = 0
+  for (const unit of ratings) {
+    const vals = unit.filter(Number.isFinite)
+    if (vals.length < 2) continue
+    for (let i = 0; i < vals.length; i++) {
+      for (let j = 0; j < vals.length; j++) {
+        if (i === j) continue
+        sumSqInUnit += Math.pow(vals[i] - vals[j], 2) / (vals.length - 1)
+        nPairsInUnit += 1 / (vals.length - 1)
+      }
+    }
+  }
+  const Do = nPairsInUnit === 0 ? 0 : sumSqInUnit / nPairsInUnit
+
+  // Expected disagreement: average squared diff over all ordered pairs in the
+  // global value distribution (independence baseline).
+  let sumSqGlobal = 0
+  let nPairsGlobal = 0
+  for (let i = 0; i < allValues.length; i++) {
+    for (let j = 0; j < allValues.length; j++) {
+      if (i === j) continue
+      sumSqGlobal += Math.pow(allValues[i] - allValues[j], 2)
+      nPairsGlobal += 1
+    }
+  }
+  const De = nPairsGlobal === 0 ? 0 : sumSqGlobal / nPairsGlobal
+
+  return De === 0 ? 1 : 1 - Do / De
+}
+
+/** Per-unit median over rater values, ignoring NaN. Used to collapse the
+ * Phase 5 multi-session matrix into the final grade. Median is more robust
+ * to a single outlier session than mean for ordinal data. */
+export function medianAcrossRaters(perUnit: readonly (readonly number[])[]): number[] {
+  return perUnit.map(unit => {
+    const sorted = unit.filter(Number.isFinite).slice().sort((a, b) => a - b)
+    if (sorted.length === 0) return Number.NaN
+    const mid = Math.floor(sorted.length / 2)
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
+  })
+}
