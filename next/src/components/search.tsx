@@ -19,7 +19,19 @@ const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID ?? ""
 const searchKey = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY ?? ""
 const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? "ton-docs"
 
-const client = liteClient(appId, searchKey)
+// `liteClient` throws "`appId` is missing." on empty credentials. This dialog
+// is mounted on every page via the root provider, so with `output: export`
+// that throw happens at prerender time and fails the ENTIRE static build when
+// the Algolia env vars aren't set (e.g. a Vercel deploy before the secrets are
+// configured). Degrade gracefully: only build a real client when configured,
+// otherwise a no-op stub so the site still builds and renders — search simply
+// returns nothing until the keys are present.
+const isSearchConfigured = Boolean(appId && searchKey)
+const client = isSearchConfigured
+  ? liteClient(appId, searchKey)
+  : ({
+      searchForHits: async () => ({results: [{hits: []}]}),
+    } as unknown as ReturnType<typeof liteClient>)
 
 // Official "Search by Algolia" wordmark. Algolia's free tier requires this
 // attribution to be shown in the search UI. Artwork/colour are the official
@@ -109,9 +121,10 @@ export default function AlgoliaSearchDialog(props: SharedProps) {
     // plan's request quota. 300ms coalesces fast typing into far fewer queries.
     delayMs: 300,
     onSearch: async (q: string, tag?: string) => {
-      // Gate sub-2-char queries: the default would fire a ~30k-hit request on
-      // the first keystroke and waste the free-plan quota for no useful result.
-      if (q.trim().length < 2) {
+      // No-op when Algolia isn't configured (stub client), and gate sub-2-char
+      // queries: the default fires a ~30k-hit request on the first keystroke
+      // and wastes the free-plan quota for no useful result.
+      if (!isSearchConfigured || q.trim().length < 2) {
         return {results: [{hits: []}]} as Awaited<ReturnType<typeof runSearch>>
       }
       return runSearch(q, tag)
