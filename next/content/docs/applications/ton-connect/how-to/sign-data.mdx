@@ -101,11 +101,11 @@ The signing scheme for `text` and `binary` payloads is described in the [`signDa
 To verify on the backend:
 
 1. Reconstruct `message` from the response fields.
-2. Compute `sha256(message)`.
-3. Look up the user's Ed25519 `publicKey` — extract it from `walletStateInit` (see below), then fall back to calling `get_public_key` on-chain. Never trust `publicKey` from the wallet response directly. See [Connect a wallet § backend verification](/applications/ton-connect/how-to/connect#backend-verification).
-4. Verify the Ed25519 signature against the digest.
-5. Reject if `Timestamp` is older than your tolerance window — 15 minutes is a common bound.
-6. Reject if `domain` is not your domain.
+1. Compute `sha256(message)`.
+1. Look up the user's Ed25519 `publicKey` — extract it from `walletStateInit` (see below), then fall back to calling `get_public_key` on-chain. Never trust `publicKey` from the wallet response directly. See [Connect a wallet § backend verification](/applications/ton-connect/how-to/connect#backend-verification).
+1. Verify the Ed25519 signature against the digest.
+1. Reject if `Timestamp` is older than your tolerance window — 15 minutes is a common bound.
+1. Reject if `domain` is not your domain.
 
 ### Extracting the public key
 
