@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
-    "start": "next start",
+    "build": "next build --webpack && tsx ./scripts/sync-content.ts",
+    "start": "npx serve@latest out",
     "lint": "eslint",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
@@ -27,7 +27,7 @@
     "sync": "npm run migrate-content && npm run nav:apply"
   },
   "dependencies": {
-    "@orama/orama": "^3.1.18",
+    "algoliasearch": "^5",
     "class-variance-authority": "^0.7.1",
     "fumadocs-core": "^16.7.14",
     "fumadocs-mdx": "^14.2.13",

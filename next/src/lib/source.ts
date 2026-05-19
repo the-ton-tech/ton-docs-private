@@ -170,6 +170,39 @@ export function getVisiblePages(language?: string) {
   return source.getPages(language).filter(isVisibleSourcePage)
 }
 
+/**
+ * Ancestor section/folder names for a page. This is the ONLY secondary text
+ * the Algolia search dialog renders under each result (the fumadocs client
+ * drops section/snippet text and shows just title + breadcrumbs), so without
+ * it the many pages titled "Overview" / "Introduction" are indistinguishable
+ * in search. Drops the page node itself and any non-string (ReactNode) labels.
+ */
+export function getPageBreadcrumbs(page: InferPageType<typeof source>): string[] {
+  const nodePath = findPath(
+    source.getPageTree(page.locale).children,
+    node => node.type === "page" && node.url === page.url,
+  )
+  if (!nodePath) return []
+  return nodePath
+    .slice(0, -1)
+    .map(node =>
+      node.type === "folder" && typeof node.name === "string" ? node.name.trim() : "",
+    )
+    .filter(Boolean)
+}
+
+/**
+ * Tag for a page: frontmatter `tag` first, then the apply-nav sidecar overlay
+ * (`nav-overlays.json`) for config-only tags not echoed into MDX frontmatter.
+ * Populating this on search records activates the dialog's `tag:` filter and
+ * Algolia faceting (both inert until records actually carry a tag).
+ */
+export function getPageTag(page: InferPageType<typeof source>): string | undefined {
+  const fromFrontmatter = (page.data as {tag?: string}).tag
+  if (fromFrontmatter) return fromFrontmatter
+  return navOverlays.tagByItemUrl?.[page.url]
+}
+
 export function getVisibleLlmPages(language?: string) {
   return llmSource.getPages(language).filter(isVisibleLlmSourcePage)
 }

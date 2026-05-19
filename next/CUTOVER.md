@@ -3,8 +3,9 @@
 This document walks through the staging and cutover steps for replatforming
 **docs.ton.org** from Mintlify to the Next.js / Fumadocs app under `next/`.
 
-The new app is fully self-contained: every existing URL, redirect, OG image,
-sitemap entry and `llms.txt` artifact is generated locally — no external SaaS.
+Every existing URL, redirect, OG image, sitemap entry and `llms.txt` artifact
+is generated locally. The only external SaaS is Algolia, which powers
+full-text search (built-time index sync; see §3 for the required secrets).
 
 ---
 
@@ -35,7 +36,7 @@ Verify the following endpoints respond as expected:
 | `/og/docs/start-here/image.png`                                    | 200 PNG (≈60 KB)                                |
 | `/sitemap.xml`                                                     | 200 XML                                         |
 | `/robots.txt`                                                      | 200 text                                        |
-| `/api/search?query=tolk`                                           | 200 Orama JSON                                  |
+| `/static.json`                                                     | 200 JSON — Algolia index source                 |
 
 ## 2. Lint suite
 
@@ -54,7 +55,11 @@ npm run lint:links:external      # optional, network-bound
    `next/` and the framework preset set to **Next.js**.
 2. Add the project secrets to GitHub: `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
    `VERCEL_PROJECT_ID`. The workflow at `.github/workflows/next-build.yml`
-   then publishes a preview URL on every PR.
+   then publishes a preview URL on every PR. Also add the Algolia env vars
+   (see `next/.env.example`) to the Vercel project and to CI:
+   `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY`,
+   `NEXT_PUBLIC_ALGOLIA_INDEX_NAME`, `ALGOLIA_ADMIN_API_KEY`. Without them the
+   build still succeeds but the search index sync is skipped.
 3. Attach the `docs-next.ton.org` domain to the Vercel project as a custom
    domain. This is the staging surface — point your own DNS at Vercel's
    `cname.vercel-dns.com`.
@@ -93,5 +98,5 @@ If anything serious surfaces in the first 24 hours:
 - Re-host the heavy interactive snippets
   (`CatchainVisualizer`, `TvmInstructionTable`) as proper TypeScript modules
   rather than the current JSX-pinned copies in `src/components/legacy/`.
-- Replace Mintlify analytics + AI search with self-hosted equivalents
-  (Plausible/Posthog + a richer Orama bundle).
+- Replace Mintlify analytics with a self-hosted equivalent
+  (Plausible/Posthog). Search is now served by Algolia (`scripts/sync-content.ts`).
