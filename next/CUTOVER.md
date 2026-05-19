@@ -56,10 +56,18 @@ npm run lint:links:external      # optional, network-bound
 2. Add the project secrets to GitHub: `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
    `VERCEL_PROJECT_ID`. The workflow at `.github/workflows/next-build.yml`
    then publishes a preview URL on every PR. Also add the Algolia env vars
-   (see `next/.env.example`) to the Vercel project and to CI:
+   (see `next/.env.example`) to the Vercel project:
    `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY`,
    `NEXT_PUBLIC_ALGOLIA_INDEX_NAME`, `ALGOLIA_ADMIN_API_KEY`. Without them the
    build still succeeds but the search index sync is skipped.
+
+   The index sync (`scripts/sync-content.ts`) runs **only on the production
+   deployment** — it is gated on `VERCEL_ENV=production`. Preview/branch
+   builds skip it so they never clobber the single shared `ton-docs` index
+   or race each other; the `ALGOLIA_ADMIN_API_KEY` is therefore only ever
+   exercised by the production deploy. Set it as a Production-scoped
+   environment variable in Vercel (Preview/Development don't need it).
+   Local/manual `npm run build` (no `VERCEL_ENV`) still syncs as before.
 3. Attach the `docs-next.ton.org` domain to the Vercel project as a custom
    domain. This is the staging surface — point your own DNS at Vercel's
    `cname.vercel-dns.com`.

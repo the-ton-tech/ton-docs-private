@@ -25,6 +25,20 @@ if (!appId || !adminKey) {
   process.exit(0)
 }
 
+// There is a single shared `ton-docs` index. On Vercel, only the production
+// deployment may write to it — every preview/branch build would otherwise run
+// `replaceAllObjects` against the same index, clobbering production search and
+// racing concurrent branch builds. `VERCEL_ENV` is "production" | "preview" |
+// "development" on Vercel and unset elsewhere, so local / manual `npm run
+// build` still syncs as before (intentional).
+const vercelEnv = process.env.VERCEL_ENV
+if (vercelEnv && vercelEnv !== "production") {
+  console.warn(
+    `[algolia] VERCEL_ENV="${vercelEnv}" (not production) — skipping search index sync.`,
+  )
+  process.exit(0)
+}
+
 // `output: "export"` emits the prerendered route to `out/static.json`; a
 // plain server build keeps it at `.next/server/app/static.json.body`. Accept
 // whichever exists so the sync works under both build modes.
