@@ -155,6 +155,36 @@ export interface Tuning {
   titleWeight: number
   haystackWeight: number
   urlWeight: number
+  /**
+   * Weight on Orama's own BM25 relevance, folded into the re-rank as
+   * `bm25Weight * (groupBM25 / maxGroupBM25)` (∈[0,1] after min-max over the
+   * candidate set). The shipped pipeline historically DISCARDED BM25 entirely
+   * (groups were ordered only by a coarse integer lexical heuristic with
+   * Orama insertion order as the sole tiebreaker), so near-tied canonical
+   * pages were separated by crawl order, not relevance. Raw BM25 alone
+   * regresses (it floats long term-dense reference pages over short canonical
+   * ones — measured), which is exactly why this is a *calibrated blend* on
+   * top of the lexical heuristic, not a replacement. >0 also promotes BM25
+   * from "unused" to the primary tiebreaker. 0 = exact legacy behavior.
+   */
+  bm25Weight: number
+  /**
+   * Optional BM25 parameters threaded into every Orama pass. `b` is the
+   * document-length penalty (default 0.75); the corpus mixes short canonical
+   * pages with multi-KB reference/whitepaper pages, so this is the principled
+   * knob for the long-page-floats problem. undefined = Orama defaults
+   * (k=1.2, b=0.75, d=0.5) = exact legacy behavior.
+   */
+  relevance?: {k?: number; b?: number; d?: number}
+  /**
+   * Bonus when the page title (normalized) exactly equals the meaningful
+   * query, or (titlePrefixWeight) when the title starts with it. Substring
+   * `includes` weighting can't tell "Wallet" from "How wallets work" for the
+   * query "wallet"; this restores the exact/prefix preference users expect
+   * for navigational/exact intents. 0 disables.
+   */
+  exactTitleWeight: number
+  titlePrefixWeight: number
 }
 
 /**
@@ -175,6 +205,14 @@ export const DEFAULT_TUNING: Tuning = {
   titleWeight: 2,
   haystackWeight: 1,
   urlWeight: 1,
+  // New levers default to neutral so DEFAULT_TUNING stays byte-identical to
+  // the previously shipped behavior until the harness validates each on the
+  // held-out mined set. The sweep promotes only net-positive, non-overfit
+  // values into these fields.
+  bm25Weight: 0,
+  relevance: undefined,
+  exactTitleWeight: 0,
+  titlePrefixWeight: 0,
 }
 
 /**
@@ -198,6 +236,10 @@ export const BASELINE_TUNING: Tuning = {
   titleWeight: 2,
   haystackWeight: 1,
   urlWeight: 1,
+  bm25Weight: 0,
+  relevance: undefined,
+  exactTitleWeight: 0,
+  titlePrefixWeight: 0,
 }
 
 export function normalizeQuery(query: string): string {
@@ -214,11 +256,16 @@ export function meaningfulTokens(query: string, stopwords: Set<string>): string[
   return kept.length > 0 ? kept : toks
 }
 
-type Grouped = {page: IndexedDoc; hits: IndexedDoc[]}
+// `bm25` is the max per-hit Orama relevance in the group, captured from the
+// pass that first contributed the page (first-seen wins, mirroring `hits`).
+// Grouped Orama results DO expose a numeric per-hit `score` (verified against
+// the real fumadocs static index: each `group.result[]` element is
+// `{id, score, document}`); the legacy pipeline simply never read it.
+type Grouped = {page: IndexedDoc; hits: IndexedDoc[]; bm25: number}
 
 function collectGroups(
   db: AnyOrama,
-  results: {groups?: {values: unknown[]; result: {document: unknown}[]}[]},
+  results: {groups?: {values: unknown[]; result: {score?: number; document: unknown}[]}[]},
   into: Map<string, Grouped>,
 ): void {
   for (const group of results.groups ?? []) {
@@ -227,15 +274,21 @@ function collectGroups(
     const page = getByID(db, pageId) as IndexedDoc | undefined
     if (!page) continue
     const hits: IndexedDoc[] = []
+    let bm25 = 0
     for (const hit of group.result) {
+      if (typeof hit.score === "number" && hit.score > bm25) bm25 = hit.score
       const doc = hit.document as IndexedDoc
       if (doc.type !== "page") hits.push(doc)
     }
-    into.set(pageId, {page, hits})
+    into.set(pageId, {page, hits, bm25})
   }
 }
 
-async function twoPassGroups(db: AnyOrama, term: string): Promise<Map<string, Grouped>> {
+async function twoPassGroups(
+  db: AnyOrama,
+  term: string,
+  relevance?: {k?: number; b?: number; d?: number},
+): Promise<Map<string, Grouped>> {
   const groups = new Map<string, Grouped>()
   for (const tolerance of [0, 1]) {
     const res = (await search(db, {
@@ -244,8 +297,9 @@ async function twoPassGroups(db: AnyOrama, term: string): Promise<Map<string, Gr
       limit: MAX_RESULTS,
       properties: ["content"],
       groupBy: {properties: ["page_id"], maxResult: HITS_PER_PAGE},
+      ...(relevance ? {relevance} : {}),
     })) as unknown as {
-      groups?: {values: unknown[]; result: {document: unknown}[]}[]
+      groups?: {values: unknown[]; result: {score?: number; document: unknown}[]}[]
     }
     collectGroups(db, res, groups)
   }
@@ -310,7 +364,7 @@ export async function runRankedSearch(
   let tokens = meaningfulTokens(trimmed, tuning.stopwords)
   const term = tokens.join(" ")
 
-  const groups = await twoPassGroups(db, term)
+  const groups = await twoPassGroups(db, term, tuning.relevance)
 
   // Spelling correction: if any token has a curated correction, union a second
   // pass on the corrected query and let the corrected tokens participate in
@@ -318,13 +372,20 @@ export async function runRankedSearch(
   if (Object.keys(tuning.spell).length > 0) {
     const corrected = tokens.map(t => tuning.spell[t] ?? t)
     if (corrected.some((t, i) => t !== tokens[i])) {
-      const extra = await twoPassGroups(db, corrected.join(" "))
+      const extra = await twoPassGroups(db, corrected.join(" "), tuning.relevance)
       for (const [k, v] of extra) if (!groups.has(k)) groups.set(k, v)
       tokens = Array.from(new Set([...tokens, ...corrected]))
     }
   }
 
-  const score = ({page, hits}: Grouped): number => {
+  // Min-max BM25 normalization over the candidate set so the relevance term
+  // is scale-free and the tuning weight is corpus-portable. Computed once
+  // (not per-group) — `score()` reads `maxBm25` from this closure.
+  let maxBm25 = 0
+  for (const g of groups.values()) if (g.bm25 > maxBm25) maxBm25 = g.bm25
+  const queryNorm = tokens.join(" ")
+
+  const score = ({page, hits, bm25}: Grouped): number => {
     const title = (page.content ?? "").toLowerCase()
     const haystack = `${title} ${(page.breadcrumbs ?? []).join(" ")} ${page.url}`.toLowerCase()
     const url = page.url.toLowerCase()
@@ -333,6 +394,23 @@ export async function runRankedSearch(
       if (haystack.includes(t)) s += tuning.haystackWeight
       if (title.includes(t)) s += tuning.titleWeight
       if (url.includes(t)) s += tuning.urlWeight
+    }
+    // Exact / prefix title preference. Substring `includes` ranks the page
+    // titled "Wallet" and one titled "How wallets work" identically for the
+    // query "wallet"; these bounded bonuses restore the canonical-title
+    // preference users expect for navigational / exact intents.
+    if (tuning.exactTitleWeight > 0 && title.trim() === queryNorm) {
+      s += tuning.exactTitleWeight
+    } else if (tuning.titlePrefixWeight > 0 && queryNorm.length > 0 && title.startsWith(queryNorm)) {
+      s += tuning.titlePrefixWeight
+    }
+    // Calibrated BM25 blend: a continuous relevance signal on top of the
+    // coarse integer lexical heuristic. Bounded to [0, bm25Weight] so it
+    // separates near-tied pages (the common case — many share the same
+    // title/url token hits) without letting a long term-dense page outscore
+    // a canonical one on relevance alone (measured to regress if unbounded).
+    if (tuning.bm25Weight > 0 && maxBm25 > 0) {
+      s += tuning.bm25Weight * (bm25 / maxBm25)
     }
     if (tuning.structHitWeight > 0) {
       // Only the hand-curated `#Keywords` rows — NOT the 343 auto-mined
@@ -369,9 +447,17 @@ export async function runRankedSearch(
     return s
   }
 
+  // Tiebreak: when the BM25 blend is active, residual score ties resolve by
+  // raw relevance (then crawl order); otherwise exact legacy behavior
+  // (crawl order only), so bm25Weight=0 is byte-identical to the prior ship.
   const ranked = [...groups.values()]
     .map((g, i) => ({g, i, s: score(g)}))
-    .sort((a, b) => b.s - a.s || a.i - b.i)
+    .sort(
+      (a, b) =>
+        b.s - a.s ||
+        (tuning.bm25Weight > 0 ? b.g.bm25 - a.g.bm25 : 0) ||
+        a.i - b.i,
+    )
     .map(x => x.g)
 
   // Best-bet pin: if the normalized query (or its spell-corrected form) is a
@@ -400,7 +486,7 @@ export async function runRankedSearch(
       ranked.unshift(pinned)
     } else if (idx < 0) {
       const doc = getByID(db, pinnedUrl) as IndexedDoc | undefined
-      if (doc) ranked.unshift({page: doc, hits: []})
+      if (doc) ranked.unshift({page: doc, hits: [], bm25: 0})
     }
   }
 

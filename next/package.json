@@ -24,7 +24,11 @@
     "nav:apply": "tsx ./scripts/apply-nav.mjs",
     "nav:apply:plan": "tsx ./scripts/apply-nav.mjs --dry-run",
     "nav:editor": "NAV_EDITOR=1 next dev -p 3001",
-    "sync": "npm run migrate-content && npm run nav:apply"
+    "sync": "npm run migrate-content && npm run nav:apply",
+    "search:eval": "tsx ./scripts/search-eval/run.ts",
+    "search:report": "tsx ./scripts/search-eval/report.ts",
+    "search:sweep": "tsx ./scripts/search-eval/sweep.ts",
+    "search:mine": "tsx ./scripts/search-eval/mine-evalset.ts"
   },
   "dependencies": {
     "@orama/orama": "^3.1.18",
