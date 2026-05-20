@@ -1,4 +1,5 @@
 "use client"
+import {useEffect} from "react"
 import {
   SearchDialog,
   SearchDialogClose,
@@ -62,6 +63,19 @@ const searchClient: SearchClient = {search: runSearch, deps: []}
 
 export default function DefaultSearchDialog(props: SharedProps) {
   const {search: searchValue, setSearch, query} = useDocsSearch({client: searchClient})
+
+  // Pre-warm the static index on dialog mount, BEFORE the user types
+  // their first character. The 46MB gzipped index takes ~200–500ms over
+  // the wire + ~100ms to `load()` into Orama on cold-start; deferring it
+  // to the first keystroke means the first query feels laggy. Mounting
+  // the dialog is already the user's "I want to search" signal, so
+  // kicking off the fetch here is correctly scoped (no idle bandwidth
+  // burn on users who never search). Catch is silent — `getDB`'s own
+  // memo handler resets `dbPromise` on transient fetch failure so the
+  // first real query will retry.
+  useEffect(() => {
+    getDB().catch(() => {})
+  }, [])
 
   return (
     <SearchDialog

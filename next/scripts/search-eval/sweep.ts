@@ -59,6 +59,11 @@ const AXES: Axis[] = [
     values: [0, 1, 2, 3],
     apply: (t, v) => ({...t, titlePrefixWeight: v as number}),
   },
+  {
+    name: "headingMatchWeight",
+    values: [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4],
+    apply: (t, v) => ({...t, headingMatchWeight: v as number}),
+  },
 ]
 
 function fmtTuning(t: Tuning): string {

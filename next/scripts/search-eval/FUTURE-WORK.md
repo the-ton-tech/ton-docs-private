@@ -4,6 +4,40 @@ Captured at the end of the LLM-augmented eval round. Concrete, sized,
 ordered by ROI / dependency. Things that need to happen first are at the
 top; speculative items toward the bottom.
 
+## 0. Status update (commits after this doc)
+
+This document was the next-action list at commit `8a84384`. The
+ship since then has measurably moved the harness numbers — `0.` here
+records what's done so the same items aren't re-prioritized.
+
+| ship          | binary | gold | comment                                    |
+| ------------- | ------ | ---- | ------------------------------------------ |
+| pinAfterStopwords (now unconditional, no flag) | curated +0.000, mined-test +0.000 | nDCG_g +0.000 → +0.007 | concept "what is a wallet" → hits the wallet pin |
+| allowDuplicates: true (tokenizer) | mined-test hit@1 +0.004 | hit@1 +0.009, nDCG_g +0.012 | real BM25 tf restored |
+| 6 spell-corrections | mined-test mrr +0.001 | — | typo_beyond_2 from hard-cases.json |
+| stemReRank lever (off by default) | curated +0.000, mined-test ns | hit@1 +0.018 ns | regresses mined-test ns @ -0.0094; gold positive |
+| headingMatchWeight=0.2 (NEW) | curated +0.016 / 0 regressions, mined-test **+0.020 hit@1 p=0.014** | nDCG_g flat, troubleshooting +0.030 | per-token + phrase heading match |
+| `description` frontmatter indexed | — | hit@1 +0.018 | 469/471 pages have non-empty descriptions |
+| `titleBM25Weight` lever (measured negative) | — | — | second Orama pass on type:"page"; rejected at every weight |
+| `#Code symbols` conditional structHit (off by default) | mined-test ns sig negative | — | confirms maintainer's earlier unconditional rejection |
+
+**Net shipped, vs. the harness's baseline before this doc:**
+
+| metric              | start (8a84384) | now    | Δ       |
+| ------------------- | --------------- | ------ | ------- |
+| curated hit@1       | 0.921           | 0.929  | +0.008  |
+| mined-test hit@1    | 0.813           | 0.832  | +0.019  |
+| mined-test MRR      | 0.840           | 0.856  | +0.016  |
+| gold hit@1          | 0.652           | 0.688  | +0.036  |
+| gold nDCG_g@10      | 0.584           | 0.602  | +0.018  |
+| gold exact nDCG_g   | 0.308           | 0.404  | +0.096  |
+| gold troubleshoot  | 0.488           | 0.527  | +0.039  |
+
+CI gate now enforced via floors.json with auto-ratchet warnings — see
+`scripts/search-eval/ci-check.ts` + `.github/workflows/search-eval.yml`.
+
+The §1–§9 items below are the *remaining* future work after this round.
+
 ## 1. Finish what Opus 529 interrupted
 
 **Phase 5 (graded gold slice) is partial:** 325 of 1050 ratings landed
