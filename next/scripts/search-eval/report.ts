@@ -40,16 +40,10 @@ function variantMatrix(quick: boolean): Record<string, Tuning> {
     return {
       baseline: BASELINE_TUNING,
       tuned: DEFAULT_TUNING,
-      "tuned+stem": {...DEFAULT_TUNING, stemReRank: true},
-      "tuned+pinAS": {...DEFAULT_TUNING, pinAfterStopwords: true},
-      "tuned+stem+pinAS": {...DEFAULT_TUNING, stemReRank: true, pinAfterStopwords: true},
-      "tuned+sh3": {...DEFAULT_TUNING, structHitWeight: 3},
-      "tuned+all3": {
-        ...DEFAULT_TUNING,
-        stemReRank: true,
-        pinAfterStopwords: true,
-        structHitWeight: 3,
-      },
+      "tuned+hd@0.2": {...DEFAULT_TUNING, headingMatchWeight: 0.2},
+      "tuned+hd@0.25": {...DEFAULT_TUNING, headingMatchWeight: 0.25},
+      "tuned+hd@0.3": {...DEFAULT_TUNING, headingMatchWeight: 0.3},
+      "tuned+hd@0.35": {...DEFAULT_TUNING, headingMatchWeight: 0.35},
     }
   }
   return {

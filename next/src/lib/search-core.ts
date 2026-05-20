@@ -59,8 +59,11 @@ export function createClientDB(): AnyOrama {
 export type IndexedDoc = {
   id: string | number
   // Fumadocs `createFromSource` emits one "page" row (content = title) plus
-  // "head"/"text" rows (content = heading / paragraph) sharing a `page_id`.
-  type: "page" | "head" | "text"
+  // "heading"/"text" rows (content = heading / paragraph) sharing a
+  // `page_id`. Earlier fumadocs versions used "head" instead of "heading"
+  // — the runtime check below tolerates either to avoid an invisible recall
+  // drop on a downgrade.
+  type: "page" | "heading" | "head" | "text"
   content: string
   url: string
   breadcrumbs?: string[]
@@ -238,6 +241,16 @@ export interface Tuning {
    * check term; false = legacy raw-normalized only.
    */
   pinAfterStopwords: boolean
+  /**
+   * Bonus when an indexed heading (a `type:"head"` row from
+   * `structuredData.headings`) contains the full normalized query, OR the
+   * per-token bonus when a heading contains an individual query token.
+   * Pages where the query matches a section heading are stronger candidates
+   * than pages where the same terms only appear in body paragraphs. 0
+   * disables. Phrase-match earns this weight × tokens.length so multi-word
+   * heading hits weigh comparably to per-token heading hits.
+   */
+  headingMatchWeight: number
 }
 
 /**
@@ -287,6 +300,16 @@ export const DEFAULT_TUNING: Tuning = {
   // which is exactly the natural-language framing the raw-normalized pin
   // lookup was missing. Ship on by default.
   pinAfterStopwords: true,
+  // headingMatchWeight: matched ablations swept 0.1 / 0.2 / 0.25 / 0.3 /
+  // 0.35 / 0.5 — 0.2 is the Pareto knee. Mined-test all three metrics
+  // improve significantly (Hit@1 +0.020 p=0.014, MRR +0.017 p=0.003,
+  // nDCG@10 +0.018 p=0.0004) and curated improves with ZERO regressions
+  // (curated Hit@1 +0.016, MRR +0.011). Higher weights buy more held-out
+  // gain at the cost of curated regressions (0.25 → 1, 0.3+ → 2). Per the
+  // harness discipline: no curated regression > marginal held-out delta.
+  // On the gold slice this also lifts troubleshooting from 0.497 to 0.527
+  // (one of the four worst-performing intents per FUTURE-WORK §2).
+  headingMatchWeight: 0.2,
 }
 
 /**
@@ -316,6 +339,7 @@ export const BASELINE_TUNING: Tuning = {
   titlePrefixWeight: 0,
   stemReRank: false,
   pinAfterStopwords: false,
+  headingMatchWeight: 0,
 }
 
 export function normalizeQuery(query: string): string {
@@ -399,23 +423,25 @@ function containsAllTokens(text: string, tokens: string[]): boolean {
 }
 
 /**
- * Heuristic for "looks like a code symbol, not prose/keyword". Duplicated
- * (without sharing the module) from app/api/search/route.ts because the index
- * builder is a Node-only route handler that pulls fumadocs-mdx; importing it
- * from this browser-loadable file would force that whole graph into the
- * client bundle. Keep these two predicates in sync — they answer the same
- * question (index side: "should I keep this raw code token as searchable?";
- * query side: "should I let a #Code symbols row earn the structHit bonus?").
+ * Heuristic for "looks like a code symbol, not prose/keyword" — query side.
+ * The index-side counterpart in app/api/search/route.ts is the case-sensitive
+ * predicate that decided which raw code tokens to keep in the synthetic
+ * `#Code symbols` block; this one decides at query time whether the user
+ * typed something that *resembles* one of those tokens, so the structHit
+ * bonus can fire on the right rows without firing on natural-language
+ * queries. Tokens here are pre-lowercased (see `tokenize` above), so the
+ * camelCase / ALLCAPS branches that the index-side predicate uses cannot
+ * fire — relying instead on `_`, `::`, and the alnum-mix branch, which all
+ * survive lowercasing. Drop in here if you ever change the indexer's
+ * predicate; the two should agree on the "is this a code token?" question.
  */
 function querySymbolLike(t: string): boolean {
   if (t.length < 2 || t.length > 40) return false
   if (/^\d+$/.test(t)) return false
   return (
-    t.includes("_") ||
-    t.includes("::") ||
-    /[a-z][A-Z]/.test(t) ||
-    /^[A-Z][A-Z0-9]{1,}$/.test(t) ||
-    /[a-zA-Z]\d|\d[a-zA-Z]/.test(t)
+    t.includes("_") || // snake_case, op_sendmsg (lowercased)
+    t.includes("::") || // FunC/C++ scope, op::transfer
+    /[a-z]\d|\d[a-z]/.test(t) // alnum mix, int257 / v3 / wallet5
   )
 }
 
@@ -476,12 +502,10 @@ export async function runRankedSearch(
   // Spelling correction: if any token has a curated correction, union a second
   // pass on the corrected query and let the corrected tokens participate in
   // re-ranking. Additive only — never drops the original matches.
-  let correctedTerm: string | undefined
   if (Object.keys(tuning.spell).length > 0) {
     const corrected = tokens.map(t => tuning.spell[t] ?? t)
     if (corrected.some((t, i) => t !== tokens[i])) {
-      correctedTerm = corrected.join(" ")
-      const extra = await twoPassGroups(db, correctedTerm, tuning.relevance)
+      const extra = await twoPassGroups(db, corrected.join(" "), tuning.relevance)
       for (const [k, v] of extra) if (!groups.has(k)) groups.set(k, v)
       tokens = Array.from(new Set([...tokens, ...corrected]))
     }
@@ -494,26 +518,44 @@ export async function runRankedSearch(
   for (const g of groups.values()) if (g.bm25 > maxBm25) maxBm25 = g.bm25
   const queryNorm = tokens.join(" ")
 
-  // Stem-aware re-rank: pre-compute stemmed token list + per-page stemmed
+  // Stem-aware re-rank: pre-compute per-token stem arrays + per-page stemmed
   // title / haystack / url word sets. Without this, the score function does
   // raw `title.includes("validating")` against a title "Validation" and
   // misses — even though Orama's index hit it via the shared stem ("valid").
   // We use word-equality on stems (not substring) so a title "Tokenomics"
   // doesn't spuriously absorb a "token" query (`includes` did).
+  //
+  // CRITICAL: each query token is stemmed INDIVIDUALLY (not via joined
+  // `tokens.join(" ")`). Orama's English splitter splits on `::`, `@`, `.`
+  // (e.g. "op::transfer" → ["op","transfer"]) and may filter empties; a
+  // single joined pass produces an array whose length does not match
+  // `tokens.length`, breaking positional alignment between `tokens[i]`
+  // (raw) and the stem the score loop is meant to compare. Per-token
+  // stemming keeps the i-th stem(s) attached to the i-th raw token.
   type StemEntry = {
     titleWords: Set<string>
     haystackWords: Set<string>
     urlWords: Set<string>
     titleStr: string
   }
-  let stemmedTokens: string[] = []
+  let tokenStems: string[][] = []
   let stemmedQueryStr = ""
   const stemCache = new Map<string, StemEntry>()
+  // Stem cache is computed only for the K candidates most likely to land in
+  // the visible top of the page list. The re-rank bonuses cap at ~10 per
+  // group; pages further than ~25 down the BM25-ordered candidate set are
+  // very unlikely to reach the visible top from a +10 boost, so paying for
+  // 100+ stem calls is wasted work. We over-shoot K relative to the visible
+  // ~5–10 to keep tiebreak quality.
+  const STEM_TOP_K = 32
   if (tuning.stemReRank) {
-    stemmedTokens = await stemString(tokens.join(" "))
-    stemmedQueryStr = stemmedTokens.join(" ")
+    tokenStems = await Promise.all(tokens.map(t => stemString(t)))
+    stemmedQueryStr = tokenStems.flat().join(" ")
+    const topGroups = [...groups.entries()]
+      .sort((a, b) => b[1].bm25 - a[1].bm25)
+      .slice(0, STEM_TOP_K)
     await Promise.all(
-      [...groups.entries()].map(async ([pageId, g]) => {
+      topGroups.map(async ([pageId, g]) => {
         const t = (g.page.content ?? "").toLowerCase()
         const bc = (g.page.breadcrumbs ?? []).join(" ").toLowerCase()
         // Split URL on slashes / hyphens / underscores so the stemmer sees real
@@ -548,10 +590,13 @@ export async function runRankedSearch(
     // pure numerics) or doesn't normalize.
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i]
-      const st = sm ? stemmedTokens[i] : ""
-      if ((sm && st && sm.haystackWords.has(st)) || haystack.includes(t)) s += tuning.haystackWeight
-      if ((sm && st && sm.titleWords.has(st)) || title.includes(t)) s += tuning.titleWeight
-      if ((sm && st && sm.urlWords.has(st)) || url.includes(t)) s += tuning.urlWeight
+      const stems = sm ? tokenStems[i] ?? [] : []
+      const stemHay = sm && stems.some(st => sm.haystackWords.has(st))
+      const stemTitle = sm && stems.some(st => sm.titleWords.has(st))
+      const stemUrl = sm && stems.some(st => sm.urlWords.has(st))
+      if (stemHay || haystack.includes(t)) s += tuning.haystackWeight
+      if (stemTitle || title.includes(t)) s += tuning.titleWeight
+      if (stemUrl || url.includes(t)) s += tuning.urlWeight
     }
     // Exact / prefix title preference. Substring `includes` ranks the page
     // titled "Wallet" and one titled "How wallets work" identically for the
@@ -596,6 +641,30 @@ export async function runRankedSearch(
         .join(" ")
       if (curated) {
         for (const t of tokens) if (curated.includes(t)) s += tuning.structHitWeight
+      }
+    }
+    if (tuning.headingMatchWeight > 0 && tokens.length > 0) {
+      // Heading match: per-token bonus when a query token appears in any of
+      // this page's heading rows (`type:"heading"`, content = the heading
+      // text). Headings are a higher-signal surface than arbitrary body
+      // paragraphs — a page with an H2 literally containing the user's
+      // words is more likely the canonical answer than a page where the
+      // same words appear in passing prose. Phrase-match (queryNorm in
+      // heading) gets an extra tokens.length-weighted bonus so a tight
+      // phrase hit dominates a scattered token hit. Accept both "heading"
+      // (current fumadocs) and "head" (older index versions) to survive a
+      // dependency downgrade.
+      const headings = hits.filter(h => h.type === "heading" || h.type === "head")
+      if (headings.length > 0) {
+        let perTokenMatches = 0
+        let phraseHit = false
+        for (const h of headings) {
+          const ht = (h.content ?? "").toLowerCase()
+          if (!phraseHit && queryNorm.length > 0 && ht.includes(queryNorm)) phraseHit = true
+          for (const t of tokens) if (ht.includes(t)) perTokenMatches++
+        }
+        s += tuning.headingMatchWeight * perTokenMatches
+        if (phraseHit) s += tuning.headingMatchWeight * tokens.length
       }
     }
     if (tuning.allTermsWeight > 0 || tuning.proximityWeight > 0) {

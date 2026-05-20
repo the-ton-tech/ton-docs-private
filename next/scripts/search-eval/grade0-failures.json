@@ -1,0 +1,603 @@
+{
+  "n": 26,
+  "queries": [
+    {
+      "q": "ton testnet funding development testing",
+      "intent": "navigational",
+      "expect_top": {
+        "url": "/overview/wallets/wallet-apps/get-coins",
+        "grade": 3
+      },
+      "actual_top": "/applications/ton-connect/api-reference/sdk",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/ton-connect/api-reference/sdk",
+        "/applications/ton-connect/api-reference/sdk#wallet",
+        "/applications/ton-connect/api-reference/sdk#tonitem",
+        "/applications/ton-connect/api-reference/sdk#walletinfobase",
+        "/applications/api/toncenter/get-api-key",
+        "/applications/api/toncenter/get-api-key#Code symbols",
+        "/applications/api/toncenter/get-api-key#get-help",
+        "/applications/ton-connect/api-reference/ui-react",
+        "/applications/ton-connect/api-reference/ui-react#tonconnectuiproviderpropswithmanifest",
+        "/applications/ton-connect/api-reference/ui-react#tonconnectuiproviderpropswithconnector"
+      ]
+    },
+    {
+      "q": "pending transactions",
+      "intent": "navigational",
+      "expect_top": {
+        "url": "/applications/api/toncenter/v3/blockchain-data/get-pending-transactions",
+        "grade": 3
+      },
+      "actual_top": "/applications/appkit/get-started/sending-transactions",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/appkit/get-started/sending-transactions",
+        "/applications/appkit/get-started/sending-transactions#pick-the-right-call",
+        "/applications/appkit/get-started/sending-transactions#Code symbols",
+        "/applications/api/toncenter/v2/transactions/get-block-transactions-extended",
+        "/applications/api/toncenter/v2/transactions/get-block-transactions",
+        "/applications/api/toncenter/v2/transactions/get-transactions-standard",
+        "/applications/api/toncenter/v2/transactions/get-transactions",
+        "/applications/api/toncenter/v2/transactions/try-locate-result-transaction",
+        "/applications/api/toncenter/v2/transactions/try-locate-source-transaction",
+        "/applications/api/toncenter/v2/transactions/try-locate-transaction"
+      ]
+    },
+    {
+      "q": "message transactions endpoint",
+      "intent": "navigational",
+      "expect_top": {
+        "url": "/applications/api/toncenter/v3/blockchain-data/get-transactions-by-message",
+        "grade": 3
+      },
+      "actual_top": "/blockchain-basics/primitives/messages/external-in",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/blockchain-basics/primitives/messages/external-in",
+        "/blockchain-basics/primitives/messages/external-in#accepting-message",
+        "/blockchain-basics/primitives/messages/external-in#contents-of-external-messages",
+        "/blockchain-basics/primitives/messages/external-out",
+        "/blockchain-basics/primitives/messages/external-out#message-modes",
+        "/blockchain-basics/primitives/messages/internal",
+        "/blockchain-basics/primitives/messages/internal#message-value",
+        "/blockchain-basics/primitives/messages/internal#bounces",
+        "/blockchain-basics/primitives/messages/ordinary-tx",
+        "/blockchain-basics/primitives/messages/ordinary-tx#Code symbols"
+      ]
+    },
+    {
+      "q": "crypto market terminology WAGMI",
+      "intent": "navigational",
+      "expect_top": {
+        "url": "/foundations/glossary",
+        "grade": 3
+      },
+      "actual_top": "/applications/appkit/reference/appkit",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 9,
+      "ranks": [
+        "/applications/appkit/reference/appkit",
+        "/applications/appkit/reference/appkit#cryptoonrampproviderinterface",
+        "/applications/appkit/reference/appkit#cryptoonrampprovidermetadataoverride",
+        "/applications/appkit/reference/appkit#cryptoonrampprovidermetadata",
+        "/applications/appkit/reference/appkit-react",
+        "/applications/appkit/reference/appkit-react#cryptoonrampwidgetprops",
+        "/applications/appkit/reference/appkit-react#cryptoonrampproviderprops",
+        "/applications/appkit/reference/appkit-react#cryptoonrampwidgetui",
+        "/foundations/glossary",
+        "/foundations/glossary#cryptobot"
+      ]
+    },
+    {
+      "q": "appkit how to guides",
+      "intent": "navigational",
+      "expect_top": {
+        "url": "/applications/appkit/howto/howto",
+        "grade": 3
+      },
+      "actual_top": "/applications/appkit/reference/appkit-react",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 9,
+      "ranks": [
+        "/applications/appkit/reference/appkit-react",
+        "/applications/appkit/reference/appkit-react#appkittheme",
+        "/applications/appkit/reference/appkit-react#appkitprovider",
+        "/applications/appkit/reference/appkit-react#appkituitoken",
+        "/applications/appkit/reference/appkit",
+        "/applications/appkit/reference/appkit#appkitevents",
+        "/applications/appkit/reference/appkit#appkitemitter",
+        "/applications/appkit/reference/appkit#appkitnetworkmanager",
+        "/applications/appkit/overview",
+        "/applications/appkit/overview#packages"
+      ]
+    },
+    {
+      "q": "masterchain info",
+      "intent": "navigational",
+      "expect_top": {
+        "url": "/applications/api/toncenter/v2/blocks/get-masterchain-info",
+        "grade": 3
+      },
+      "actual_top": "/applications/ton-pay/payment-integration/status-info",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/ton-pay/payment-integration/status-info",
+        "/applications/walletkit/android/data",
+        "/applications/walletkit/android/data#wallet-information",
+        "/applications/walletkit/ios/data",
+        "/applications/walletkit/ios/data#wallet-information",
+        "/blockchain-basics/primitives/limits",
+        "/blockchain-basics/primitives/limits#validator-parameters",
+        "/blockchain-basics/primitives/limits#masterchain-specific-parameters",
+        "/applications/api/toncenter/v2-tonlib-types",
+        "/applications/api/toncenter/v2-tonlib-types#block-data"
+      ]
+    },
+    {
+      "q": "public key not wallet address",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/blockchain-basics/standard/wallets/how-it-works",
+        "grade": 3
+      },
+      "actual_top": "/applications/walletkit/ios/wallets",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/walletkit/ios/wallets",
+        "/applications/walletkit/ios/wallets#Code symbols",
+        "/applications/walletkit/ios/wallets#creating-wallets-from-secret-key",
+        "/overview/wallets/wallet-apps/addresses-workflow",
+        "/blockchain-basics/standard/wallets/history",
+        "/blockchain-basics/standard/wallets/history#persistent-memory-layout-1",
+        "/blockchain-basics/standard/wallets/history#persistent-memory-layout",
+        "/blockchain-basics/standard/wallets/history#wallet-v2",
+        "/blockchain-basics/standard/wallets/v5",
+        "/blockchain-basics/standard/wallets/v5#persistent-memory-layout"
+      ]
+    },
+    {
+      "q": "profile picture display styling",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/ecosystem/tma/telegram-ui/reference/avatar",
+        "grade": 3
+      },
+      "actual_top": "/contribute/style-guide-extended",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/contribute/style-guide-extended",
+        "/contribute/style-guide-extended#ton-documentation-style-guide",
+        "/contribute/style-guide-extended#63-code-styling",
+        "/applications/ton-pay/ui-integration/button-react",
+        "/applications/ton-pay/ui-integration/button-react#tonpaybutton-props",
+        "/applications/ton-pay/ui-integration/button-react#custom-styling",
+        "/overview/contribute/snippets/overview",
+        "/overview/contribute/snippets/overview#styling",
+        "/overview/contribute/snippets/overview#see-also",
+        "/applications/ton-connect/api-reference/ui-react"
+      ]
+    },
+    {
+      "q": "lite-client adnl connection",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/blockchain-basics/nodes/overview",
+        "grade": 3
+      },
+      "actual_top": "/applications/walletkit/web/connections",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/walletkit/web/connections",
+        "/applications/walletkit/web/connections#connection-flow",
+        "/applications/walletkit/web/connections#see-also",
+        "/applications/ton-connect/api-reference/sdk",
+        "/applications/ton-connect/api-reference/sdk#connectioninfo",
+        "/applications/ton-connect/api-reference/sdk#connectionrestoringevent",
+        "/applications/ton-connect/api-reference/sdk#connectionevent",
+        "/blockchain-basics/nodes/rust/node-config-ref",
+        "/blockchain-basics/nodes/rust/node-config-ref#extensions",
+        "/blockchain-basics/nodes/rust/node-config-ref#adnl_node"
+      ]
+    },
+    {
+      "q": "pragma allow-post-modification variables",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/blockchain-basics/languages/func/compiler-directives",
+        "grade": 3
+      },
+      "actual_top": "/blockchain-basics/tolk/syntax/variables",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 6,
+      "ranks": [
+        "/blockchain-basics/tolk/syntax/variables",
+        "/blockchain-basics/tolk/syntax/variables#unassigned-variables",
+        "/blockchain-basics/tolk/syntax/variables#multiple-variables",
+        "/blockchain-basics/languages/func/global-variables",
+        "/blockchain-basics/languages/func/global-variables#declaration",
+        "/blockchain-basics/languages/func/compiler-directives",
+        "/blockchain-basics/languages/func/compiler-directives#pragma-allow-post-modification",
+        "/blockchain-basics/languages/func/compiler-directives#pragma",
+        "/blockchain-basics/languages/func/compiler-directives#pragma-version",
+        "/ecosystem/tma/telegram-ui/platform-and-palette"
+      ]
+    },
+    {
+      "q": "TL-B prefix code dictionary implementation",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/blockchain-basics/languages/tl-b/complex-and-non-trivial-examples",
+        "grade": 3
+      },
+      "actual_top": "/blockchain-basics/languages/tl-b/tooling",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 7,
+      "ranks": [
+        "/blockchain-basics/languages/tl-b/tooling",
+        "/blockchain-basics/languages/tl-b/tooling#tl-b-parsers",
+        "/blockchain-basics/languages/tl-b/tooling#tl-b-generators",
+        "/blockchain-basics/contract-dev/ide/vscode",
+        "/blockchain-basics/contract-dev/ide/vscode#tl-b",
+        "/blockchain-basics/contract-dev/ide/vscode#func",
+        "/blockchain-basics/languages/tl-b/syntax-and-semantics",
+        "/blockchain-basics/languages/tl-b/syntax-and-semantics#tl-b-scheme",
+        "/blockchain-basics/tvm/exit-codes",
+        "/blockchain-basics/tvm/exit-codes#table-of-exit-codes"
+      ]
+    },
+    {
+      "q": "separate owner cold wallet validator hot wallet",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/blockchain-basics/nodes/staking/single-nominator",
+        "grade": 3
+      },
+      "actual_top": "/applications/walletkit/ios/wallets",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/walletkit/ios/wallets",
+        "/applications/walletkit/ios/wallets#Code symbols",
+        "/applications/walletkit/ios/wallets#wallet-versions",
+        "/overview/wallets/wallet-apps/web",
+        "/overview/wallets/wallet-apps/web#verify-wallets-version",
+        "/overview/wallets/wallet-apps/web#create-a-wallet",
+        "/blockchain-basics/standard/wallets/interact",
+        "/blockchain-basics/standard/wallets/interact#Code symbols",
+        "/blockchain-basics/standard/wallets/interact#default-wallet_id-values",
+        "/applications/ton-connect/how-to/filter-wallets"
+      ]
+    },
+    {
+      "q": "find blockchain block by number",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/applications/api/toncenter/v2/blocks/lookup-block",
+        "grade": 3
+      },
+      "actual_top": "/blockchain-basics/primitives/limits",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 7,
+      "ranks": [
+        "/blockchain-basics/primitives/limits",
+        "/blockchain-basics/primitives/limits#gas-and-fee-parameters",
+        "/blockchain-basics/whitepapers/tblkch",
+        "/blockchain-basics/whitepapers/tblkch#512-components-of-a-shardchain-block",
+        "/blockchain-basics/whitepapers/tblkch#15--total-blockchain-state",
+        "/applications/api/toncenter/v3/blockchain-data/get-adjacent-transactions",
+        "/applications/api/toncenter/v3/blockchain-data/get-blocks",
+        "/applications/api/toncenter/v3/blockchain-data/get-masterchain-block-shard-state-1",
+        "/applications/api/toncenter/v3/blockchain-data/get-masterchain-block-shard-state",
+        "/applications/api/toncenter/v3/blockchain-data/get-masterchain-info"
+      ]
+    },
+    {
+      "q": "get lifecheck status",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/applications/api/toncenter/smc-index/lifecheck-method",
+        "grade": 3
+      },
+      "actual_top": "/blockchain-basics/standard/tokens/nft/metadata",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/blockchain-basics/standard/tokens/nft/metadata",
+        "/blockchain-basics/standard/tokens/nft/metadata#Code symbols",
+        "/blockchain-basics/standard/tokens/nft/metadata#low-level",
+        "/blockchain-basics/tolk/features/contract-getters",
+        "/blockchain-basics/tolk/features/contract-getters#custom-name",
+        "/blockchain-basics/tolk/features/contract-getters#Code symbols",
+        "/blockchain-basics/standard/tokens/nft/api",
+        "/blockchain-basics/standard/tokens/nft/api#get_authority_address",
+        "/blockchain-basics/standard/tokens/nft/api#get_revoked_time",
+        "/blockchain-basics/standard/tokens/nft/api#get_nft_content"
+      ]
+    },
+    {
+      "q": "iOS Material Design cross-platform",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/ecosystem/tma/telegram-ui/overview",
+        "grade": 3
+      },
+      "actual_top": "/applications/walletkit/ios/installation",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/walletkit/ios/installation",
+        "/applications/walletkit/ios/installation#requirements",
+        "/applications/walletkit/ios/webview",
+        "/applications/walletkit/ios/init",
+        "/applications/walletkit/ios/wallets",
+        "/applications/walletkit/ios/events",
+        "/applications/walletkit/ios/transactions",
+        "/applications/walletkit/ios/data",
+        "/blockchain-basics/nodes/cpp/mytonctrl/validator",
+        "/blockchain-basics/nodes/cpp/mytonctrl/validator#vo"
+      ]
+    },
+    {
+      "q": "check jetton mintable status",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/blockchain-basics/standard/tokens/jettons/supply-data",
+        "grade": 3
+      },
+      "actual_top": "/applications/ton-pay/payment-integration/status-info",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 6,
+      "ranks": [
+        "/applications/ton-pay/payment-integration/status-info",
+        "/applications/ton-pay/payment-integration/status-info#response-fields",
+        "/applications/ton-pay/payment-integration/status-info#return-shape",
+        "/blockchain-basics/standard/tokens/jettons/wallet-data",
+        "/blockchain-basics/standard/tokens/jettons/wallet-data#Code symbols",
+        "/blockchain-basics/standard/tokens/jettons/api",
+        "/blockchain-basics/standard/tokens/jettons/api#get_jetton_data",
+        "/blockchain-basics/standard/tokens/jettons/api#get_wallet_data",
+        "/blockchain-basics/standard/tokens/jettons/supply-data",
+        "/blockchain-basics/contract-dev/techniques/on-chain-jetton-processing"
+      ]
+    },
+    {
+      "q": "int64 vs string TON API",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/applications/api/toncenter/v2-tonlib-types",
+        "grade": 3
+      },
+      "actual_top": "/applications/api/toncenter/get-api-key",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/api/toncenter/get-api-key",
+        "/applications/api/toncenter/get-api-key#Code symbols",
+        "/applications/api/toncenter/get-api-key#get-help",
+        "/blockchain-basics/standard/tokens/jettons/transfer",
+        "/blockchain-basics/standard/tokens/jettons/transfer#Code symbols",
+        "/blockchain-basics/standard/tokens/jettons/mint",
+        "/blockchain-basics/standard/tokens/jettons/mint#Code symbols",
+        "/applications/api/toncenter/v3/apiv2/estimate-fee",
+        "/applications/api/toncenter/v3/apiv2/get-address-information",
+        "/applications/api/toncenter/v3/apiv2/get-wallet-information"
+      ]
+    },
+    {
+      "q": "what is the difference between WalletKit and AppKit",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/applications/appkit/overview",
+        "grade": 3
+      },
+      "actual_top": "/applications/appkit/reference/appkit-react",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 9,
+      "ranks": [
+        "/applications/appkit/reference/appkit-react",
+        "/applications/appkit/reference/appkit-react#appkittheme",
+        "/applications/appkit/reference/appkit-react#appkitprovider",
+        "/applications/appkit/reference/appkit-react#appkituitoken",
+        "/applications/appkit/reference/appkit",
+        "/applications/appkit/reference/appkit#appkitevents",
+        "/applications/appkit/reference/appkit#appkitemitter",
+        "/applications/appkit/reference/appkit#appkitnetworkmanager",
+        "/applications/walletkit/overview",
+        "/applications/walletkit/overview#what-walletkit-is"
+      ]
+    },
+    {
+      "q": "fetch block data from TON blockchain",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/applications/api/toncenter/v3/blockchain-data/get-blocks",
+        "grade": 3
+      },
+      "actual_top": "/applications/api/toncenter/v3/blockchain-data/get-adjacent-transactions",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 2,
+      "ranks": [
+        "/applications/api/toncenter/v3/blockchain-data/get-adjacent-transactions",
+        "/applications/api/toncenter/v3/blockchain-data/get-blocks",
+        "/applications/api/toncenter/v3/blockchain-data/get-masterchain-block-shard-state-1",
+        "/applications/api/toncenter/v3/blockchain-data/get-masterchain-block-shard-state",
+        "/applications/api/toncenter/v3/blockchain-data/get-masterchain-info",
+        "/applications/api/toncenter/v3/blockchain-data/get-messages",
+        "/applications/api/toncenter/v3/blockchain-data/get-pending-transactions",
+        "/applications/api/toncenter/v3/blockchain-data/get-transactions-by-masterchain-block",
+        "/applications/api/toncenter/v3/blockchain-data/get-transactions-by-message",
+        "/applications/api/toncenter/v3/blockchain-data/get-transactions"
+      ]
+    },
+    {
+      "q": "TL-B parameterized types Type combinator",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/blockchain-basics/languages/tl-b/syntax-and-semantics",
+        "grade": 3
+      },
+      "actual_top": "/blockchain-basics/languages/func/types",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/blockchain-basics/languages/func/types",
+        "/blockchain-basics/languages/func/types#atomic-types",
+        "/blockchain-basics/languages/func/types#typed-holes",
+        "/blockchain-basics/tolk/types/unions",
+        "/blockchain-basics/tolk/types/unions#lazy-matching-for-unions",
+        "/blockchain-basics/tolk/types/unions#arbitrary-union-types",
+        "/blockchain-basics/tolk/types/void-never",
+        "/blockchain-basics/tolk/types/void-never#implicit-never-in-unreachable-branches",
+        "/blockchain-basics/tolk/types/void-never#optional-void-parameters",
+        "/blockchain-basics/tolk/types/nullable"
+      ]
+    },
+    {
+      "q": "how to send BOC message",
+      "intent": "concept",
+      "expect_top": {
+        "url": "/applications/api/toncenter/v2/send/send-boc",
+        "grade": 3
+      },
+      "actual_top": "/blockchain-basics/tolk/features/message-sending",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 4,
+      "ranks": [
+        "/blockchain-basics/tolk/features/message-sending",
+        "/blockchain-basics/tolk/features/message-sending#sending-modes",
+        "/blockchain-basics/tolk/features/message-sending#message-value",
+        "/applications/api/toncenter/v2/send/send-boc-return-hash",
+        "/applications/api/toncenter/v2/send/send-boc",
+        "/applications/api/toncenter/v3/apiv2/send-message",
+        "/blockchain-basics/primitives/actions/send",
+        "/blockchain-basics/primitives/messages/modes",
+        "/blockchain-basics/primitives/messages/modes#Code symbols",
+        "/applications/appkit/get-started/sending-transactions"
+      ]
+    },
+    {
+      "q": "validator zero state init block hardfork",
+      "intent": "exact",
+      "expect_top": {
+        "url": "/blockchain-basics/nodes/rust/global-config",
+        "grade": 3
+      },
+      "actual_top": "/applications/api/toncenter/v3/blockchain-data/get-masterchain-block-shard-state-1",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/api/toncenter/v3/blockchain-data/get-masterchain-block-shard-state-1",
+        "/applications/api/toncenter/v3/blockchain-data/get-masterchain-block-shard-state",
+        "/blockchain-basics/languages/func/statements",
+        "/blockchain-basics/languages/func/statements#block-statement",
+        "/blockchain-basics/languages/func/statements#expression-statements",
+        "/blockchain-basics/contract-dev/techniques/zero-knowledge",
+        "/blockchain-basics/contract-dev/techniques/zero-knowledge#initialize-a-project",
+        "/blockchain-basics/contract-dev/techniques/zero-knowledge#initialize-trusted-setup",
+        "/blockchain-basics/tvm/initialization",
+        "/blockchain-basics/tvm/initialization#registers-initialization"
+      ]
+    },
+    {
+      "q": "cold wallet hot wallet validator separation",
+      "intent": "exact",
+      "expect_top": {
+        "url": "/blockchain-basics/nodes/staking/single-nominator",
+        "grade": 3
+      },
+      "actual_top": "/applications/walletkit/ios/wallets",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/applications/walletkit/ios/wallets",
+        "/applications/walletkit/ios/wallets#Code symbols",
+        "/applications/walletkit/ios/wallets#wallet-versions",
+        "/overview/wallets/wallet-apps/web",
+        "/overview/wallets/wallet-apps/web#verify-wallets-version",
+        "/overview/wallets/wallet-apps/web#create-a-wallet",
+        "/blockchain-basics/standard/wallets/interact",
+        "/blockchain-basics/standard/wallets/interact#Code symbols",
+        "/blockchain-basics/standard/wallets/interact#default-wallet_id-values",
+        "/applications/ton-connect/how-to/filter-wallets"
+      ]
+    },
+    {
+      "q": "cannot import get fun entrypoint",
+      "intent": "troubleshooting",
+      "expect_top": {
+        "url": "/blockchain-basics/tolk/syntax/imports",
+        "grade": 3
+      },
+      "actual_top": "/blockchain-basics/languages/func/stdlib",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": null,
+      "ranks": [
+        "/blockchain-basics/languages/func/stdlib",
+        "/blockchain-basics/languages/func/stdlib#get_c3",
+        "/blockchain-basics/languages/func/stdlib#get_seed",
+        "/blockchain-basics/languages/func/stdlib#get_balance",
+        "/blockchain-basics/tolk/features/contract-getters",
+        "/blockchain-basics/tolk/features/contract-getters#custom-name",
+        "/blockchain-basics/tolk/features/contract-getters#Code symbols",
+        "/blockchain-basics/languages/func/functions",
+        "/blockchain-basics/languages/func/functions#function-name",
+        "/blockchain-basics/languages/func/functions#function-arguments"
+      ]
+    },
+    {
+      "q": "sendTransaction fails wallet not accepting request",
+      "intent": "troubleshooting",
+      "expect_top": {
+        "url": "/applications/appkit/get-started/sending-transactions",
+        "grade": 2
+      },
+      "actual_top": "/applications/walletkit/ios/wallets",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 8,
+      "ranks": [
+        "/applications/walletkit/ios/wallets",
+        "/applications/walletkit/ios/wallets#Code symbols",
+        "/applications/walletkit/ios/wallets#wallet-versions",
+        "/blockchain-basics/standard/wallets/v5-api",
+        "/blockchain-basics/standard/wallets/v5-api#how-to-create-and-send-signed-request",
+        "/blockchain-basics/standard/wallets/v5-api#inner-request",
+        "/blockchain-basics/standard/wallets/v5-api#signed-request",
+        "/applications/ton-connect/how-to/filter-wallets",
+        "/applications/ton-connect/how-to/filter-wallets#how-filtered-wallets-appear-in-the-modal",
+        "/applications/ton-connect/how-to/filter-wallets#Code symbols"
+      ]
+    },
+    {
+      "q": "mytonctrl synchronization status check lag",
+      "intent": "troubleshooting",
+      "expect_top": {
+        "url": "/blockchain-basics/nodes/cpp/mytonctrl/core",
+        "grade": 3
+      },
+      "actual_top": "/applications/ton-pay/payment-integration/status-info",
+      "actual_top_grade": 0,
+      "expect_rank_in_top10": 3,
+      "ranks": [
+        "/applications/ton-pay/payment-integration/status-info",
+        "/applications/ton-pay/payment-integration/status-info#return-shape",
+        "/blockchain-basics/nodes/cpp/setup-mytonctrl",
+        "/blockchain-basics/nodes/cpp/setup-mytonctrl#install-mytonctrl",
+        "/blockchain-basics/nodes/cpp/setup-mytonctrl#verify-services-and-synchronization",
+        "/blockchain-basics/primitives/status",
+        "/blockchain-basics/primitives/status#status-variety",
+        "/blockchain-basics/primitives/status#status-transitions",
+        "/overview/infrastructure/status",
+        "/blockchain-basics/nodes/cpp/mytonctrl/core"
+      ]
+    }
+  ]
+}
