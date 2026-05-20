@@ -82,20 +82,23 @@ Hypotheses worth measuring on the held-out + gold:
 to the top-50 most-searched concept pages (any heuristic — page-view
 proxy: by-depth-in-nav, or by-incoming-internal-links).
 
-## 3. Graded-objective sweep (NOW unblocked — gold has 349 queries)
+## 3. ~~Graded-objective sweep~~ ✅ DONE (shipped — current tuning is Pareto-optimal)
 
-`sweep.ts` currently optimizes the *binary* objective on `mined-train`.
-With 349 gold queries (median α 1.000) the graded sweep is now feasible —
-add a sibling `sweep-graded.ts`:
+`scripts/search-eval/sweep-graded.ts` (npm: `search:sweep:graded`)
+implements coordinate ascent on
+`0.4 * nDCG_g@10 + 0.4 * Hit@1 + 0.2 * ERR@10`
+over a page-stratified split (gold-train n=158, gold-test n=191) with
+the curated set as a regression guardrail.
 
-- Page-stratified split of the gold slice into `gold-train` / `gold-test`.
-- Objective: `0.4 * nDCG_g@10 + 0.4 * Hit@1 + 0.2 * ERR@10`.
-- Same coordinate-ascent pattern; same guardrails (must not significantly
-  regress curated, must significantly improve `gold-test`).
-- Consider per-intent reporting so `synonym` / `identifier` headroom is
-  attributable rather than averaged out.
+**Result of running it on DEFAULT_TUNING:** sweep finds a "best" config
+on gold-train that fails to generalize to gold-test (test obj drops vs
+DEFAULT, both Hit@1 and nDCG_g deltas are negative on held-out). The
+sweep's accept gate (significant gain on gold-test + no curated
+regression) correctly REJECTS the local optimum. Current DEFAULT is at
+the Pareto knee for this corpus.
 
-This is the highest-resolution tuning surface we'll have on this corpus.
+Useful in future rounds when corpus changes (new pages, new keywords,
+plugin swap) — re-run to confirm the existing tuning is still optimal.
 
 ## 4. Untested levers worth measuring
 
