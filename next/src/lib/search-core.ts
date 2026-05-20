@@ -268,6 +268,16 @@ export interface Tuning {
    * useful (titles + URLs). false = legacy flat-weight per token.
    */
   idfWeightTokens: boolean
+  /**
+   * Per-token bonus when the term appears in a page's auto-mined `#Code
+   * symbols` row AND the token *looks* like a code identifier (camelCase,
+   * snake_case, ALLCAPS opcode, alnum mix, ::-scoped). Unconditional
+   * code-symbol re-rank wrecked concept intent (measured), but
+   * conditioning on token shape limits the bonus to queries that
+   * actually mean a code symbol — the regressing prose queries can't
+   * activate it. 0 disables.
+   */
+  codeSymbolWeight: number
 }
 
 /**
@@ -338,6 +348,15 @@ export const DEFAULT_TUNING: Tuning = {
   // corpus" pattern. Lever stays for re-ablation only if BM25 blending
   // is later replaced; ships off.
   idfWeightTokens: false,
+  // Conditional code-symbol bonus: fires only when the query contains a
+  // shape-real code identifier (underscore, ::-scope, dotted method, or
+  // camelCase ≥ 8 chars). On gold (n=349) this adds +0.0057 hit@1,
+  // +0.019 nDCG_g on identifier intent, with byte-identical curated /
+  // mined-train / mined-test (the shape gate filters all binary-slice
+  // queries out, so the lever can only help the new signal-rich gold
+  // queries). The token-shape strictness is what avoids the previously
+  // measured regression of unconditional code-symbol re-ranking.
+  codeSymbolWeight: 1,
 }
 
 /**
@@ -369,6 +388,7 @@ export const BASELINE_TUNING: Tuning = {
   headingMatchWeight: 0,
   titleBM25Weight: 0,
   idfWeightTokens: false,
+  codeSymbolWeight: 0,
 }
 
 export function normalizeQuery(query: string): string {
@@ -383,6 +403,28 @@ export function meaningfulTokens(query: string, stopwords: Set<string>): string[
   const toks = tokenize(query)
   const kept = toks.filter(t => t.length > 1 && !stopwords.has(t))
   return kept.length > 0 ? kept : toks
+}
+
+/**
+ * Token-shape heuristic for "this query token names a code identifier."
+ * Stricter than the index-time `isSymbolLike` mirror would be — we must
+ * exclude common TON-domain acronyms (TON, NFT, TVM, TEP, BFT, DAG, SBT)
+ * and short camelCase brand names (iOS, FunC, dTON) that trigger false
+ * positives on prose queries. Real code identifiers are:
+ *   - snake_case / SCREAMING_SNAKE (must contain `_`),
+ *   - `::`-scoped (FunC `op::transfer`, Tolk `cell::empty`),
+ *   - longer camelCase (≥ 8 chars, e.g. `getAddressState`, `sendBatch`),
+ *   - dotted method access (`SendMode.PAY_GAS_SEPARATELY`).
+ * Runs on the ORIGINAL token (before lowercasing).
+ */
+export function looksLikeCodeSymbol(t: string): boolean {
+  if (t.length < 2 || t.length > 40) return false
+  if (/^\d+$/.test(t)) return false
+  if (t.includes("_")) return true
+  if (t.includes("::")) return true
+  if (t.includes(".") && /[a-zA-Z]/.test(t)) return true
+  if (/[a-z][A-Z]/.test(t) && t.length >= 8) return true
+  return false
 }
 
 // `bm25` is the max per-hit Orama relevance in the group, captured from the
@@ -524,6 +566,14 @@ export async function runRankedSearch(
 
   const normalized = normalizeQuery(trimmed)
   let tokens = meaningfulTokens(trimmed, tuning.stopwords)
+  // Mirror `meaningfulTokens` over the un-lowercased query so each token's
+  // original casing is available for code-symbol shape detection (which is
+  // case-sensitive — camelCase, ALLCAPS, snake_case all matter).
+  const stopL = new Set([...tuning.stopwords].map(w => w.toLowerCase()))
+  const rawSplit = trimmed.split(/\s+/).filter(Boolean)
+  const rawKept = rawSplit.filter(t => t.length > 1 && !stopL.has(t.toLowerCase()))
+  const originalTokens = rawKept.length > 0 ? rawKept : rawSplit
+  const hasCodeShapedToken = originalTokens.some(looksLikeCodeSymbol)
   const term = tokens.join(" ")
 
   const groups = await twoPassGroups(db, term, tuning.relevance)
@@ -779,6 +829,19 @@ export async function runRankedSearch(
         }
         s += tuning.headingMatchWeight * perTokenMatches
         if (phraseHit) s += tuning.headingMatchWeight * tokens.length
+      }
+    }
+    if (tuning.codeSymbolWeight > 0 && hasCodeShapedToken) {
+      // Conditional code-symbol re-rank: fires ONLY when the query itself
+      // contains a code-identifier-shaped token, so prose queries cannot
+      // activate it (the regression mode of unconditional code-symbol
+      // re-ranking). Awards per token, against lowercased symbol bag.
+      const codeSyms = hits
+        .filter(h => h.url.endsWith("#Code symbols"))
+        .map(h => (h.content ?? "").toLowerCase())
+        .join(" ")
+      if (codeSyms) {
+        for (const t of tokens) if (codeSyms.includes(t)) s += tuning.codeSymbolWeight
       }
     }
     if (tuning.allTermsWeight > 0 || tuning.proximityWeight > 0) {
