@@ -97,12 +97,25 @@ This is the highest-resolution tuning surface we'll have on this corpus.
 
 ### Index-side (require rebuild)
 
-- **`allowDuplicates: true` in the tokenizer**
-  ([route.ts](../../src/app/api/search/route.ts)). Default `false` caps
-  term-frequency at 1/field, flattening BM25's tf component. With the
-  BM25 blend now active in ranking, restoring real tf is the most
-  promising untried lever. Cost: one `next build`. Measure on all 4
-  slices.
+- ~~**`allowDuplicates: true` in the tokenizer**~~ ❌ measured-negative.
+  Default `false` caps term-frequency at 1/field, flattening BM25's tf
+  component. Hypothesis was that restoring real tf would help; **on
+  full apples-to-apples measurement (both indexes built, same harness):**
+
+  | slice      | metric   | nodups | allowdups | Δ        |
+  | ---------- | -------- | ------ | --------- | -------- |
+  | curated    | hit@1    | 0.9206 | 0.9127    | -0.0079  |
+  | curated    | mrr      | 0.9389 | 0.9311    | -0.0078  |
+  | mined-train| hit@1    | 0.7632 | 0.7647    | +0.0015  |
+  | mined-test | hit@1    | 0.8132 | 0.8104    | -0.0028  |
+  | gold       | hit@1    | 0.5301 | 0.5244    | -0.0057  |
+  | gold       | grade@1  | 1.5845 | 1.5702    | -0.0143  |
+
+  Strongest signal (curated, hand-verified) regresses. Hypothesis:
+  with the calibrated BM25 blend already extracting tf information from
+  curated keyword and code-symbol rows, the additional tf from
+  duplicates over-weights long term-dense pages — the same mechanism the
+  BM25 blend was designed to mitigate.
 - **Custom multi-field schema, bypassing `createFromSource`.** Real
   separate title / headings / keywords / body fields with per-field
   `boost` at query time. Highest ceiling per Orama's own design intent.
@@ -246,9 +259,8 @@ Documented for the next maintainer who'll be tempted:
 ## 10. Order of operations (recommended, post-Phase-5)
 
 1. ~~Finish Phase 5~~ ✅ done — full 349-query gold slice, α median 1.000.
-2. **`allowDuplicates: true` build experiment.** Single rebuild, all
-   4 slices, both binary and graded. Either ship or document as
-   measured-negative. **Now the highest-ROI untried lever.**
+2. ~~`allowDuplicates: true` build experiment.~~ ❌ measured-negative
+   on curated and gold (see §4). Not shipped; moved to "not worth doing".
 3. **Spot-check synonym/identifier gold labels** (1 hour). The earlier
    exact-intent hypothesis turned out to be partial-data noise; redo
    on the new weak-spot intents.
@@ -259,7 +271,7 @@ Documented for the next maintainer who'll be tempted:
    BM25 over-weighting on broad conceptual queries; try `bm25Weight=2`
    instead of 2.5 with paired test on gold + curated.
 6. **Graded sweep** (now feasible — see §3).
-7. **Plugin QPS / PT15 A/B**, if 2–5 leave headroom.
+7. **Plugin QPS / PT15 A/B**, if 3–5 leave headroom.
 8. **CI integration** — should happen alongside, not after.
 9. **Real user logs ingest** if and when available — supersedes much
    of the above.
