@@ -192,18 +192,21 @@ Trivial; keeps the CLI surface tight.
 `report-graded.ts --determinism` — 3× run, byte-compare. Same pattern
 as the existing binary-slice determinism check.
 
-### CI integration
+### ~~CI integration~~ ✅ DONE
 
-Add a CI job (e.g. `.github/workflows/search-eval.yml`) that runs on
-PRs touching `src/lib/search-core.ts`, `src/app/api/search/route.ts`,
-or `content/docs/**`:
+`.github/workflows/search-eval.yml` triggers on PRs that touch
+`src/lib/search-core.ts`, `src/app/api/search/**`, `scripts/search-eval/**`,
+or `content/docs/**`. Pipeline:
 
-1. `npm run search:smoke` (24-check infra)
-2. `npm run build` (so out/api/search is present)
-3. `npm run search:report --quick` — fail if curated metric regresses
-4. `npm run search:eval` (legacy ablation, byte-compares)
+1. `npm run search:smoke` — 24-check infra (fails fast).
+2. `npm run build` — produce `out/api/search`.
+3. `npm run search:report` — binary 4-slice metrics + significance.
+4. `npm run search:report:graded -- --vs-baseline` — graded gold slice
+   (n=349, α median 1.000).
+5. `npm run search:eval` — legacy byte-compare ablation.
 
-The graded report stays out of CI for now (gold slice still partial).
+Currently the binary report is advisory (logs only); a future revision
+should grep for `> 0.5% curated regression` in the output and fail.
 
 ### `report.ts` regression on gold
 
@@ -277,8 +280,8 @@ Documented for the next maintainer who'll be tempted:
 5. **Investigate `concept` regression** (-0.024 vs baseline). Possible
    BM25 over-weighting on broad conceptual queries; try `bm25Weight=2`
    instead of 2.5 with paired test on gold + curated.
-6. **Graded sweep** (now feasible — see §3).
+6. ~~Graded sweep~~ ✅ shipped (§3) — confirmed DEFAULT is Pareto-optimal.
 7. **Plugin QPS / PT15 A/B**, if 3–5 leave headroom.
-8. **CI integration** — should happen alongside, not after.
+8. ~~CI integration~~ ✅ shipped (`.github/workflows/search-eval.yml`).
 9. **Real user logs ingest** if and when available — supersedes much
    of the above.
