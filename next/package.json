@@ -24,20 +24,7 @@
     "nav:apply": "tsx ./scripts/apply-nav.mjs",
     "nav:apply:plan": "tsx ./scripts/apply-nav.mjs --dry-run",
     "nav:editor": "NAV_EDITOR=1 next dev -p 3001",
-    "sync": "npm run migrate-content && npm run nav:apply",
-    "search:eval": "tsx ./scripts/search-eval/run.ts",
-    "search:report": "tsx ./scripts/search-eval/report.ts",
-    "search:sweep": "tsx ./scripts/search-eval/sweep.ts",
-    "search:sweep:graded": "tsx ./scripts/search-eval/sweep-graded.ts",
-    "search:mine": "tsx ./scripts/search-eval/mine-evalset.ts",
-    "search:smoke": "tsx ./scripts/search-eval/smoke-test.ts",
-    "search:ci": "tsx ./scripts/search-eval/ci-check.ts",
-    "search:report:graded": "tsx ./scripts/search-eval/report-graded.ts",
-    "search:llm:haiku": "tsx ./scripts/search-eval/orchestrate-haiku.ts",
-    "search:llm:sonnet": "tsx ./scripts/search-eval/orchestrate-sonnet.ts",
-    "search:llm:opus-calib": "tsx ./scripts/search-eval/orchestrate-opus-calibrate.ts",
-    "search:llm:opus-rank": "tsx ./scripts/search-eval/orchestrate-opus-rank.ts",
-    "search:llm:opus-redteam": "tsx ./scripts/search-eval/orchestrate-opus-redteam.ts"
+    "sync": "npm run migrate-content && npm run nav:apply"
   },
   "dependencies": {
     "@orama/orama": "^3.1.18",
