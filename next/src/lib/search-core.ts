@@ -11,11 +11,12 @@ import type {SortedResult} from "fumadocs-core/search"
  * + memoized so the cost is paid once per process (browser or Node harness),
  * not per query. Awaited once at the top of `runRankedSearch`.
  */
-let stemTokenizerPromise: Promise<{tokenize: (s: string) => Promise<string[]> | string[]}> | undefined
-function getStemTokenizer(): Promise<{tokenize: (s: string) => Promise<string[]> | string[]}> {
+type StemTokenizer = {tokenize: (s: string) => Promise<string[]> | string[]}
+let stemTokenizerPromise: Promise<StemTokenizer> | undefined
+function getStemTokenizer(): Promise<StemTokenizer> {
   return (stemTokenizerPromise ??= Promise.resolve(
     oramaTokenizer.createTokenizer({language: "english", stemming: true}),
-  ) as Promise<{tokenize: (s: string) => Promise<string[]> | string[]}>)
+  ) as Promise<StemTokenizer>)
 }
 
 async function stemString(s: string): Promise<string[]> {
@@ -233,16 +234,7 @@ export interface Tuning {
    */
   stemReRank: boolean
   /**
-   * Also try the post-stopword "term" as a pin key, not just the raw
-   * normalized query. Without this, a concept query like "what is a wallet"
-   * misses the "wallet" pin even though after stopword stripping the term
-   * IS "wallet" — DEFAULT_STOPWORDS strips what/is/a, so the pin lookup
-   * (which keys off the *raw* normalized form) never sees it. true = also
-   * check term; false = legacy raw-normalized only.
-   */
-  pinAfterStopwords: boolean
-  /**
-   * Bonus when an indexed heading (a `type:"head"` row from
+   * Bonus when an indexed heading (a `type:"heading"` row from
    * `structuredData.headings`) contains the full normalized query, OR the
    * per-token bonus when a heading contains an individual query token.
    * Pages where the query matches a section heading are stronger candidates
@@ -293,13 +285,6 @@ export const DEFAULT_TUNING: Tuning = {
   // word-equality match cannot disambiguate. Lever stays in the harness for
   // future re-evaluation (esp. on a graded slice ≥ 300) but ships off.
   stemReRank: false,
-  // pinAfterStopwords: zero regressions on all 3 binary slices, +0.007
-  // graded-nDCG@10 on the gold slice with +0.027 grade@1 lift on concept
-  // intent. Fires only when a curated pin key matches the post-stopword
-  // token join (e.g. "what is a wallet" → "wallet" → /wallets/how-it-works),
-  // which is exactly the natural-language framing the raw-normalized pin
-  // lookup was missing. Ship on by default.
-  pinAfterStopwords: true,
   // headingMatchWeight: matched ablations swept 0.1 / 0.2 / 0.25 / 0.3 /
   // 0.35 / 0.5 — 0.2 is the Pareto knee. Mined-test all three metrics
   // improve significantly (Hit@1 +0.020 p=0.014, MRR +0.017 p=0.003,
@@ -338,7 +323,6 @@ export const BASELINE_TUNING: Tuning = {
   exactTitleWeight: 0,
   titlePrefixWeight: 0,
   stemReRank: false,
-  pinAfterStopwords: false,
   headingMatchWeight: 0,
 }
 
@@ -696,32 +680,25 @@ export async function runRankedSearch(
     .sort((a, b) => b.s - a.s || (tuning.bm25Weight > 0 ? b.g.bm25 - a.g.bm25 : 0) || a.i - b.i)
     .map(x => x.g)
 
-  // Best-bet pin: if the normalized query (or its spell-corrected form) is a
-  // curated navigational query, move its canonical page to the very top
-  // (insert if the crawl missed it). Checking the corrected form lets a
-  // misspelled brand query like "jeton" still resolve to its landing page.
-  // pinAfterStopwords ALSO tries the post-stopword token join (and its
-  // corrected variant), so a natural-language concept query like "what is a
-  // wallet" → term "wallet" → hits the `wallet` pin. Without this, the user's
-  // framing words (which the stopword list correctly strips for ranking) also
-  // void the pin lookup (which keys off the raw normalized query).
-  const pinKeys = [normalized]
+  // Best-bet pin: if any of {raw normalized query, post-stopword term,
+  // spell-corrected forms of either} is a curated navigational pin key,
+  // move its canonical page to the very top (insert if the crawl missed
+  // it). The post-stopword `term` lookup is what lets a natural-language
+  // concept query like "what is a wallet" → term "wallet" → hit the
+  // `wallet` pin even though the raw normalized form ("what is a wallet")
+  // is not a pin key. The corrected forms let a misspelled brand query
+  // like "what is a jeton" → "jetton" still resolve.
   const spellOf = (s: string): string =>
     s
       .split(" ")
       .map(w => tuning.spell[w] ?? w)
       .join(" ")
+  const pinKeys = [normalized]
+  if (term && term !== normalized) pinKeys.push(term)
   if (Object.keys(tuning.spell).length > 0) {
-    const corrected = spellOf(normalized)
-    if (corrected !== normalized) pinKeys.push(corrected)
-  }
-  if (tuning.pinAfterStopwords && term && term !== normalized) {
-    pinKeys.push(term)
-    if (Object.keys(tuning.spell).length > 0) {
-      const correctedTerm2 = spellOf(term)
-      if (correctedTerm2 !== term && !pinKeys.includes(correctedTerm2)) {
-        pinKeys.push(correctedTerm2)
-      }
+    for (const k of [...pinKeys]) {
+      const c = spellOf(k)
+      if (c !== k && !pinKeys.includes(c)) pinKeys.push(c)
     }
   }
   let pinnedUrl: string | undefined

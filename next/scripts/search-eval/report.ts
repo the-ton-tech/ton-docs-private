@@ -37,14 +37,7 @@ import {BASELINE_TUNING, DEFAULT_TUNING, type Tuning} from "../../src/lib/search
 
 function variantMatrix(quick: boolean): Record<string, Tuning> {
   if (quick) {
-    return {
-      baseline: BASELINE_TUNING,
-      tuned: DEFAULT_TUNING,
-      "tuned+hd@0.2": {...DEFAULT_TUNING, headingMatchWeight: 0.2},
-      "tuned+hd@0.25": {...DEFAULT_TUNING, headingMatchWeight: 0.25},
-      "tuned+hd@0.3": {...DEFAULT_TUNING, headingMatchWeight: 0.3},
-      "tuned+hd@0.35": {...DEFAULT_TUNING, headingMatchWeight: 0.35},
-    }
+    return {baseline: BASELINE_TUNING, tuned: DEFAULT_TUNING}
   }
   return {
     baseline: BASELINE_TUNING,
@@ -59,8 +52,8 @@ function variantMatrix(quick: boolean): Record<string, Tuning> {
     "tuned+exacttitle": {...DEFAULT_TUNING, exactTitleWeight: 3},
     "tuned+titleprefix": {...DEFAULT_TUNING, titlePrefixWeight: 2},
     "tuned+stem": {...DEFAULT_TUNING, stemReRank: true},
-    "tuned+pinAS": {...DEFAULT_TUNING, pinAfterStopwords: true},
-    "tuned+stem+pinAS": {...DEFAULT_TUNING, stemReRank: true, pinAfterStopwords: true},
+    "tuned+hd@0.1": {...DEFAULT_TUNING, headingMatchWeight: 0.1},
+    "tuned+hd@0.3": {...DEFAULT_TUNING, headingMatchWeight: 0.3},
   }
 }
 

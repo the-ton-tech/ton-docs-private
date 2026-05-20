@@ -49,9 +49,9 @@ async function main(): Promise<void> {
     ? {baseline: BASELINE_TUNING, tuned: DEFAULT_TUNING}
     : {tuned: DEFAULT_TUNING}
   if (args.has("--ablate")) {
-    variants["tuned+hd@0.2"] = {...DEFAULT_TUNING, headingMatchWeight: 0.2}
-    variants["tuned+hd@0.25"] = {...DEFAULT_TUNING, headingMatchWeight: 0.25}
-    variants["tuned+hd@0.35"] = {...DEFAULT_TUNING, headingMatchWeight: 0.35}
+    variants["tuned+stem"] = {...DEFAULT_TUNING, stemReRank: true}
+    variants["tuned+hd0"] = {...DEFAULT_TUNING, headingMatchWeight: 0}
+    variants["tuned+hd@0.3"] = {...DEFAULT_TUNING, headingMatchWeight: 0.3}
   }
 
   const results: Record<string, Aggr> = {}

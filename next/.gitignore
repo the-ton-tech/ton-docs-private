@@ -40,3 +40,7 @@ next-env.d.ts
 
 # nav editor
 .nav-editor-backups/
+
+# search-eval per-task LLM outputs + regenerable diagnostic snapshots
+scripts/search-eval/llm-data/
+scripts/search-eval/grade0-failures.json
