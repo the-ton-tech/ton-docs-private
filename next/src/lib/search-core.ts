@@ -254,6 +254,20 @@ export interface Tuning {
    * the bm25Weight blend pattern. 0 disables.
    */
   titleBM25Weight: number
+  /**
+   * When true, each per-token title/haystack/url presence bonus is
+   * multiplied by `log(maxDf / df_t)` clamped to [0.5, 2.5], where df_t
+   * is the row-level document frequency of the token in the corpus.
+   * Rationale: a query "how to deploy a contract" → kept tokens
+   * `[deploy, contract]`. Without IDF weighting, both earn `titleWeight=2`
+   * per surface; a title hit on "contract" (very common across pages)
+   * counts as much as a title hit on "deploy" (much rarer), which floods
+   * concept queries with title-noise. The BM25 blend captures IDF *for
+   * the whole page*, not per-token-per-surface; this lever extends the
+   * IDF signal into the lexical heuristic where it's actually most
+   * useful (titles + URLs). false = legacy flat-weight per token.
+   */
+  idfWeightTokens: boolean
 }
 
 /**
@@ -313,6 +327,17 @@ export const DEFAULT_TUNING: Tuning = {
   // MRR at w=0.5. Kept as a lever for re-ablation if the corpus
   // changes (e.g. very long titles become common), but ships off.
   titleBM25Weight: 0,
+  // idfWeightTokens: measured strongly negative across all 3 binary
+  // slices (curated Hit@1 -3.2pp, mined-test Hit@1 -1.8pp, MRR -1.2pp).
+  // The intuition was that "deploy" (rare) should outweigh "contract"
+  // (common) in per-token title bonuses; in practice the BM25 blend
+  // already captures the IDF signal at the page level, and adding IDF
+  // multipliers to the lexical heuristic creates an opposing signal that
+  // demotes canonical landing pages whose titles happen to use common
+  // domain words. The harness's recurring "intuition is wrong on this
+  // corpus" pattern. Lever stays for re-ablation only if BM25 blending
+  // is later replaced; ships off.
+  idfWeightTokens: false,
 }
 
 /**
@@ -343,6 +368,7 @@ export const BASELINE_TUNING: Tuning = {
   stemReRank: false,
   headingMatchWeight: 0,
   titleBM25Weight: 0,
+  idfWeightTokens: false,
 }
 
 export function normalizeQuery(query: string): string {
@@ -622,6 +648,31 @@ export async function runRankedSearch(
 
   const symbolTokens = tokens.filter(querySymbolLike)
 
+  // Per-token IDF multipliers. Cheap: one zero-limit Orama search per
+  // unique token to pull the row-level count. log((maxDf+1)/(df+1)) is
+  // monotonic in rarity; clamped to [0.5, 2.5] so a single rare token
+  // can't dominate the rerank. Computed once per query, not per group.
+  const idfWeights = new Map<string, number>()
+  if (tuning.idfWeightTokens) {
+    const dfPairs = await Promise.all(
+      tokens.map(async t => {
+        const r = (await search(db, {
+          term: t,
+          tolerance: 0,
+          properties: ["content"],
+          limit: 0,
+        })) as unknown as {count?: number}
+        return [t, r.count ?? 0] as [string, number]
+      }),
+    )
+    let maxDf = 0
+    for (const [, df] of dfPairs) if (df > maxDf) maxDf = df
+    for (const [t, df] of dfPairs) {
+      const raw = Math.log((maxDf + 1) / (df + 1))
+      idfWeights.set(t, Math.max(0.5, Math.min(2.5, raw)))
+    }
+  }
+
   const score = ({page, hits, bm25}: Grouped): number => {
     const title = (page.content ?? "").toLowerCase()
     const haystack = `${title} ${(page.breadcrumbs ?? []).join(" ")} ${page.url}`.toLowerCase()
@@ -638,9 +689,10 @@ export async function runRankedSearch(
       const stemHay = sm && stems.some(st => sm.haystackWords.has(st))
       const stemTitle = sm && stems.some(st => sm.titleWords.has(st))
       const stemUrl = sm && stems.some(st => sm.urlWords.has(st))
-      if (stemHay || haystack.includes(t)) s += tuning.haystackWeight
-      if (stemTitle || title.includes(t)) s += tuning.titleWeight
-      if (stemUrl || url.includes(t)) s += tuning.urlWeight
+      const idf = tuning.idfWeightTokens ? (idfWeights.get(t) ?? 1) : 1
+      if (stemHay || haystack.includes(t)) s += tuning.haystackWeight * idf
+      if (stemTitle || title.includes(t)) s += tuning.titleWeight * idf
+      if (stemUrl || url.includes(t)) s += tuning.urlWeight * idf
     }
     // Exact / prefix title preference. Substring `includes` ranks the page
     // titled "Wallet" and one titled "How wallets work" identically for the

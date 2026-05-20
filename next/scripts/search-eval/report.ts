@@ -55,6 +55,7 @@ function variantMatrix(quick: boolean): Record<string, Tuning> {
     "tuned+hd@0.1": {...DEFAULT_TUNING, headingMatchWeight: 0.1},
     "tuned+hd@0.3": {...DEFAULT_TUNING, headingMatchWeight: 0.3},
     "tuned+tbm@1": {...DEFAULT_TUNING, titleBM25Weight: 1},
+    "tuned+idf": {...DEFAULT_TUNING, idfWeightTokens: true},
   }
 }
 
