@@ -114,6 +114,20 @@ export const {staticGET: GET} = createFromSource(visibleSource, {
       })
     }
 
+    // Frontmatter `description` — the short editor-curated summary that
+    // appears in nav cards and as the canonical SEO blurb. Promotes the
+    // page as a candidate for queries that paraphrase the description's
+    // verbs/nouns even when the body text uses different phrasing
+    // ("Run a validator node…" → matches query "running validator"). Stored
+    // as a separate content block (not merged into body) so its presence
+    // can be diagnosed via the same `#Description` URL-fragment trick used
+    // for `#Keywords`. Empty/missing → skipped (most pages have non-empty
+    // descriptions; the few empty ones just don't contribute this signal).
+    const desc = (page.data as {description?: unknown}).description
+    if (typeof desc === "string" && desc.trim().length > 0) {
+      contents.push({heading: "Description", content: desc.trim()})
+    }
+
     // Code symbols mined from raw MDX (see extractCodeSymbols). `getText` is
     // the fumadocs-mdx accessor; guard it so a page type without it degrades
     // gracefully to no code block rather than failing the whole index build.
