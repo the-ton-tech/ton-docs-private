@@ -4,47 +4,56 @@ Captured at the end of the LLM-augmented eval round. Concrete, sized,
 ordered by ROI / dependency. Things that need to happen first are at the
 top; speculative items toward the bottom.
 
-## 1. Finish what Opus 529 interrupted
+## 1. ~~Finish what Opus 529 interrupted~~ ✅ DONE
 
-**Phase 5 (graded gold slice) is partial:** 325 of 1050 ratings landed
-before Anthropic rate-limited Opus across our parallel agents. The
-orchestrator is fully resumable — re-running `prepare` rebuilds batches
-only for the missing tasks. Once 529s subside, finish:
+**Phase 5 is complete:** 1050/1050 Opus ratings landed across the full
+350-query stratified sample (50 queries × 7 intents). The waves-of-6
+dispatch pattern worked cleanly. 349 queries kept after α ≥ 0.5 gate
+(1 dropped); median α = 1.000, p10 = 0.964 — exceptional 3-session
+agreement.
 
-```bash
-# from next/, with out/api/search present
-npx tsx scripts/search-eval/orchestrate-opus-rank.ts            # rewrites only missing batches
-# then dispatch the remaining ~80 batches, model:opus, throttled
-npx tsx scripts/search-eval/orchestrate-opus-rank.ts --aggregate  # → gold-evalset.json
-```
+**Tuned vs baseline on n=349 (graded):**
 
-**Critical:** dispatch in waves of ≤6 in parallel, with a deliberate
-pause between waves (e.g. wait for a wave to complete before launching
-the next, rather than firing 25+ at once like the first attempt). The
-limiting factor is platform-level rate-limit, not Claude Max quota, so
-sequential throughput is fine; brute parallelism is what tripped it.
+| metric         | baseline | tuned   | Δ        | p       |
+| -------------- | -------- | ------- | -------- | ------- |
+| Hit@1 (binary) | 0.5014   | 0.5301  | +0.0287  |         |
+| MRR            | 0.5587   | 0.5846  | +0.0258  | 0.008 ▲ |
+| nDCG-graded@10 | 0.4982   | 0.5112  | +0.0129  | 0.102   |
+| ERR@10         | 0.4506   | 0.4656  | +0.0149  | 0.043 ▲ |
+| grade@1 mean   | 1.52     | 1.58    | +0.0630  | 0.030 ▲ |
 
-Target: full 350-query gold slice (50 per intent). After that lands, a
-**graded-objective sweep** (§3 below) becomes feasible.
+3 of 4 graded metrics significantly improved; nDCG_g is directional but
+not significant on n=349. The graded sweep (§3) is now feasible.
 
-If gold quality holds at α ≈ 1.0 on 350, consider scaling further to
-~3000 (one ranking per validated query × 3 sessions). At that size,
-per-intent significance becomes powered.
+**Optional further scaling:** if more headroom is wanted, scale to
+~3000 ratings (1 per validated query × 3 sessions across the full
+Sonnet-validated set). At that size, per-intent significance becomes
+powered. Not strictly necessary — 349 is enough to drive the next
+round of tuning.
 
 ## 2. Targeted fixes from Phase 7's per-intent diagnostic
 
-Gold-slice graded nDCG@10 by intent (DEFAULT_TUNING, n=112):
+Gold-slice graded nDCG@10 by intent (DEFAULT_TUNING, n=349 — full slice):
 
 | intent          | nDCG_g@10 | mean grade@1 |
 | --------------- | --------- | ------------ |
-| navigational    | 0.72      | 2.46         |
-| concept         | 0.49      | 1.52         |
-| troubleshooting | 0.49      | 1.50         |
-| **exact**       | **0.31**  | **1.00**     |
+| navigational    | 0.718     | 2.46         |
+| exact           | 0.542     | 1.56         |
+| troubleshooting | 0.517     | 1.61         |
+| typo            | 0.493     | 1.38         |
+| concept         | 0.476     | 1.46         |
+| **synonym**     | **0.424** | **1.30**     |
+| **identifier**  | **0.408** | **1.32**     |
 
-**`exact` is the biggest weak spot** and was invisible to binary Hit@1
-(0.65 on gold; misleading without grading). Hypotheses worth measuring
-on the held-out + gold:
+The partial-data analysis (n=112) flagged `exact` as the weak spot at
+0.31 — that finding was **noise from the small sample**. On the full
+349-query slice `exact` is at 0.542, mid-pack. The actual weak intents
+are **`synonym` (0.424)** and **`identifier` (0.408)**, both below 0.43.
+**`concept` regressed** vs baseline (-0.024) on the full slice — likely
+the BM25 blend overweighting term-density on broad conceptual queries;
+worth a targeted ablation.
+
+Hypotheses worth measuring on the held-out + gold:
 
 - **Stem-aware title bonus.** `runRankedSearch` re-rank does
   `title.includes(t)` with unstemmed tokens; the index is stemmed. For
@@ -69,15 +78,18 @@ on the held-out + gold:
 to the top-50 most-searched concept pages (any heuristic — page-view
 proxy: by-depth-in-nav, or by-incoming-internal-links).
 
-## 3. Graded-objective sweep (after Phase 5 scales)
+## 3. Graded-objective sweep (NOW unblocked — gold has 349 queries)
 
 `sweep.ts` currently optimizes the *binary* objective on `mined-train`.
-With ≥ 300 gold queries, add a sibling `sweep-graded.ts`:
+With 349 gold queries (median α 1.000) the graded sweep is now feasible —
+add a sibling `sweep-graded.ts`:
 
 - Page-stratified split of the gold slice into `gold-train` / `gold-test`.
 - Objective: `0.4 * nDCG_g@10 + 0.4 * Hit@1 + 0.2 * ERR@10`.
 - Same coordinate-ascent pattern; same guardrails (must not significantly
   regress curated, must significantly improve `gold-test`).
+- Consider per-intent reporting so `synonym` / `identifier` headroom is
+  attributable rather than averaged out.
 
 This is the highest-resolution tuning surface we'll have on this corpus.
 
@@ -231,19 +243,23 @@ Documented for the next maintainer who'll be tempted:
   worth it for natural-language coverage we can get from the
   Sonnet/keywords path.
 
-## 10. Order of operations (recommended)
+## 10. Order of operations (recommended, post-Phase-5)
 
-1. **Finish Phase 5** (throttled). Re-run `report-graded.ts`. Update
-   the gold-slice table in the README.
+1. ~~Finish Phase 5~~ ✅ done — full 349-query gold slice, α median 1.000.
 2. **`allowDuplicates: true` build experiment.** Single rebuild, all
    4 slices, both binary and graded. Either ship or document as
-   measured-negative.
-3. **Spot-check exact-intent gold labels** (1 hour). Quantify label
-   noise vs. genuine search misses.
-4. **One targeted exact-intent fix attempt** (stem-aware title bonus
-   probably). Measure on gold. Ship only if significant.
-5. **Graded sweep** once gold ≥ 300.
-6. **Plugin QPS / PT15 A/B**, if 1–4 leave headroom.
-7. **CI integration** — should happen alongside, not after.
-8. **Real user logs ingest** if and when available — supersedes much
+   measured-negative. **Now the highest-ROI untried lever.**
+3. **Spot-check synonym/identifier gold labels** (1 hour). The earlier
+   exact-intent hypothesis turned out to be partial-data noise; redo
+   on the new weak-spot intents.
+4. **One targeted synonym/identifier fix attempt**. Identifier headroom
+   suggests stem-aware title matching is still worth testing; synonym
+   headroom hints at keyword-frontmatter coverage gaps.
+5. **Investigate `concept` regression** (-0.024 vs baseline). Possible
+   BM25 over-weighting on broad conceptual queries; try `bm25Weight=2`
+   instead of 2.5 with paired test on gold + curated.
+6. **Graded sweep** (now feasible — see §3).
+7. **Plugin QPS / PT15 A/B**, if 2–5 leave headroom.
+8. **CI integration** — should happen alongside, not after.
+9. **Real user logs ingest** if and when available — supersedes much
    of the above.

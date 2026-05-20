@@ -138,7 +138,7 @@ catalog, a sub-agent pipeline produces three more artifacts:
 | Haiku generation   | Haiku 4.5    | `llm-candidates.jsonl` (4 649)      | 10 queries / page across 5 personas, 7 intents, 3 length buckets                      |
 | Sonnet validation  | Sonnet 4.6   | `llm-validated.jsonl` (4 231)       | per-category adversarial audit: drop / expand / correct / keep — 91% retention        |
 | Opus calibration   | Opus 4.7     | `opus-calibration-report.json`      | **GATE**: graded-rank 126 curated, measure top-1 agreement / recall@expect            |
-| Opus 3-session     | Opus 4.7 ×3  | `gold-evalset.json` (112 queries)   | graded relevance, median across sessions, Krippendorff α reported per query           |
+| Opus 3-session     | Opus 4.7 ×3  | `gold-evalset.json` (349 queries)   | graded relevance, median across sessions, Krippendorff α reported per query           |
 | Opus red-team      | Opus 4.7 ×3  | `hard-cases.json` (46)              | proposed failure queries, **empirically verified** against the pipeline; surviving 46 |
 
 Phase-4 calibration result on curated: **top-1 agreement 0.9762** (123/126
@@ -146,10 +146,9 @@ match the hand label as the highest-grade page), **recall@expect 0.9921**
 (125/126 have at least one expect URL graded ≥ 2), false-3 rate 0.024.
 Opus is a trustworthy graded judge on this corpus.
 
-Phase-5 gold slice (stratified Opus 3-session ranking): **Krippendorff α
-median 1.000**, p10 = 0.963, min = 0.823 — 75%+ of queries have perfect
-3-session agreement, 0 dropped for low α. Sample is 112 queries (partial
-of 350 planned; rate-limit gated, fully resumable).
+Phase-5 gold slice (stratified Opus 3-session ranking, full 350-query
+sample): **Krippendorff α median 1.000**, p10 = 0.964, max = 1.000 —
+3-session agreement is exceptional, 1 query dropped for low α (kept 349).
 
 ### Graded metrics on the gold slice
 
@@ -160,19 +159,24 @@ of 350 planned; rate-limit gated, fully resumable).
   satisfied at rank r)
 - **mean grade-at-rank-1** (out of 3 — "did we put the BEST page first?")
 
-| metric         | baseline | shipped tuned |
-| -------------- | -------- | ------------- |
-| Hit@1 (binary) | 0.634    | **0.652**     |
-| MRR            | 0.692    | **0.702**     |
-| nDCG-graded@10 | 0.593    | **0.586**     |
-| ERR@10         | 0.564    | **0.563**     |
-| grade@1 mean   | 1.90     | **1.92**      |
+| metric         | baseline | shipped tuned | Δ        | p      |
+| -------------- | -------- | ------------- | -------- | ------ |
+| Hit@1 (binary) | 0.5014   | **0.5301**    | +0.0287  |        |
+| MRR            | 0.5587   | **0.5846**    | +0.0258  | 0.008 ▲ |
+| nDCG-graded@10 | 0.4982   | **0.5112**    | +0.0129  | 0.102  |
+| ERR@10         | 0.4506   | **0.4656**    | +0.0149  | 0.043 ▲ |
+| grade@1 mean   | 1.52     | **1.58**      | +0.0630  | 0.030 ▲ |
 
-Direction is preserved (positive) but not significant on n=112 (p ≥ 0.55).
-**The diagnostic value is per-intent**: graded nDCG@10 reveals exact-intent
-queries average grade 1.0 at rank 1 — i.e. the pipeline finds an
-acceptable page but only the *partial* one, not the canonical. This is a
-documented future-work target the binary harness could never surface.
+3 of 4 graded metrics significantly improve on n=349 (paired permutation,
+10k iters). nDCG_g@10 is directionally positive (p=0.10) — the BM25 blend
+moves first-place outcomes more than it shifts the tail distribution.
+
+**Per-intent diagnostic (nDCG_g@10, tuned)**: navigational 0.718,
+exact 0.542, troubleshooting 0.517, concept 0.476, typo 0.493,
+synonym 0.424, identifier 0.408. The remaining headroom is on
+**synonym** and **identifier** intents (both <0.43) — `concept`
+unexpectedly regressed vs baseline on the full slice (-0.024), worth
+investigating as a future-work target.
 
 ### New pieces
 
