@@ -30,6 +30,7 @@
     "search:sweep": "tsx ./scripts/search-eval/sweep.ts",
     "search:mine": "tsx ./scripts/search-eval/mine-evalset.ts",
     "search:smoke": "tsx ./scripts/search-eval/smoke-test.ts",
+    "search:ci": "tsx ./scripts/search-eval/ci-check.ts",
     "search:report:graded": "tsx ./scripts/search-eval/report-graded.ts",
     "search:llm:haiku": "tsx ./scripts/search-eval/orchestrate-haiku.ts",
     "search:llm:sonnet": "tsx ./scripts/search-eval/orchestrate-sonnet.ts",

@@ -36,7 +36,22 @@ import {splitByTarget} from "./lib/split"
 import {BASELINE_TUNING, DEFAULT_TUNING, type Tuning} from "../../src/lib/search-core"
 
 function variantMatrix(quick: boolean): Record<string, Tuning> {
-  if (quick) return {baseline: BASELINE_TUNING, tuned: DEFAULT_TUNING}
+  if (quick) {
+    return {
+      baseline: BASELINE_TUNING,
+      tuned: DEFAULT_TUNING,
+      "tuned+stem": {...DEFAULT_TUNING, stemReRank: true},
+      "tuned+pinAS": {...DEFAULT_TUNING, pinAfterStopwords: true},
+      "tuned+stem+pinAS": {...DEFAULT_TUNING, stemReRank: true, pinAfterStopwords: true},
+      "tuned+sh3": {...DEFAULT_TUNING, structHitWeight: 3},
+      "tuned+all3": {
+        ...DEFAULT_TUNING,
+        stemReRank: true,
+        pinAfterStopwords: true,
+        structHitWeight: 3,
+      },
+    }
+  }
   return {
     baseline: BASELINE_TUNING,
     tuned: DEFAULT_TUNING,
@@ -49,6 +64,9 @@ function variantMatrix(quick: boolean): Record<string, Tuning> {
     "tuned+relB.9": {...DEFAULT_TUNING, relevance: {b: 0.9}},
     "tuned+exacttitle": {...DEFAULT_TUNING, exactTitleWeight: 3},
     "tuned+titleprefix": {...DEFAULT_TUNING, titlePrefixWeight: 2},
+    "tuned+stem": {...DEFAULT_TUNING, stemReRank: true},
+    "tuned+pinAS": {...DEFAULT_TUNING, pinAfterStopwords: true},
+    "tuned+stem+pinAS": {...DEFAULT_TUNING, stemReRank: true, pinAfterStopwords: true},
   }
 }
 

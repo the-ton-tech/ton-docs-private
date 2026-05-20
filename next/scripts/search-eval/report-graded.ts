@@ -48,6 +48,15 @@ async function main(): Promise<void> {
   const variants: Record<string, Tuning> = args.has("--vs-baseline")
     ? {baseline: BASELINE_TUNING, tuned: DEFAULT_TUNING}
     : {tuned: DEFAULT_TUNING}
+  if (args.has("--ablate")) {
+    variants["tuned+stem"] = {...DEFAULT_TUNING, stemReRank: true}
+    variants["tuned+pinAS"] = {...DEFAULT_TUNING, pinAfterStopwords: true}
+    variants["tuned+stem+pinAS"] = {
+      ...DEFAULT_TUNING,
+      stemReRank: true,
+      pinAfterStopwords: true,
+    }
+  }
 
   const results: Record<string, Aggr> = {}
   const fullResults: Record<string, Awaited<ReturnType<typeof evaluateGraded>>> = {}

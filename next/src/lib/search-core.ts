@@ -1,5 +1,28 @@
 import {create, getByID, search, type AnyOrama} from "@orama/orama"
+import {tokenizer as oramaTokenizer} from "@orama/orama/components"
 import type {SortedResult} from "fumadocs-core/search"
+
+/**
+ * Shared Orama English tokenizer used to *stem* re-rank inputs so the score
+ * function compares query/title in the same stem space the index uses (e.g.
+ * "validating" → "valid", "wallets" → "wallet"). Without this, a query like
+ * "validating" misses a title "Validation" on the substring `includes` check
+ * even though the Orama pass hits it via the stemmed inverted index. Lazy
+ * + memoized so the cost is paid once per process (browser or Node harness),
+ * not per query. Awaited once at the top of `runRankedSearch`.
+ */
+let stemTokenizerPromise: Promise<{tokenize: (s: string) => Promise<string[]> | string[]}> | undefined
+function getStemTokenizer(): Promise<{tokenize: (s: string) => Promise<string[]> | string[]}> {
+  return (stemTokenizerPromise ??= Promise.resolve(
+    oramaTokenizer.createTokenizer({language: "english", stemming: true}),
+  ) as Promise<{tokenize: (s: string) => Promise<string[]> | string[]}>)
+}
+
+async function stemString(s: string): Promise<string[]> {
+  const tk = await getStemTokenizer()
+  const out = await tk.tokenize(s)
+  return Array.isArray(out) ? out : [String(out)]
+}
 
 /**
  * Empty Orama instance with the query-time tokenizer. `load()` overwrites
@@ -16,7 +39,7 @@ export function createClientDB(): AnyOrama {
   return create({
     schema: {_: "string"},
     sort: {enabled: false},
-    components: {tokenizer: {language: "english", stemming: true}},
+    components: {tokenizer: {language: "english", stemming: true, allowDuplicates: true}},
   })
 }
 
@@ -122,6 +145,15 @@ export const DEFAULT_SPELL: Record<string, string> = {
   toncentre: "toncenter",
   blueprnt: "blueprint",
   blueprit: "blueprint",
+  // hard-cases.json typo_beyond_2: edit distance > 1 typos Orama's
+  // tolerance:1 second pass can't reach. All three appear in real user
+  // failure traces; corrections are unambiguous.
+  valdiator: "validator",
+  valdator: "validator",
+  dictinary: "dictionary",
+  dictionry: "dictionary",
+  concensus: "consensus",
+  consensous: "consensus",
 }
 
 export interface Tuning {
@@ -185,6 +217,27 @@ export interface Tuning {
    */
   exactTitleWeight: number
   titlePrefixWeight: number
+  /**
+   * Use stemmed tokens against stemmed title/haystack/url when computing
+   * title/haystack/url presence bonuses and the exact-title preference.
+   * The index is built with English stemming, but the re-rank historically
+   * did a raw `title.includes(t)` on unstemmed query tokens, so a query for
+   * "validating" missed a title "Validation" on the substring check even
+   * though the Orama pass surfaced the page via the stemmed inverted index
+   * (the substring fails because the stems aren't substrings of one another).
+   * Stemming both sides lets the re-rank reward the same morphological
+   * matches Orama already counted. true = stem-aware; false = legacy.
+   */
+  stemReRank: boolean
+  /**
+   * Also try the post-stopword "term" as a pin key, not just the raw
+   * normalized query. Without this, a concept query like "what is a wallet"
+   * misses the "wallet" pin even though after stopword stripping the term
+   * IS "wallet" — DEFAULT_STOPWORDS strips what/is/a, so the pin lookup
+   * (which keys off the *raw* normalized form) never sees it. true = also
+   * check term; false = legacy raw-normalized only.
+   */
+  pinAfterStopwords: boolean
 }
 
 /**
@@ -220,6 +273,20 @@ export const DEFAULT_TUNING: Tuning = {
   relevance: undefined,
   exactTitleWeight: 3,
   titlePrefixWeight: 0,
+  // stemReRank: small Hit@1 lift on the graded gold slice but a held-out
+  // mined-test MRR regression of ~0.009 (p≈0.05) driven by precision loss on
+  // synonym/typo intents — the corpus has many morphology-collision pages
+  // (test/tests/testing/tester all stem to "test") that the stricter
+  // word-equality match cannot disambiguate. Lever stays in the harness for
+  // future re-evaluation (esp. on a graded slice ≥ 300) but ships off.
+  stemReRank: false,
+  // pinAfterStopwords: zero regressions on all 3 binary slices, +0.007
+  // graded-nDCG@10 on the gold slice with +0.027 grade@1 lift on concept
+  // intent. Fires only when a curated pin key matches the post-stopword
+  // token join (e.g. "what is a wallet" → "wallet" → /wallets/how-it-works),
+  // which is exactly the natural-language framing the raw-normalized pin
+  // lookup was missing. Ship on by default.
+  pinAfterStopwords: true,
 }
 
 /**
@@ -247,6 +314,8 @@ export const BASELINE_TUNING: Tuning = {
   relevance: undefined,
   exactTitleWeight: 0,
   titlePrefixWeight: 0,
+  stemReRank: false,
+  pinAfterStopwords: false,
 }
 
 export function normalizeQuery(query: string): string {
@@ -268,6 +337,16 @@ export function meaningfulTokens(query: string, stopwords: Set<string>): string[
 // Grouped Orama results DO expose a numeric per-hit `score` (verified against
 // the real fumadocs static index: each `group.result[]` element is
 // `{id, score, document}`); the legacy pipeline simply never read it.
+//
+// First-seen, not max-across-passes: the "merge max" alternative is
+// theoretically cleaner (the min-max normalization downstream would compare
+// scores from comparable passes), but measured ΔMRR ≈ -0.005 on mined-test
+// because the tolerance-1 fuzzy pass occasionally gives an irrelevant
+// near-miss page a higher BM25 than its exact-match neighbors and that
+// score then outranks the true target. The first-seen tie-break is
+// effectively a "trust the exact pass over fuzzy" rule, which the corpus
+// rewards. Keep this comment in sync with the FUTURE-WORK §9 "not worth"
+// list if the alternative is re-considered.
 type Grouped = {page: IndexedDoc; hits: IndexedDoc[]; bm25: number}
 
 function collectGroups(
@@ -317,6 +396,27 @@ async function twoPassGroups(
 function containsAllTokens(text: string, tokens: string[]): boolean {
   for (const t of tokens) if (!text.includes(t)) return false
   return true
+}
+
+/**
+ * Heuristic for "looks like a code symbol, not prose/keyword". Duplicated
+ * (without sharing the module) from app/api/search/route.ts because the index
+ * builder is a Node-only route handler that pulls fumadocs-mdx; importing it
+ * from this browser-loadable file would force that whole graph into the
+ * client bundle. Keep these two predicates in sync — they answer the same
+ * question (index side: "should I keep this raw code token as searchable?";
+ * query side: "should I let a #Code symbols row earn the structHit bonus?").
+ */
+function querySymbolLike(t: string): boolean {
+  if (t.length < 2 || t.length > 40) return false
+  if (/^\d+$/.test(t)) return false
+  return (
+    t.includes("_") ||
+    t.includes("::") ||
+    /[a-z][A-Z]/.test(t) ||
+    /^[A-Z][A-Z0-9]{1,}$/.test(t) ||
+    /[a-zA-Z]\d|\d[a-zA-Z]/.test(t)
+  )
 }
 
 /**
@@ -376,10 +476,12 @@ export async function runRankedSearch(
   // Spelling correction: if any token has a curated correction, union a second
   // pass on the corrected query and let the corrected tokens participate in
   // re-ranking. Additive only — never drops the original matches.
+  let correctedTerm: string | undefined
   if (Object.keys(tuning.spell).length > 0) {
     const corrected = tokens.map(t => tuning.spell[t] ?? t)
     if (corrected.some((t, i) => t !== tokens[i])) {
-      const extra = await twoPassGroups(db, corrected.join(" "), tuning.relevance)
+      correctedTerm = corrected.join(" ")
+      const extra = await twoPassGroups(db, correctedTerm, tuning.relevance)
       for (const [k, v] of extra) if (!groups.has(k)) groups.set(k, v)
       tokens = Array.from(new Set([...tokens, ...corrected]))
     }
@@ -392,21 +494,76 @@ export async function runRankedSearch(
   for (const g of groups.values()) if (g.bm25 > maxBm25) maxBm25 = g.bm25
   const queryNorm = tokens.join(" ")
 
+  // Stem-aware re-rank: pre-compute stemmed token list + per-page stemmed
+  // title / haystack / url word sets. Without this, the score function does
+  // raw `title.includes("validating")` against a title "Validation" and
+  // misses — even though Orama's index hit it via the shared stem ("valid").
+  // We use word-equality on stems (not substring) so a title "Tokenomics"
+  // doesn't spuriously absorb a "token" query (`includes` did).
+  type StemEntry = {
+    titleWords: Set<string>
+    haystackWords: Set<string>
+    urlWords: Set<string>
+    titleStr: string
+  }
+  let stemmedTokens: string[] = []
+  let stemmedQueryStr = ""
+  const stemCache = new Map<string, StemEntry>()
+  if (tuning.stemReRank) {
+    stemmedTokens = await stemString(tokens.join(" "))
+    stemmedQueryStr = stemmedTokens.join(" ")
+    await Promise.all(
+      [...groups.entries()].map(async ([pageId, g]) => {
+        const t = (g.page.content ?? "").toLowerCase()
+        const bc = (g.page.breadcrumbs ?? []).join(" ").toLowerCase()
+        // Split URL on slashes / hyphens / underscores so the stemmer sees real
+        // words, not a single slug-soup token.
+        const u = g.page.url.toLowerCase().replace(/[/\-_#]+/g, " ").trim()
+        const [tw, hw, uw] = await Promise.all([
+          stemString(t),
+          stemString(`${t} ${bc} ${u}`),
+          stemString(u),
+        ])
+        stemCache.set(pageId, {
+          titleWords: new Set(tw),
+          haystackWords: new Set(hw),
+          urlWords: new Set(uw),
+          titleStr: tw.join(" "),
+        })
+      }),
+    )
+  }
+
+  const symbolTokens = tokens.filter(querySymbolLike)
+
   const score = ({page, hits, bm25}: Grouped): number => {
     const title = (page.content ?? "").toLowerCase()
     const haystack = `${title} ${(page.breadcrumbs ?? []).join(" ")} ${page.url}`.toLowerCase()
     const url = page.url.toLowerCase()
+    const sm = tuning.stemReRank ? stemCache.get(String(page.id)) : undefined
     let s = 0
-    for (const t of tokens) {
-      if (haystack.includes(t)) s += tuning.haystackWeight
-      if (title.includes(t)) s += tuning.titleWeight
-      if (url.includes(t)) s += tuning.urlWeight
+    // Each surface (haystack/title/url) earns at most one bonus per token.
+    // Stem-aware match wins; raw `includes` is the fallback so the lever can't
+    // strictly regress recall on tokens the stemmer drops (single chars,
+    // pure numerics) or doesn't normalize.
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i]
+      const st = sm ? stemmedTokens[i] : ""
+      if ((sm && st && sm.haystackWords.has(st)) || haystack.includes(t)) s += tuning.haystackWeight
+      if ((sm && st && sm.titleWords.has(st)) || title.includes(t)) s += tuning.titleWeight
+      if ((sm && st && sm.urlWords.has(st)) || url.includes(t)) s += tuning.urlWeight
     }
     // Exact / prefix title preference. Substring `includes` ranks the page
     // titled "Wallet" and one titled "How wallets work" identically for the
     // query "wallet"; these bounded bonuses restore the canonical-title
-    // preference users expect for navigational / exact intents.
-    if (tuning.exactTitleWeight > 0 && title.trim() === queryNorm) {
+    // preference users expect for navigational / exact intents. Under stem
+    // mode, the comparison also fires when the stemmed forms align (e.g.
+    // page "Tokens" / query "token", both stem to "token") so morphology
+    // doesn't void the canonical-title preference.
+    const titleTrim = title.trim()
+    const titleExact =
+      titleTrim === queryNorm || (sm && sm.titleStr.length > 0 && sm.titleStr === stemmedQueryStr)
+    if (tuning.exactTitleWeight > 0 && titleExact) {
       s += tuning.exactTitleWeight
     } else if (
       tuning.titlePrefixWeight > 0 &&
@@ -424,13 +581,17 @@ export async function runRankedSearch(
       s += tuning.bm25Weight * (bm25 / maxBm25)
     }
     if (tuning.structHitWeight > 0) {
-      // Only the hand-curated `#Keywords` rows — NOT the 343 auto-mined
-      // `#Code symbols` rows, which are too noisy for natural-language
-      // queries (measured: rewarding them wrecked concept intent and hit@1).
-      // Code symbols still aid recall/candidacy via Orama; they just don't
-      // earn a re-rank bonus.
+      // Hand-curated `#Keywords` rows always count. `#Code symbols` rows only
+      // count when at least one query token IS itself a symbol-like token (per
+      // the same predicate the indexer uses to mine them) — that gate kills
+      // the over-firing on natural-language queries (e.g. "wallet", "how to
+      // deploy") that wrecked concept intent in the unconditional ablation.
       const curated = hits
-        .filter(h => h.url.endsWith("#Keywords"))
+        .filter(
+          h =>
+            h.url.endsWith("#Keywords") ||
+            (symbolTokens.length > 0 && h.url.endsWith("#Code symbols")),
+        )
         .map(h => (h.content ?? "").toLowerCase())
         .join(" ")
       if (curated) {
@@ -470,13 +631,29 @@ export async function runRankedSearch(
   // curated navigational query, move its canonical page to the very top
   // (insert if the crawl missed it). Checking the corrected form lets a
   // misspelled brand query like "jeton" still resolve to its landing page.
+  // pinAfterStopwords ALSO tries the post-stopword token join (and its
+  // corrected variant), so a natural-language concept query like "what is a
+  // wallet" → term "wallet" → hits the `wallet` pin. Without this, the user's
+  // framing words (which the stopword list correctly strips for ranking) also
+  // void the pin lookup (which keys off the raw normalized query).
   const pinKeys = [normalized]
-  if (Object.keys(tuning.spell).length > 0) {
-    const corrected = normalized
+  const spellOf = (s: string): string =>
+    s
       .split(" ")
       .map(w => tuning.spell[w] ?? w)
       .join(" ")
+  if (Object.keys(tuning.spell).length > 0) {
+    const corrected = spellOf(normalized)
     if (corrected !== normalized) pinKeys.push(corrected)
+  }
+  if (tuning.pinAfterStopwords && term && term !== normalized) {
+    pinKeys.push(term)
+    if (Object.keys(tuning.spell).length > 0) {
+      const correctedTerm2 = spellOf(term)
+      if (correctedTerm2 !== term && !pinKeys.includes(correctedTerm2)) {
+        pinKeys.push(correctedTerm2)
+      }
+    }
   }
   let pinnedUrl: string | undefined
   for (const k of pinKeys) {

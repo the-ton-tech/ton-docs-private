@@ -85,7 +85,14 @@ export const {staticGET: GET} = createFromSource(visibleSource, {
   // custom tokenizer (NO_LANGUAGE_WITH_CUSTOM_TOKENIZER). This MUST stay in
   // sync with the query-time tokenizer in lib/search-core.ts, or stemmed
   // query terms miss the index and recall silently collapses.
-  components: {tokenizer: {language: "english", stemming: true}},
+  //
+  // allowDuplicates:true restores real BM25 term-frequency (Orama's tokenizer
+  // dedupes per field by default → tf capped at 1, flattening tf·idf to just
+  // idf). Now that the BM25 blend is active (`bm25Weight=2.5` in
+  // DEFAULT_TUNING), true tf is what `bm25/maxBm25` is supposed to be
+  // ranging over. Must match the query-time tokenizer config in
+  // lib/search-core.ts.
+  components: {tokenizer: {language: "english", stemming: true, allowDuplicates: true}},
   async buildIndex(page) {
     const sd = await resolveStructuredData(page.data)
     const contents = sd.contents.map(c =>

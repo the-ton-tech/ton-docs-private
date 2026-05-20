@@ -1,0 +1,82 @@
+name: Search relevance eval
+
+on:
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "next/src/lib/search-core.ts"
+      - "next/src/app/api/search/route.ts"
+      - "next/scripts/search-eval/**"
+      - "next/content/docs/**"
+      - ".github/workflows/search-eval.yml"
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "next/src/lib/search-core.ts"
+      - "next/src/app/api/search/route.ts"
+      - "next/scripts/search-eval/**"
+      - "next/content/docs/**"
+      - ".github/workflows/search-eval.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  search-eval:
+    name: Curated relevance gate
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      HUSKY: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: next/package-lock.json
+
+      - name: Install dependencies
+        working-directory: next
+        run: npm ci
+
+      - name: Generate Fumadocs source
+        working-directory: next
+        run: npm run generated-source
+
+      # Phase-1 infra check: no LLM, no built index. Verifies the harness
+      # itself loads and parses the corpus cleanly. Cheap; runs first so
+      # broken refactors fail fast before the expensive build.
+      - name: Search harness smoke
+        working-directory: next
+        run: npm run search:smoke
+
+      - name: Next build (produces out/api/search)
+        working-directory: next
+        run: npm run build
+
+      # The relevance gate: shipped DEFAULT_TUNING on the 126 curated queries
+      # must clear the documented floor. See scripts/search-eval/ci-check.ts
+      # for thresholds and the "what to do when it fails" runbook.
+      - name: Curated relevance gate
+        working-directory: next
+        run: npm run search:ci
+
+      # Legacy ablation runner — byte-comparable historical output that
+      # surfaces incidental ranking shifts. Non-fatal: prints the diff but
+      # doesn't fail CI; the ci-check above is the hard gate.
+      - name: Full ablation report (non-fatal diagnostic)
+        working-directory: next
+        run: npm run search:eval
+        continue-on-error: true
