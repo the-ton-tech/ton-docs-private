@@ -100,17 +100,23 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Pull latest server code on VPS
-        # `git pull` keeps server.mjs / search-core.mjs / package*.json in sync
-        # with what was just built from. If package-lock changed, reinstall.
-        # All other times it's a no-op fast-forward.
+        # Pull the SAME branch that triggered this run so what we just
+        # built in CI matches what runs on the VPS. `${{ github.ref_name }}`
+        # is the short branch name (main / orama-backend / ...); GitHub
+        # expands it at YAML render time, before the heredoc is shipped to
+        # the remote shell. If the orama-server lockfile drifted, reinstall
+        # node_modules so the new server.mjs starts against fresh deps.
         run: |
           ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
             "${REMOTE_USER}@${REMOTE_HOST}" bash -se <<'REMOTE'
           set -euo pipefail
+          BRANCH='${{ github.ref_name }}'
           cd /root/ton-docs-private
-          git fetch --quiet origin main
-          git reset --hard origin/main
-          # If orama-server deps moved, reinstall before the new server.mjs runs.
+          git fetch --quiet origin "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+          # Reinstall orama-server deps only if package-lock changed — the
+          # diff returns non-zero both for "files differ" and "either side
+          # missing", so a fresh checkout triggers a clean install too.
           if ! diff -q orama-server/package-lock.json orama-server/node_modules/.package-lock.json >/dev/null 2>&1 ; then
             echo "orama-server deps changed — reinstalling"
             (cd orama-server && npm ci --omit=dev --no-audit --no-fund)
