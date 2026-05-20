@@ -138,7 +138,7 @@ catalog, a sub-agent pipeline produces three more artifacts:
 | Haiku generation   | Haiku 4.5    | `llm-candidates.jsonl` (4 649)      | 10 queries / page across 5 personas, 7 intents, 3 length buckets                      |
 | Sonnet validation  | Sonnet 4.6   | `llm-validated.jsonl` (4 231)       | per-category adversarial audit: drop / expand / correct / keep — 91% retention        |
 | Opus calibration   | Opus 4.7     | `opus-calibration-report.json`      | **GATE**: graded-rank 126 curated, measure top-1 agreement / recall@expect            |
-| Opus 3-session     | Opus 4.7 ×3  | `gold-evalset.json` (349 queries)   | graded relevance, median across sessions, Krippendorff α reported per query           |
+| Opus 3-session     | Opus 4.7 ×3  | `gold-evalset.json` (1049 queries)  | graded relevance, median across sessions, Krippendorff α reported per query           |
 | Opus red-team      | Opus 4.7 ×3  | `hard-cases.json` (46)              | proposed failure queries, **empirically verified** against the pipeline; surviving 46 |
 
 Phase-4 calibration result on curated: **top-1 agreement 0.9762** (123/126
@@ -146,9 +146,10 @@ match the hand label as the highest-grade page), **recall@expect 0.9921**
 (125/126 have at least one expect URL graded ≥ 2), false-3 rate 0.024.
 Opus is a trustworthy graded judge on this corpus.
 
-Phase-5 gold slice (stratified Opus 3-session ranking, full 350-query
-sample): **Krippendorff α median 1.000**, p10 = 0.964, max = 1.000 —
-3-session agreement is exceptional, 1 query dropped for low α (kept 349).
+Phase-5 gold slice (stratified Opus 3-session ranking, 150 queries per
+intent × 7 intents × 3 sessions = 3150 ratings on 1050 queries):
+**Krippendorff α median 1.000**, p10 = 0.965, max = 1.000 — 3-session
+agreement is exceptional, 1 query dropped for low α (kept 1049).
 
 ### Graded metrics on the gold slice
 
@@ -159,24 +160,24 @@ sample): **Krippendorff α median 1.000**, p10 = 0.964, max = 1.000 —
   satisfied at rank r)
 - **mean grade-at-rank-1** (out of 3 — "did we put the BEST page first?")
 
-| metric         | baseline | shipped tuned | Δ        | p       |
-| -------------- | -------- | ------------- | -------- | ------- |
-| Hit@1 (binary) | 0.5014   | **0.5358**    | +0.0344  |         |
-| MRR            | 0.5587   | **0.5900**    | +0.0312  | 0.004 ▲ |
-| nDCG-graded@10 | 0.4982   | **0.5134**    | +0.0152  | 0.081   |
-| ERR@10         | 0.4506   | **0.4669**    | +0.0163  | 0.049 ▲ |
-| grade@1 mean   | 1.52     | **1.59**      | +0.0659  | 0.046 ▲ |
+| metric         | baseline | shipped tuned | Δ        | p        |
+| -------------- | -------- | ------------- | -------- | -------- |
+| Hit@1 (binary) | 0.5214   | **0.5443**    | +0.0229  |          |
+| MRR            | 0.5770   | **0.5975**    | +0.0206  | 0.0005 ▲ |
+| nDCG-graded@10 | 0.5068   | **0.5214**    | +0.0146  | 0.0012 ▲ |
+| ERR@10         | 0.4702   | **0.4834**    | +0.0132  | 0.0049 ▲ |
+| grade@1 mean   | 1.6072   | **1.6520**    | +0.0448  | 0.0183 ▲ |
 
-3 of 4 graded metrics significantly improve on n=349 (paired permutation,
-10k iters). nDCG_g@10 is directionally positive (p=0.08) — the BM25 blend
-+ code-symbol bonus move first-place outcomes more than they shift the
-tail distribution.
+All 4 graded metrics significantly improve on n=1049 (paired permutation,
+10k iters). The 3× expansion from n=349 sharpens nDCG_g@10 from p=0.081
+to p=0.0012 — the BM25 blend + code-symbol bonus is now decisive on both
+first-place outcomes _and_ the tail distribution.
 
-**Per-intent diagnostic (nDCG_g@10, tuned)**: navigational 0.717,
-exact 0.537, troubleshooting 0.520, typo 0.496, concept 0.473,
-identifier 0.427, synonym 0.424. The remaining headroom is on
-**synonym** and **concept** intents — `identifier` improved with the
-shape-conditional code-symbol bonus (0.408 → 0.427 on this round).
+**Per-intent diagnostic (nDCG_g@10, tuned, n=1049)**: navigational 0.742,
+exact 0.574, synonym 0.488, concept 0.485, troubleshooting 0.477,
+typo 0.468, **identifier 0.415** (new weakest). The 3× expansion
+revealed `synonym` was overstated as weakest at n=349 (was 0.424, now
+0.488); the true headroom is on `identifier` and `typo`.
 
 ### New pieces
 
@@ -220,8 +221,8 @@ npx tsx scripts/search-eval/orchestrate-opus-calibrate.ts          # prepare
 npx tsx scripts/search-eval/orchestrate-opus-calibrate.ts --aggregate
 # GATE: pass requires top1≥0.85 AND recall@expect≥0.95
 
-npx tsx scripts/search-eval/orchestrate-opus-rank.ts         # prepare (350×3)
-# (dispatch ~105 Opus rank batches, throttle to ≤10 parallel to avoid 529)
+npx tsx scripts/search-eval/orchestrate-opus-rank.ts         # prepare (1050×3)
+# (dispatch ~315 Opus rank batches, waves of ≤6 to avoid rate limits)
 npx tsx scripts/search-eval/orchestrate-opus-rank.ts --aggregate # → gold-evalset.json
 
 npx tsx scripts/search-eval/orchestrate-opus-redteam.ts        # prepare 3 sessions

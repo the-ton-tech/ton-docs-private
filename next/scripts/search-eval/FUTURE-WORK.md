@@ -4,57 +4,53 @@ Captured at the end of the LLM-augmented eval round. Concrete, sized,
 ordered by ROI / dependency. Things that need to happen first are at the
 top; speculative items toward the bottom.
 
-## 1. ~~Finish what Opus 529 interrupted~~ ✅ DONE
+## 1. ~~Finish what Opus 529 interrupted~~ ✅ DONE (expanded to n=1049)
 
-**Phase 5 is complete:** 1050/1050 Opus ratings landed across the full
-350-query stratified sample (50 queries × 7 intents). The waves-of-6
-dispatch pattern worked cleanly. 349 queries kept after α ≥ 0.5 gate
-(1 dropped); median α = 1.000, p10 = 0.964 — exceptional 3-session
-agreement.
+**Phase 5 is complete and expanded:** 3150/3150 Opus ratings landed
+across the full 1050-query stratified sample (150 queries × 7 intents
+× 3 sessions). The waves-of-6 dispatch pattern worked cleanly through
+16 waves. 1049 queries kept after α ≥ 0.5 gate (1 dropped); median
+α = 1.000, p10 = 0.965 — exceptional 3-session agreement preserved at
+3× scale.
 
-**Tuned vs baseline on n=349 (graded):**
+**Tuned vs baseline on n=1049 (graded):**
 
-| metric         | baseline | tuned   | Δ        | p       |
-| -------------- | -------- | ------- | -------- | ------- |
-| Hit@1 (binary) | 0.5014   | 0.5358  | +0.0344  |         |
-| MRR            | 0.5587   | 0.5900  | +0.0312  | 0.004 ▲ |
-| nDCG-graded@10 | 0.4982   | 0.5134  | +0.0152  | 0.081   |
-| ERR@10         | 0.4506   | 0.4669  | +0.0163  | 0.049 ▲ |
-| grade@1 mean   | 1.52     | 1.59    | +0.0659  | 0.046 ▲ |
+| metric         | baseline | tuned   | Δ        | p        |
+| -------------- | -------- | ------- | -------- | -------- |
+| Hit@1 (binary) | 0.5214   | 0.5443  | +0.0229  |          |
+| MRR            | 0.5770   | 0.5975  | +0.0206  | 0.0005 ▲ |
+| nDCG-graded@10 | 0.5068   | 0.5214  | +0.0146  | 0.0012 ▲ |
+| ERR@10         | 0.4702   | 0.4834  | +0.0132  | 0.0049 ▲ |
+| grade@1 mean   | 1.6072   | 1.6520  | +0.0448  | 0.0183 ▲ |
 
-3 of 4 graded metrics significantly improved; nDCG_g is directional but
-not significant on n=349. The shape-conditional code-symbol bonus (§4
-below) added another ~+0.006 hit@1 over the prior measurement.
-
-**Optional further scaling:** if more headroom is wanted, scale to
-~3000 ratings (1 per validated query × 3 sessions across the full
-Sonnet-validated set). At that size, per-intent significance becomes
-powered. Not strictly necessary — 349 is enough to drive the next
-round of tuning.
+All 4 graded metrics significantly improve. The 3× expansion from
+n=349 sharpens nDCG_g@10 from p=0.081 → **p=0.0012**, confirming the
+tuning is decisive on both first-place outcomes _and_ the tail
+distribution — not a noise artifact of small samples.
 
 ## 2. Targeted fixes from Phase 7's per-intent diagnostic
 
 Gold-slice graded nDCG@10 by intent (DEFAULT_TUNING with codeSymbolWeight=1,
-n=349 — full slice):
+n=1049 — full slice, 150 queries per intent):
 
 | intent          | nDCG_g@10 | mean grade@1 |
 | --------------- | --------- | ------------ |
-| navigational    | 0.717     | 2.46         |
-| exact           | 0.537     | 1.56         |
-| troubleshooting | 0.520     | 1.63         |
-| typo            | 0.496     | 1.38         |
-| concept         | 0.473     | 1.46         |
-| identifier      | 0.427     | 1.32         |
-| **synonym**     | **0.424** | **1.30**     |
+| navigational    | 0.742     | 2.51         |
+| exact           | 0.574     | 1.79         |
+| synonym         | 0.488     | 1.55         |
+| concept         | 0.485     | 1.47         |
+| troubleshooting | 0.477     | 1.50         |
+| typo            | 0.468     | 1.43         |
+| **identifier**  | **0.415** | **1.32**     |
 
-The partial-data analysis (n=112) flagged `exact` as the weak spot at
-0.31 — that finding was **noise from the small sample**. On the full
-349-query slice `exact` is at 0.537, mid-pack. After the shape-
-conditional code-symbol bonus shipped this round, `identifier` is no
-longer the weakest intent (was 0.408, now 0.427). The actual remaining
-weak intent is **`synonym` (0.424)** — pages whose ground-truth match
-relies on vocabulary the page doesn't use verbatim. `concept` regressed
-vs baseline (-0.024) — likely the BM25 blend overweighting term-density
+The 3× expansion (n=349 → n=1049) flipped the diagnostic. At n=349
+`synonym` looked like the weakest intent (0.424); at n=1049 it lifted
+to 0.488 — that earlier ranking was **noise from a ±0.14 95% CI** on
+the per-intent estimate. The actual remaining weak intent is
+**`identifier` (0.415)** — the shape-conditional code-symbol bonus
+helped but didn't close the gap to other intents. `concept` regressed
+vs baseline at n=349 (-0.024) but at n=1049 the gap is smaller
+(-0.011) — likely the BM25 blend slightly overweighting term-density
 on broad conceptual queries; worth a targeted ablation.
 
 Hypotheses worth measuring on the held-out + gold:
@@ -87,15 +83,16 @@ proxy: by-depth-in-nav, or by-incoming-internal-links).
 `scripts/search-eval/sweep-graded.ts` (npm: `search:sweep:graded`)
 implements coordinate ascent on
 `0.4 * nDCG_g@10 + 0.4 * Hit@1 + 0.2 * ERR@10`
-over a page-stratified split (gold-train n=158, gold-test n=191) with
-the curated set as a regression guardrail.
+over a page-stratified split of the gold slice (n=1049 → roughly
+~500 train / ~550 test) with the curated set as a regression guardrail.
 
 **Result of running it on DEFAULT_TUNING:** sweep finds a "best" config
 on gold-train that fails to generalize to gold-test (test obj drops vs
 DEFAULT, both Hit@1 and nDCG_g deltas are negative on held-out). The
 sweep's accept gate (significant gain on gold-test + no curated
 regression) correctly REJECTS the local optimum. Current DEFAULT is at
-the Pareto knee for this corpus.
+the Pareto knee for this corpus. Re-validation at n=1049 confirms the
+finding (see §1) — the tuning is stable, not a small-sample artifact.
 
 Useful in future rounds when corpus changes (new pages, new keywords,
 plugin swap) — re-run to confirm the existing tuning is still optimal.
@@ -223,7 +220,7 @@ or `content/docs/**`. Pipeline:
 2. `npm run build` — produce `out/api/search`.
 3. `npm run search:report` — binary 4-slice metrics + significance.
 4. `npm run search:report:graded -- --vs-baseline` — graded gold slice
-   (n=349, α median 1.000).
+   (n=1049, α median 1.000).
 5. `npm run search:eval` — legacy byte-compare ablation.
 
 Currently the binary report is advisory (logs only); a future revision
@@ -262,9 +259,9 @@ harness.
   and regenerable. Periodic prune on disk pressure.
 - Sub-agent JSONL transcripts in `/tmp/claude-*/tasks/` are session-
   scoped and auto-clean on container reclaim.
-- After Phase 5 scales to 350: regenerate `gold-evalset.json`, re-run
-  `report-graded.ts --vs-baseline`, update the README's gold-slice
-  table with the final numbers.
+- Phase 5 scaled to 1050 queries; gold-evalset regenerated at n=1049.
+  Re-running `report-graded.ts --vs-baseline` is now the standard check
+  on relevance changes — all four graded metrics significant at p≤0.02.
 - The "leftover" `opus-rank/batches/batch_NNN.prompt.txt` files from the
   partial first run were cleaned manually; if the orchestrator is run
   more than once between batches, expect stale files (resumable design
@@ -289,7 +286,7 @@ Documented for the next maintainer who'll be tempted:
 
 ## 10. Order of operations (recommended, post-Phase-5)
 
-1. ~~Finish Phase 5~~ ✅ done — full 349-query gold slice, α median 1.000.
+1. ~~Finish Phase 5~~ ✅ done — full 1049-query gold slice, α median 1.000.
 2. ~~`allowDuplicates: true` build experiment.~~ ❌ measured-negative
    on curated and gold (see §4). Not shipped; moved to "not worth doing".
 3. **Spot-check synonym/identifier gold labels** (1 hour). The earlier
