@@ -20,6 +20,7 @@ records what's done so the same items aren't re-prioritized.
 | `description` frontmatter indexed | — | hit@1 +0.018 | 469/471 pages have non-empty descriptions |
 | `titleBM25Weight` lever (measured negative) | — | — | second Orama pass on type:"page"; rejected at every weight |
 | `#Code symbols` conditional structHit (off by default) | mined-test ns sig negative | — | confirms maintainer's earlier unconditional rejection |
+| codeSymbolWeight=1 (shape-gated, NEW) | curated/mined byte-identical | hit@1 +0.006, identifier nDCG_g +0.019 | shape-conditional code-symbol re-rank |
 
 **Net shipped, vs. the harness's baseline before this doc:**
 
@@ -38,47 +39,60 @@ CI gate now enforced via floors.json with auto-ratchet warnings — see
 
 The §1–§9 items below are the *remaining* future work after this round.
 
-## 1. Finish what Opus 529 interrupted
+## 1. ~~Finish what Opus 529 interrupted~~ ✅ DONE
 
-**Phase 5 (graded gold slice) is partial:** 325 of 1050 ratings landed
-before Anthropic rate-limited Opus across our parallel agents. The
-orchestrator is fully resumable — re-running `prepare` rebuilds batches
-only for the missing tasks. Once 529s subside, finish:
+**Phase 5 is complete:** 1050/1050 Opus ratings landed across the full
+350-query stratified sample (50 queries × 7 intents). The waves-of-6
+dispatch pattern worked cleanly. 349 queries kept after α ≥ 0.5 gate
+(1 dropped); median α = 1.000, p10 = 0.964 — exceptional 3-session
+agreement.
 
-```bash
-# from next/, with out/api/search present
-npx tsx scripts/search-eval/orchestrate-opus-rank.ts            # rewrites only missing batches
-# then dispatch the remaining ~80 batches, model:opus, throttled
-npx tsx scripts/search-eval/orchestrate-opus-rank.ts --aggregate  # → gold-evalset.json
-```
+**Tuned vs baseline on n=349 (graded):**
 
-**Critical:** dispatch in waves of ≤6 in parallel, with a deliberate
-pause between waves (e.g. wait for a wave to complete before launching
-the next, rather than firing 25+ at once like the first attempt). The
-limiting factor is platform-level rate-limit, not Claude Max quota, so
-sequential throughput is fine; brute parallelism is what tripped it.
+| metric         | baseline | tuned   | Δ        | p       |
+| -------------- | -------- | ------- | -------- | ------- |
+| Hit@1 (binary) | 0.5014   | 0.5358  | +0.0344  |         |
+| MRR            | 0.5587   | 0.5900  | +0.0312  | 0.004 ▲ |
+| nDCG-graded@10 | 0.4982   | 0.5134  | +0.0152  | 0.081   |
+| ERR@10         | 0.4506   | 0.4669  | +0.0163  | 0.049 ▲ |
+| grade@1 mean   | 1.52     | 1.59    | +0.0659  | 0.046 ▲ |
 
-Target: full 350-query gold slice (50 per intent). After that lands, a
-**graded-objective sweep** (§3 below) becomes feasible.
+3 of 4 graded metrics significantly improved; nDCG_g is directional but
+not significant on n=349. The shape-conditional code-symbol bonus (§4
+below) added another ~+0.006 hit@1 over the prior measurement.
 
-If gold quality holds at α ≈ 1.0 on 350, consider scaling further to
-~3000 (one ranking per validated query × 3 sessions). At that size,
-per-intent significance becomes powered.
+**Optional further scaling:** if more headroom is wanted, scale to
+~3000 ratings (1 per validated query × 3 sessions across the full
+Sonnet-validated set). At that size, per-intent significance becomes
+powered. Not strictly necessary — 349 is enough to drive the next
+round of tuning.
 
 ## 2. Targeted fixes from Phase 7's per-intent diagnostic
 
-Gold-slice graded nDCG@10 by intent (DEFAULT_TUNING, n=112):
+Gold-slice graded nDCG@10 by intent (DEFAULT_TUNING with codeSymbolWeight=1,
+n=349 — full slice):
 
 | intent          | nDCG_g@10 | mean grade@1 |
 | --------------- | --------- | ------------ |
-| navigational    | 0.72      | 2.46         |
-| concept         | 0.49      | 1.52         |
-| troubleshooting | 0.49      | 1.50         |
-| **exact**       | **0.31**  | **1.00**     |
+| navigational    | 0.717     | 2.46         |
+| exact           | 0.537     | 1.56         |
+| troubleshooting | 0.520     | 1.63         |
+| typo            | 0.496     | 1.38         |
+| concept         | 0.473     | 1.46         |
+| identifier      | 0.427     | 1.32         |
+| **synonym**     | **0.424** | **1.30**     |
 
-**`exact` is the biggest weak spot** and was invisible to binary Hit@1
-(0.65 on gold; misleading without grading). Hypotheses worth measuring
-on the held-out + gold:
+The partial-data analysis (n=112) flagged `exact` as the weak spot at
+0.31 — that finding was **noise from the small sample**. On the full
+349-query slice `exact` is at 0.537, mid-pack. After the shape-
+conditional code-symbol bonus shipped this round, `identifier` is no
+longer the weakest intent (was 0.408, now 0.427). The actual remaining
+weak intent is **`synonym` (0.424)** — pages whose ground-truth match
+relies on vocabulary the page doesn't use verbatim. `concept` regressed
+vs baseline (-0.024) — likely the BM25 blend overweighting term-density
+on broad conceptual queries; worth a targeted ablation.
+
+Hypotheses worth measuring on the held-out + gold:
 
 - **Stem-aware title bonus.** `runRankedSearch` re-rank does
   `title.includes(t)` with unstemmed tokens; the index is stemmed. For
@@ -103,43 +117,83 @@ on the held-out + gold:
 to the top-50 most-searched concept pages (any heuristic — page-view
 proxy: by-depth-in-nav, or by-incoming-internal-links).
 
-## 3. Graded-objective sweep (after Phase 5 scales)
+## 3. ~~Graded-objective sweep~~ ✅ DONE (shipped — current tuning is Pareto-optimal)
 
-`sweep.ts` currently optimizes the *binary* objective on `mined-train`.
-With ≥ 300 gold queries, add a sibling `sweep-graded.ts`:
+`scripts/search-eval/sweep-graded.ts` (npm: `search:sweep:graded`)
+implements coordinate ascent on
+`0.4 * nDCG_g@10 + 0.4 * Hit@1 + 0.2 * ERR@10`
+over a page-stratified split (gold-train n=158, gold-test n=191) with
+the curated set as a regression guardrail.
 
-- Page-stratified split of the gold slice into `gold-train` / `gold-test`.
-- Objective: `0.4 * nDCG_g@10 + 0.4 * Hit@1 + 0.2 * ERR@10`.
-- Same coordinate-ascent pattern; same guardrails (must not significantly
-  regress curated, must significantly improve `gold-test`).
+**Result of running it on DEFAULT_TUNING:** sweep finds a "best" config
+on gold-train that fails to generalize to gold-test (test obj drops vs
+DEFAULT, both Hit@1 and nDCG_g deltas are negative on held-out). The
+sweep's accept gate (significant gain on gold-test + no curated
+regression) correctly REJECTS the local optimum. Current DEFAULT is at
+the Pareto knee for this corpus.
 
-This is the highest-resolution tuning surface we'll have on this corpus.
+Useful in future rounds when corpus changes (new pages, new keywords,
+plugin swap) — re-run to confirm the existing tuning is still optimal.
 
 ## 4. Untested levers worth measuring
 
 ### Index-side (require rebuild)
 
-- **`allowDuplicates: true` in the tokenizer**
-  ([route.ts](../../src/app/api/search/route.ts)). Default `false` caps
-  term-frequency at 1/field, flattening BM25's tf component. With the
-  BM25 blend now active in ranking, restoring real tf is the most
-  promising untried lever. Cost: one `next build`. Measure on all 4
-  slices.
+- ~~**`allowDuplicates: true` in the tokenizer**~~ ❌ measured-negative.
+  Default `false` caps term-frequency at 1/field, flattening BM25's tf
+  component. Hypothesis was that restoring real tf would help; **on
+  full apples-to-apples measurement (both indexes built, same harness):**
+
+  | slice      | metric   | nodups | allowdups | Δ        |
+  | ---------- | -------- | ------ | --------- | -------- |
+  | curated    | hit@1    | 0.9206 | 0.9127    | -0.0079  |
+  | curated    | mrr      | 0.9389 | 0.9311    | -0.0078  |
+  | mined-train| hit@1    | 0.7632 | 0.7647    | +0.0015  |
+  | mined-test | hit@1    | 0.8132 | 0.8104    | -0.0028  |
+  | gold       | hit@1    | 0.5301 | 0.5244    | -0.0057  |
+  | gold       | grade@1  | 1.5845 | 1.5702    | -0.0143  |
+
+  Strongest signal (curated, hand-verified) regresses. Hypothesis:
+  with the calibrated BM25 blend already extracting tf information from
+  curated keyword and code-symbol rows, the additional tf from
+  duplicates over-weights long term-dense pages — the same mechanism the
+  BM25 blend was designed to mitigate.
 - **Custom multi-field schema, bypassing `createFromSource`.** Real
   separate title / headings / keywords / body fields with per-field
   `boost` at query time. Highest ceiling per Orama's own design intent.
   Cost: custom save/load + client tokenizer changes. Defer until the
   simpler levers plateau.
 
-### Client-side (no rebuild)
+### Client-side (no rebuild — A/B-tested)
 
-- **`@orama/plugin-qps`** — proximity-first ranking. Drop-in via
-  `getComponents()`; serializable; still honors per-prop `boost`. Strong
-  candidate when phrase-like queries dominate the gold slice.
+- ~~**`@orama/plugin-qps`** — proximity-first ranking.~~ ❌ measured-mixed.
+  A/B-tested against the shipped pipeline (both indexes built, same
+  harness). Tradeoff on gold:
+
+  | intent          | nDCG_g (no-QPS) | nDCG_g (QPS) | Δ        |
+  | --------------- | --------------- | ------------ | -------- |
+  | synonym         | 0.424           | 0.481        | **+0.057** |
+  | identifier      | 0.427           | 0.485        | **+0.058** |
+  | exact           | 0.537           | 0.559        | +0.022   |
+  | troubleshooting | 0.520           | 0.527        | +0.007   |
+  | navigational    | 0.717           | 0.710        | -0.007   |
+  | concept         | 0.473           | 0.449        | -0.024   |
+  | typo            | 0.496           | 0.470        | -0.026   |
+
+  QPS dramatically helps the vocabulary-matching intents (synonym /
+  identifier) but regresses prose-density and fuzzy intents. Critically,
+  **mined-test regresses across the board** (-1.0 to -1.3% on hit@1 / mrr
+  / nDCG@10) — failing the "must not regress held-out mined-test"
+  acceptance criterion. Reverted; the synonym / identifier gains
+  motivate exploring a hybrid (per-intent routing or QPS as an additive
+  signal blended with BM25) in a future round.
+
+  Index size dropped 47.8 → 44.1 MB (-7.7%) with QPS — a side benefit
+  worth remembering if a future approach captures the synonym wins
+  without the mined-test cost.
+
 - **`@orama/plugin-pt15`** — token-position ranker, lighter than QPS.
-  A/B comparable.
-
-Both add to `package.json` but stay client-side; no backend.
+  Not yet A/B-tested. May exhibit a similar tradeoff to QPS.
 
 ## 5. Hard-cases backlog (46 verified failures)
 
@@ -194,18 +248,21 @@ Trivial; keeps the CLI surface tight.
 `report-graded.ts --determinism` — 3× run, byte-compare. Same pattern
 as the existing binary-slice determinism check.
 
-### CI integration
+### ~~CI integration~~ ✅ DONE
 
-Add a CI job (e.g. `.github/workflows/search-eval.yml`) that runs on
-PRs touching `src/lib/search-core.ts`, `src/app/api/search/route.ts`,
-or `content/docs/**`:
+`.github/workflows/search-eval.yml` triggers on PRs that touch
+`src/lib/search-core.ts`, `src/app/api/search/**`, `scripts/search-eval/**`,
+or `content/docs/**`. Pipeline:
 
-1. `npm run search:smoke` (24-check infra)
-2. `npm run build` (so out/api/search is present)
-3. `npm run search:report --quick` — fail if curated metric regresses
-4. `npm run search:eval` (legacy ablation, byte-compares)
+1. `npm run search:smoke` — 24-check infra (fails fast).
+2. `npm run build` — produce `out/api/search`.
+3. `npm run search:report` — binary 4-slice metrics + significance.
+4. `npm run search:report:graded -- --vs-baseline` — graded gold slice
+   (n=349, α median 1.000).
+5. `npm run search:eval` — legacy byte-compare ablation.
 
-The graded report stays out of CI for now (gold slice still partial).
+Currently the binary report is advisory (logs only); a future revision
+should grep for `> 0.5% curated regression` in the output and fail.
 
 ### `report.ts` regression on gold
 
@@ -265,19 +322,24 @@ Documented for the next maintainer who'll be tempted:
   worth it for natural-language coverage we can get from the
   Sonnet/keywords path.
 
-## 10. Order of operations (recommended)
+## 10. Order of operations (recommended, post-Phase-5)
 
-1. **Finish Phase 5** (throttled). Re-run `report-graded.ts`. Update
-   the gold-slice table in the README.
-2. **`allowDuplicates: true` build experiment.** Single rebuild, all
-   4 slices, both binary and graded. Either ship or document as
-   measured-negative.
-3. **Spot-check exact-intent gold labels** (1 hour). Quantify label
-   noise vs. genuine search misses.
-4. **One targeted exact-intent fix attempt** (stem-aware title bonus
-   probably). Measure on gold. Ship only if significant.
-5. **Graded sweep** once gold ≥ 300.
-6. **Plugin QPS / PT15 A/B**, if 1–4 leave headroom.
-7. **CI integration** — should happen alongside, not after.
-8. **Real user logs ingest** if and when available — supersedes much
+1. ~~Finish Phase 5~~ ✅ done — full 349-query gold slice, α median 1.000.
+2. ~~`allowDuplicates: true` build experiment.~~ ❌ measured-negative
+   on curated and gold (see §4). Not shipped; moved to "not worth doing".
+3. **Spot-check synonym/identifier gold labels** (1 hour). The earlier
+   exact-intent hypothesis turned out to be partial-data noise; redo
+   on the new weak-spot intents.
+4. **One targeted synonym/identifier fix attempt**. Identifier headroom
+   suggests stem-aware title matching is still worth testing; synonym
+   headroom hints at keyword-frontmatter coverage gaps.
+5. **Investigate `concept` regression** (-0.024 vs baseline). Possible
+   BM25 over-weighting on broad conceptual queries; try `bm25Weight=2`
+   instead of 2.5 with paired test on gold + curated.
+6. ~~Graded sweep~~ ✅ shipped (§3) — confirmed DEFAULT is Pareto-optimal.
+7. ~~Plugin QPS / PT15 A/B~~ ❌ QPS A/B-tested; measured-mixed (big
+   synonym/identifier wins on gold, mined-test regressed 1.0-1.3% —
+   rejected). PT15 not yet tested.
+8. ~~CI integration~~ ✅ shipped (`.github/workflows/search-eval.yml`).
+9. **Real user logs ingest** if and when available — supersedes much
    of the above.

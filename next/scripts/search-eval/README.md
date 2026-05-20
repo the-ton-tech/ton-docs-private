@@ -156,7 +156,7 @@ catalog, a sub-agent pipeline produces three more artifacts:
 | Haiku generation   | Haiku 4.5    | `llm-candidates.jsonl` (4 649)      | 10 queries / page across 5 personas, 7 intents, 3 length buckets                      |
 | Sonnet validation  | Sonnet 4.6   | `llm-validated.jsonl` (4 231)       | per-category adversarial audit: drop / expand / correct / keep — 91% retention        |
 | Opus calibration   | Opus 4.7     | `opus-calibration-report.json`      | **GATE**: graded-rank 126 curated, measure top-1 agreement / recall@expect            |
-| Opus 3-session     | Opus 4.7 ×3  | `gold-evalset.json` (112 queries)   | graded relevance, median across sessions, Krippendorff α reported per query           |
+| Opus 3-session     | Opus 4.7 ×3  | `gold-evalset.json` (349 queries)   | graded relevance, median across sessions, Krippendorff α reported per query           |
 | Opus red-team      | Opus 4.7 ×3  | `hard-cases.json` (46)              | proposed failure queries, **empirically verified** against the pipeline; surviving 46 |
 
 Phase-4 calibration result on curated: **top-1 agreement 0.9762** (123/126
@@ -164,10 +164,9 @@ match the hand label as the highest-grade page), **recall@expect 0.9921**
 (125/126 have at least one expect URL graded ≥ 2), false-3 rate 0.024.
 Opus is a trustworthy graded judge on this corpus.
 
-Phase-5 gold slice (stratified Opus 3-session ranking): **Krippendorff α
-median 1.000**, p10 = 0.963, min = 0.823 — 75%+ of queries have perfect
-3-session agreement, 0 dropped for low α. Sample is 112 queries (partial
-of 350 planned; rate-limit gated, fully resumable).
+Phase-5 gold slice (stratified Opus 3-session ranking, full 350-query
+sample): **Krippendorff α median 1.000**, p10 = 0.964, max = 1.000 —
+3-session agreement is exceptional, 1 query dropped for low α (kept 349).
 
 ### Graded metrics on the gold slice
 
@@ -178,22 +177,30 @@ of 350 planned; rate-limit gated, fully resumable).
   satisfied at rank r)
 - **mean grade-at-rank-1** (out of 3 — "did we put the BEST page first?")
 
-Initial Phase-7 graded numbers (commit 5a28287, before the headingMatch /
-keywords / queryNorm-fix rounds) — direction positive but not
-significant on n=112 (p ≥ 0.55), exact-intent grade@1 mean stuck at 1.0:
+Initial Phase-7 graded numbers (commit 5a28287, n=112) were directionally
+positive but not significant. Subsequent rounds (headingMatchWeight,
+allowDuplicates, description indexing, +keywords, spell additions,
+queryNorm fix, shape-conditional code-symbol bonus) plus scaling the gold
+slice to n=349 turned the direction into a significant move:
 
-| metric         | baseline | shipped @ 5a28287 |
-| -------------- | -------- | ----------------- |
-| Hit@1 (binary) | 0.634    | 0.652             |
-| MRR            | 0.692    | 0.702             |
-| nDCG-graded@10 | 0.593    | 0.586             |
-| ERR@10         | 0.564    | 0.563             |
-| grade@1 mean   | 1.90     | 1.92              |
+| metric         | baseline | shipped tuned | Δ        | p       |
+| -------------- | -------- | ------------- | -------- | ------- |
+| Hit@1 (binary) | 0.5014   | **0.5358**    | +0.0344  |         |
+| MRR            | 0.5587   | **0.5900**    | +0.0312  | 0.004 ▲ |
+| nDCG-graded@10 | 0.4982   | **0.5134**    | +0.0152  | 0.081   |
+| ERR@10         | 0.4506   | **0.4669**    | +0.0163  | 0.049 ▲ |
+| grade@1 mean   | 1.52     | **1.59**      | +0.0659  | 0.046 ▲ |
 
-Subsequent rounds (headingMatchWeight, allowDuplicates, description
-indexing, +keywords, spell additions, queryNorm fix) turned the
-direction into a significant move — see top-of-doc "Validated result"
-table for current shipped numbers.
+3 of 4 graded metrics significantly improve on n=349 (paired permutation,
+10k iters). nDCG_g@10 is directionally positive (p=0.08) — the BM25 blend
++ code-symbol bonus move first-place outcomes more than they shift the
+tail distribution.
+
+**Per-intent diagnostic (nDCG_g@10, tuned)**: navigational 0.717,
+exact 0.537, troubleshooting 0.520, typo 0.496, concept 0.473,
+identifier 0.427, synonym 0.424. The remaining headroom is on
+**synonym** and **concept** intents — `identifier` improved with the
+shape-conditional code-symbol bonus (0.408 → 0.427 on this round).
 
 ### New pieces
 

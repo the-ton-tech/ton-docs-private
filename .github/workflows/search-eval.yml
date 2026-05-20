@@ -1,11 +1,16 @@
 name: Search relevance eval
 
+# Runs the offline relevance harness on PRs that touch the search pipeline or
+# the docs content (which both change what gets indexed / how it ranks). The
+# build step is required because the harness scores the same static index the
+# browser would load — there is no live server.
+
 on:
   pull_request:
     branches: ["**"]
     paths:
       - "next/src/lib/search-core.ts"
-      - "next/src/app/api/search/route.ts"
+      - "next/src/app/api/search/**"
       - "next/scripts/search-eval/**"
       - "next/content/docs/**"
       - ".github/workflows/search-eval.yml"
@@ -13,7 +18,7 @@ on:
     branches: ["main", "master"]
     paths:
       - "next/src/lib/search-core.ts"
-      - "next/src/app/api/search/route.ts"
+      - "next/src/app/api/search/**"
       - "next/scripts/search-eval/**"
       - "next/content/docs/**"
       - ".github/workflows/search-eval.yml"
@@ -55,13 +60,16 @@ jobs:
         working-directory: next
         run: npm run generated-source
 
-      # Phase-1 infra check: no LLM, no built index. Verifies the harness
-      # itself loads and parses the corpus cleanly. Cheap; runs first so
-      # broken refactors fail fast before the expensive build.
+      # Phase-1 harness check (24 assertions): index loads, BM25 blend
+      # active, deterministic ranking. Cheap and runs without the full build,
+      # so we fail fast here if the harness itself is broken.
       - name: Search harness smoke
         working-directory: next
         run: npm run search:smoke
 
+      # `npm run build` writes out/api/search — the same Orama dump the
+      # browser fetches. The harness scores from this file directly, so the
+      # build cost is unavoidable.
       - name: Next build (produces out/api/search)
         working-directory: next
         run: npm run build
@@ -75,3 +83,25 @@ jobs:
       - name: Relevance gate
         working-directory: next
         run: npm run search:ci
+
+      # Binary 4-slice report: curated (126 hand queries), mined-train (663),
+      # mined-test (712). Includes paired-permutation significance vs the
+      # shipped DEFAULT_TUNING. Advisory — full ablation output is in the
+      # job logs.
+      - name: Binary slice report
+        working-directory: next
+        run: npm run search:report
+
+      # Graded report (Opus 349-query gold slice, α median 1.000). The
+      # highest-signal measurement we have. Reports tuned vs baseline on
+      # graded nDCG@10 / ERR@10 / grade-at-rank-1 plus per-intent breakdown.
+      - name: Graded slice report
+        working-directory: next
+        run: npm run search:report:graded -- --vs-baseline
+
+      # Legacy byte-compare ablation. Confirms levers behave deterministically
+      # (bm25Weight=0 = exact pre-blend behavior, etc.). Fails the job if
+      # determinism is broken.
+      - name: Legacy ablation
+        working-directory: next
+        run: npm run search:eval

@@ -1,13 +1,13 @@
 {
   "sampled": 350,
   "sessions_expected": 1050,
-  "sessions_parsed": 325,
-  "queries_with_any_rating": 112,
-  "queries_kept": 112,
-  "queries_dropped_low_alpha": 0,
+  "sessions_parsed": 1050,
+  "queries_with_any_rating": 350,
+  "queries_kept": 349,
+  "queries_dropped_low_alpha": 1,
   "alpha_distribution": {
-    "min": 0.8232044198895028,
-    "p10": 0.9633217993079585,
+    "min": 0.2558139534883721,
+    "p10": 0.9644859813084112,
     "median": 1,
     "p90": 1,
     "max": 1

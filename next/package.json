@@ -28,6 +28,7 @@
     "search:eval": "tsx ./scripts/search-eval/run.ts",
     "search:report": "tsx ./scripts/search-eval/report.ts",
     "search:sweep": "tsx ./scripts/search-eval/sweep.ts",
+    "search:sweep:graded": "tsx ./scripts/search-eval/sweep-graded.ts",
     "search:mine": "tsx ./scripts/search-eval/mine-evalset.ts",
     "search:smoke": "tsx ./scripts/search-eval/smoke-test.ts",
     "search:ci": "tsx ./scripts/search-eval/ci-check.ts",
