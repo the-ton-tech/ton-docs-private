@@ -125,3 +125,107 @@ nDCG@10 (mined-test) baseline→shipped: concept 0.58→**0.77**, synonym
 Residual 2 curated fails are code-only-symbol cases (`OP_SENDMSG`,
 `loadUint`). Accepted — chasing them risks the overfitting this harness
 exists to prevent, now quantified by the held-out slice.
+
+## LLM-augmented harness (Phases 2–7)
+
+The 126-curated + 1375-mined slices measure binary relevance. To add
+**realistic phrasing**, **multi-target** ground truth, **graded** relevance
+(distinguishes perfect vs. acceptable), and a **diagnostic** failure
+catalog, a sub-agent pipeline produces three more artifacts:
+
+| stage              | model        | output                              | role                                                                                  |
+| ------------------ | ------------ | ----------------------------------- | ------------------------------------------------------------------------------------- |
+| Haiku generation   | Haiku 4.5    | `llm-candidates.jsonl` (4 649)      | 10 queries / page across 5 personas, 7 intents, 3 length buckets                      |
+| Sonnet validation  | Sonnet 4.6   | `llm-validated.jsonl` (4 231)       | per-category adversarial audit: drop / expand / correct / keep — 91% retention        |
+| Opus calibration   | Opus 4.7     | `opus-calibration-report.json`      | **GATE**: graded-rank 126 curated, measure top-1 agreement / recall@expect            |
+| Opus 3-session     | Opus 4.7 ×3  | `gold-evalset.json` (112 queries)   | graded relevance, median across sessions, Krippendorff α reported per query           |
+| Opus red-team      | Opus 4.7 ×3  | `hard-cases.json` (46)              | proposed failure queries, **empirically verified** against the pipeline; surviving 46 |
+
+Phase-4 calibration result on curated: **top-1 agreement 0.9762** (123/126
+match the hand label as the highest-grade page), **recall@expect 0.9921**
+(125/126 have at least one expect URL graded ≥ 2), false-3 rate 0.024.
+Opus is a trustworthy graded judge on this corpus.
+
+Phase-5 gold slice (stratified Opus 3-session ranking): **Krippendorff α
+median 1.000**, p10 = 0.963, min = 0.823 — 75%+ of queries have perfect
+3-session agreement, 0 dropped for low α. Sample is 112 queries (partial
+of 350 planned; rate-limit gated, fully resumable).
+
+### Graded metrics on the gold slice
+
+`report-graded.ts` adds:
+
+- **graded nDCG@10** with Burges gain `2^g − 1` (g ∈ {0,1,2,3})
+- **ERR@10** (Chapelle et al. cascade model: probability the user stops
+  satisfied at rank r)
+- **mean grade-at-rank-1** (out of 3 — "did we put the BEST page first?")
+
+| metric         | baseline | shipped tuned |
+| -------------- | -------- | ------------- |
+| Hit@1 (binary) | 0.634    | **0.652**     |
+| MRR            | 0.692    | **0.702**     |
+| nDCG-graded@10 | 0.593    | **0.586**     |
+| ERR@10         | 0.564    | **0.563**     |
+| grade@1 mean   | 1.90     | **1.92**      |
+
+Direction is preserved (positive) but not significant on n=112 (p ≥ 0.55).
+**The diagnostic value is per-intent**: graded nDCG@10 reveals exact-intent
+queries average grade 1.0 at rank 1 — i.e. the pipeline finds an
+acceptable page but only the *partial* one, not the canonical. This is a
+documented future-work target the binary harness could never surface.
+
+### New pieces
+
+- `lib/personas.ts` — 5 user personas (novice/expert/non_native/
+  troubleshooter/explorer) for Haiku prompt diversity.
+- `lib/llm-prompts.ts` — byte-stable prompt builders for every phase
+  (Haiku gen, Sonnet validation, Opus graded-rank, Opus red-team).
+- `lib/llm-types.ts` + `lib/llm-validate.ts` — zod schemas + tolerant
+  parser for sub-agent outputs.
+- `lib/llm-aggregate.ts` — per-phase directory scanners producing the
+  final consolidated artifacts.
+- `lib/pages.ts` — shared corpus loader (URL = `/` + path under
+  `content/docs/` sans `.mdx`; verified mapping).
+- `orchestrate-haiku.ts` / `orchestrate-sonnet.ts` /
+  `orchestrate-opus-calibrate.ts` / `orchestrate-opus-rank.ts` /
+  `orchestrate-opus-redteam.ts` — task-manifest builders + aggregators
+  (all resumable: skip outputs that already exist).
+- `report-graded.ts` — Phase-7 graded-metric report on the gold slice.
+- `smoke-test.ts` — Phase-1 infrastructure verifier (24 checks; no LLM).
+
+### Run the LLM pipeline
+
+The sub-agents are launched via the Agent tool from the orchestrator
+session (no `ANTHROPIC_API_KEY` needed — uses the Claude Max plan).
+Each phase writes its task-manifest, the orchestrator dispatches
+sub-agents that Read source files and Write the JSON outputs, then the
+aggregator builds the final artifact:
+
+```bash
+# from next/, requires out/api/search and content/docs/
+npx tsx scripts/search-eval/orchestrate-haiku.ts             # prepare batches
+# (dispatch ~48 Haiku batches via Agent tool, model:haiku)
+npx tsx scripts/search-eval/orchestrate-haiku.ts --aggregate # → llm-candidates.jsonl
+
+npx tsx scripts/search-eval/orchestrate-sonnet.ts            # prepare batches
+# (dispatch ~65 Sonnet batches via Agent tool, model:sonnet)
+npx tsx scripts/search-eval/orchestrate-sonnet.ts --aggregate # → llm-validated.jsonl
+
+npx tsx scripts/search-eval/orchestrate-opus-calibrate.ts          # prepare
+# (dispatch 13 Opus calibration batches, model:opus)
+npx tsx scripts/search-eval/orchestrate-opus-calibrate.ts --aggregate
+# GATE: pass requires top1≥0.85 AND recall@expect≥0.95
+
+npx tsx scripts/search-eval/orchestrate-opus-rank.ts         # prepare (350×3)
+# (dispatch ~105 Opus rank batches, throttle to ≤10 parallel to avoid 529)
+npx tsx scripts/search-eval/orchestrate-opus-rank.ts --aggregate # → gold-evalset.json
+
+npx tsx scripts/search-eval/orchestrate-opus-redteam.ts        # prepare 3 sessions
+# (dispatch 3 Opus red-team sub-agents)
+npx tsx scripts/search-eval/orchestrate-opus-redteam.ts --aggregate # → hard-cases.json
+# (each proposed failure is run through runRankedSearch — only true failures
+# survive, dropping Opus mispredictions)
+
+# Final graded report:
+npx tsx scripts/search-eval/report-graded.ts --vs-baseline
+```
