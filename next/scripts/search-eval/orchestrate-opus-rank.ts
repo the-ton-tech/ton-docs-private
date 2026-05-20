@@ -44,7 +44,7 @@ const INDEX_PATH = resolve(process.cwd(), process.env.INDEX ?? "out/api/search")
 const GOLD_OUT = resolve(HERE, "gold-evalset.json")
 const REPORT_OUT = resolve(HERE, "gold-rank-report.json")
 
-const TARGET_PER_INTENT = 50
+const TARGET_PER_INTENT = 150
 const SESSIONS = [1, 2, 3] as const
 const BATCH_SIZE = 10
 const TASK_SEPARATOR = "\n\n===== TASK BOUNDARY (read & execute each in order) =====\n\n"
