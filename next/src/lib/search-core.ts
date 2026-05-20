@@ -519,7 +519,22 @@ export async function runRankedSearch(
   // (not per-group) — `score()` reads `maxBm25` from this closure.
   let maxBm25 = 0
   for (const g of groups.values()) if (g.bm25 > maxBm25) maxBm25 = g.bm25
-  const queryNorm = tokens.join(" ")
+  // `queryNorm` is the user's meaningful query as TYPED — NOT the
+  // post-spell-correction expansion. Used downstream for exact-title and
+  // heading-phrase comparisons. The earlier code defined this as
+  // `tokens.join(" ")` AFTER the spell-correction expansion, which broke
+  // exact-title matching on misspelled queries (the comparison became
+  // e.g. `"jetton" === "jeton jetton"` → never fires). `correctedQueryNorm`
+  // is the spell-corrected variant for the same comparisons — so a page
+  // titled "Jetton" matches a user's "jeton" via the corrected form.
+  const queryNorm = term
+  const correctedQueryNorm =
+    Object.keys(tuning.spell).length > 0
+      ? term
+          .split(" ")
+          .map(w => tuning.spell[w] ?? w)
+          .join(" ")
+      : term
 
   // Title-only BM25: optional second Orama pass restricted to `type:"page"`
   // rows (content = title). Returns per-page Orama relevance of the title
@@ -635,14 +650,22 @@ export async function runRankedSearch(
     // page "Tokens" / query "token", both stem to "token") so morphology
     // doesn't void the canonical-title preference.
     const titleTrim = title.trim()
+    // Exact-title also fires on the spell-corrected query form: a user
+    // typing "jeton" (which → "jetton" via spell) on a page titled
+    // "Jetton" SHOULD earn the exact-title bonus. `queryNorm` is the
+    // original typed term (NOT the expanded post-spell token union), and
+    // we fall back to the corrected form here so spell correction
+    // doesn't accidentally void the bonus it's supposed to enable.
     const titleExact =
-      titleTrim === queryNorm || (sm && sm.titleStr.length > 0 && sm.titleStr === stemmedQueryStr)
+      titleTrim === queryNorm ||
+      titleTrim === correctedQueryNorm ||
+      (sm && sm.titleStr.length > 0 && sm.titleStr === stemmedQueryStr)
     if (tuning.exactTitleWeight > 0 && titleExact) {
       s += tuning.exactTitleWeight
     } else if (
       tuning.titlePrefixWeight > 0 &&
       queryNorm.length > 0 &&
-      title.startsWith(queryNorm)
+      (title.startsWith(queryNorm) || title.startsWith(correctedQueryNorm))
     ) {
       s += tuning.titlePrefixWeight
     }
@@ -693,7 +716,13 @@ export async function runRankedSearch(
         let phraseHit = false
         for (const h of headings) {
           const ht = (h.content ?? "").toLowerCase()
-          if (!phraseHit && queryNorm.length > 0 && ht.includes(queryNorm)) phraseHit = true
+          if (
+            !phraseHit &&
+            queryNorm.length > 0 &&
+            (ht.includes(queryNorm) || ht.includes(correctedQueryNorm))
+          ) {
+            phraseHit = true
+          }
           for (const t of tokens) if (ht.includes(t)) perTokenMatches++
         }
         s += tuning.headingMatchWeight * perTokenMatches
