@@ -9,7 +9,7 @@
       "cov10": 0.97
     },
     "slack": 0.008,
-    "commit": "21dfa6f",
+    "commit": "78f1942",
     "date": "2026-05-20",
     "last_observed": {
       "hit1": 0.9286,
@@ -26,26 +26,26 @@
       "ndcg10": 0.86
     },
     "slack": 0.01,
-    "commit": "21dfa6f",
+    "commit": "78f1942",
     "date": "2026-05-20",
     "last_observed": {
-      "hit1": 0.8315,
-      "mrr": 0.8564,
-      "ndcg10": 0.8687
+      "hit1": 0.8301,
+      "mrr": 0.8553,
+      "ndcg10": 0.8679
     }
   },
   "gold": {
     "n": 112,
     "floors": {
-      "hit1": 0.66,
-      "ndcgGraded10": 0.59
+      "hit1": 0.72,
+      "ndcgGraded10": 0.63
     },
     "slack": 0.02,
-    "commit": "21dfa6f",
+    "commit": "78f1942",
     "date": "2026-05-20",
     "last_observed": {
-      "hit1": 0.6875,
-      "ndcgGraded10": 0.6018
+      "hit1": 0.75,
+      "ndcgGraded10": 0.6574
     }
   }
 }
