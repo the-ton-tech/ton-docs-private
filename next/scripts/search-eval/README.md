@@ -77,34 +77,52 @@ fumadocs index is produced by the webpack build.
 
 ## Validated result
 
-**Curated (n=126)** — unchanged by this round. The new levers are pure
-re-rank refinements that leave the curated wins byte-identical (verified):
+**Curated (n=126):**
 
 | metric      | baseline | shipped tuned |
 | ----------- | -------- | ------------- |
-| Coverage@10 | 0.873    | **0.984**     |
-| Hit@1       | 0.770    | **0.921**     |
-| MRR         | 0.799    | **0.939**     |
+| Coverage@10 | 0.873    | **0.976**     |
+| Hit@1       | 0.770    | **0.929**     |
+| MRR         | 0.799    | **0.942**     |
 | nDCG@10     | 0.805    | **0.931**     |
 | fails       | 16       | **2**         |
 
 **Held-out mined-test (n=712)** — the honest generalization metric, queries
-the tuning never saw. The earlier pin/spell/structHit round lifted curated
-+15pp Hit@1 but only ~+2pp here (much of the curated gain was memorization);
-**this round's calibrated BM25 blend + exact-title bonus is what generalizes**:
+the tuning never saw:
 
-| metric      | baseline | prior-ship tuned | **+ this round** |
-| ----------- | -------- | ---------------- | ---------------- |
-| Hit@1       | 0.771    | 0.795            | **0.813**        |
-| MRR         | 0.801    | 0.824            | **0.840**        |
-| nDCG@10     | 0.815    | 0.837            | **0.852**        |
-| Coverage@10 | 0.878    | 0.896            | **0.906**        |
+| metric      | baseline | shipped tuned |
+| ----------- | -------- | ------------- |
+| Hit@1       | 0.768    | **0.830**     |
+| MRR         | 0.799    | **0.855**     |
+| nDCG@10     | 0.813    | **0.868**     |
+| Coverage@10 | 0.876    | **0.921**     |
 
-Marginal effect of this round's levers, held-out mined-test, paired
-permutation (10k): **ΔMRR +0.0168 (p=0.0001), ΔHit@1 +0.0183 (p=0.0004),
-ΔnDCG@10 +0.0150 (p=0.0001)**; curated Δ = 0.0000, 0 regressions. Per-intent
-nDCG@10 (mined-test) baseline→shipped: concept 0.58→**0.77**, synonym
-0.14→**0.85**, exact 0.96→**0.99**.
+**Gold slice (graded, n=112)** — Opus 3-session median ratings, all four
+metrics now significantly improved (p<0.05) vs baseline:
+
+| metric         | baseline | shipped tuned | Δ (paired, 10k perm) |
+| -------------- | -------- | ------------- | -------------------- |
+| Hit@1          | 0.643    | **0.750**     | +0.107               |
+| MRR            | 0.699    | **0.790**     | +0.091 p=0.0046 ▲    |
+| nDCG-graded@10 | 0.596    | **0.659**     | +0.063 p=0.0132 ▲    |
+| ERR@10         | 0.567    | **0.639**     | +0.071 p=0.0086 ▲    |
+| grade@1 mean   | 1.92     | **2.18**      | +0.26 p=0.0109 ▲     |
+| grade=0 @ 1    | 27       | **19**        | −8                   |
+
+Per-intent gold nDCG_g@10:
+| intent          | baseline | shipped  |
+| --------------- | -------- | -------- |
+| navigational    | 0.717    | 0.748    |
+| exact           | 0.308    | **0.601**|
+| concept         | 0.516    | 0.590    |
+| troubleshooting | 0.497    | 0.575    |
+
+The biggest movement was on `exact`-intent (+0.293) and grade-at-rank-1
+mean for `exact` going from 1.00 (acceptable-only) to **2.25** (mostly
+canonical). Driven by: 6 added spell corrections (the `typo_beyond_2`
+class from `hard-cases.json`), per-page `keywords:` frontmatter
+additions on the 10 verified recall-bug pages from the grade-0 audit,
+and the new `headingMatchWeight=0.2` lever.
 
 ### Lever verdicts (ablated, significance-tested)
 
@@ -160,19 +178,22 @@ of 350 planned; rate-limit gated, fully resumable).
   satisfied at rank r)
 - **mean grade-at-rank-1** (out of 3 — "did we put the BEST page first?")
 
-| metric         | baseline | shipped tuned |
-| -------------- | -------- | ------------- |
-| Hit@1 (binary) | 0.634    | **0.652**     |
-| MRR            | 0.692    | **0.702**     |
-| nDCG-graded@10 | 0.593    | **0.586**     |
-| ERR@10         | 0.564    | **0.563**     |
-| grade@1 mean   | 1.90     | **1.92**      |
+Initial Phase-7 graded numbers (commit 5a28287, before the headingMatch /
+keywords / queryNorm-fix rounds) — direction positive but not
+significant on n=112 (p ≥ 0.55), exact-intent grade@1 mean stuck at 1.0:
 
-Direction is preserved (positive) but not significant on n=112 (p ≥ 0.55).
-**The diagnostic value is per-intent**: graded nDCG@10 reveals exact-intent
-queries average grade 1.0 at rank 1 — i.e. the pipeline finds an
-acceptable page but only the *partial* one, not the canonical. This is a
-documented future-work target the binary harness could never surface.
+| metric         | baseline | shipped @ 5a28287 |
+| -------------- | -------- | ----------------- |
+| Hit@1 (binary) | 0.634    | 0.652             |
+| MRR            | 0.692    | 0.702             |
+| nDCG-graded@10 | 0.593    | 0.586             |
+| ERR@10         | 0.564    | 0.563             |
+| grade@1 mean   | 1.90     | 1.92              |
+
+Subsequent rounds (headingMatchWeight, allowDuplicates, description
+indexing, +keywords, spell additions, queryNorm fix) turned the
+direction into a significant move — see top-of-doc "Validated result"
+table for current shipped numbers.
 
 ### New pieces
 
