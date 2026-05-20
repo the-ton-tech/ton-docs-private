@@ -11,13 +11,23 @@ import {dirname, resolve} from "node:path"
 import {fileURLToPath} from "node:url"
 import {load, type AnyOrama, type RawData} from "@orama/orama"
 import {createClientDB, runRankedSearch, type Tuning} from "../../../src/lib/search-core"
-import {aggregate, distinctPageRanks, scoreQuery, type Aggregate, type QueryScore} from "./metrics"
+import {
+  aggregate,
+  distinctPageRanks,
+  gradedScoreQuery,
+  scoreQuery,
+  type Aggregate,
+  type GradedExpect,
+  type GradedQueryScore,
+  type QueryScore,
+} from "./metrics"
 import type {EvalQuery} from "./split"
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 export const INDEX_PATH = resolve(process.cwd(), process.env.INDEX ?? "out/api/search")
 export const CURATED_PATH = resolve(HERE, "..", "evalset.json")
 export const MINED_PATH = resolve(HERE, "..", "mined-evalset.json")
+export const GOLD_PATH = resolve(HERE, "..", "gold-evalset.json")
 
 export interface LoadedIndex {
   db: AnyOrama
@@ -139,4 +149,101 @@ export function regressions(
     if (b > a) out.push({q: base.perQuery[i].q, intent: base.perQuery[i].intent, from: a, to: b})
   }
   return out.sort((x, y) => y.to - y.from - (x.to - x.from))
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Graded eval set (Phase 5 gold slice, Phase 7 harness integration). Queries
+// carry per-page `{url, grade}` ratings (0–3) from the Opus 3-session median.
+// Graded metrics (graded-nDCG, ERR, gradeAt1) coexist with binary metrics
+// (collapsed via grade ≥ 2 → relevant), so a single report can show both.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface GradedEvalQuery {
+  q: string
+  intent: string
+  expect: {url: string; grade: number}[]
+  session_alpha?: number
+  n_sessions?: number
+}
+
+export function readGradedEvalSet(path: string): GradedEvalQuery[] {
+  const parsed = JSON.parse(readFileSync(path, "utf8")) as {queries: GradedEvalQuery[]}
+  return parsed.queries
+}
+
+export interface GradedAggregate extends Aggregate {
+  ndcgGraded10: number
+  err10: number
+  gradeAt1Mean: number
+}
+
+export interface GradedPerQuery {
+  q: string
+  intent: string
+  expect: GradedExpect
+  ranks: string[]
+  score: GradedQueryScore
+}
+
+export interface GradedEvalResult {
+  overall: GradedAggregate
+  byIntent: Record<string, GradedAggregate>
+  perQuery: GradedPerQuery[]
+}
+
+function aggregateGraded(scores: GradedQueryScore[]): GradedAggregate {
+  const base = aggregate(scores)
+  const n = scores.length
+  if (n === 0) return {...base, ndcgGraded10: 0, err10: 0, gradeAt1Mean: 0}
+  const sum = (f: (s: GradedQueryScore) => number) => scores.reduce((a, s) => a + f(s), 0)
+  return {
+    ...base,
+    ndcgGraded10: sum(s => s.gNdcg10) / n,
+    err10: sum(s => s.err10) / n,
+    gradeAt1Mean: sum(s => s.gradeAt1) / n,
+  }
+}
+
+export async function evaluateGraded(
+  db: AnyOrama,
+  queries: GradedEvalQuery[],
+  tuning: Tuning,
+): Promise<GradedEvalResult> {
+  const perQuery: GradedPerQuery[] = []
+  const byIntentScores: Record<string, GradedQueryScore[]> = {}
+  const allScores: GradedQueryScore[] = []
+
+  for (const {q, intent, expect} of queries) {
+    const {results} = await runRankedSearch(db, q, tuning)
+    const ranks = distinctPageRanks(results)
+    const score = gradedScoreQuery(ranks, expect)
+    allScores.push(score)
+    ;(byIntentScores[intent] ??= []).push(score)
+    perQuery.push({q, intent, expect, ranks: ranks.slice(0, RANK_KEEP), score})
+  }
+
+  const byIntent: Record<string, GradedAggregate> = {}
+  for (const [k, v] of Object.entries(byIntentScores)) byIntent[k] = aggregateGraded(v)
+  return {overall: aggregateGraded(allScores), byIntent, perQuery}
+}
+
+/** Per-query graded metric extractor for the paired significance test. */
+export function gradedMetricVector(
+  res: GradedEvalResult,
+  metric: "rr" | "ndcg10" | "hit1" | "ndcgGraded10" | "err10" | "gradeAt1",
+): number[] {
+  return res.perQuery.map(p => {
+    const s = p.score
+    return metric === "rr"
+      ? s.rr
+      : metric === "ndcg10"
+        ? s.ndcg10
+        : metric === "hit1"
+          ? s.hit1
+          : metric === "ndcgGraded10"
+            ? s.gNdcg10
+            : metric === "err10"
+              ? s.err10
+              : s.gradeAt1
+  })
 }
