@@ -129,15 +129,36 @@ plugin swap) — re-run to confirm the existing tuning is still optimal.
   Cost: custom save/load + client tokenizer changes. Defer until the
   simpler levers plateau.
 
-### Client-side (no rebuild)
+### Client-side (no rebuild — A/B-tested)
 
-- **`@orama/plugin-qps`** — proximity-first ranking. Drop-in via
-  `getComponents()`; serializable; still honors per-prop `boost`. Strong
-  candidate when phrase-like queries dominate the gold slice.
+- ~~**`@orama/plugin-qps`** — proximity-first ranking.~~ ❌ measured-mixed.
+  A/B-tested against the shipped pipeline (both indexes built, same
+  harness). Tradeoff on gold:
+
+  | intent          | nDCG_g (no-QPS) | nDCG_g (QPS) | Δ        |
+  | --------------- | --------------- | ------------ | -------- |
+  | synonym         | 0.424           | 0.481        | **+0.057** |
+  | identifier      | 0.427           | 0.485        | **+0.058** |
+  | exact           | 0.537           | 0.559        | +0.022   |
+  | troubleshooting | 0.520           | 0.527        | +0.007   |
+  | navigational    | 0.717           | 0.710        | -0.007   |
+  | concept         | 0.473           | 0.449        | -0.024   |
+  | typo            | 0.496           | 0.470        | -0.026   |
+
+  QPS dramatically helps the vocabulary-matching intents (synonym /
+  identifier) but regresses prose-density and fuzzy intents. Critically,
+  **mined-test regresses across the board** (-1.0 to -1.3% on hit@1 / mrr
+  / nDCG@10) — failing the "must not regress held-out mined-test"
+  acceptance criterion. Reverted; the synonym / identifier gains
+  motivate exploring a hybrid (per-intent routing or QPS as an additive
+  signal blended with BM25) in a future round.
+
+  Index size dropped 47.8 → 44.1 MB (-7.7%) with QPS — a side benefit
+  worth remembering if a future approach captures the synonym wins
+  without the mined-test cost.
+
 - **`@orama/plugin-pt15`** — token-position ranker, lighter than QPS.
-  A/B comparable.
-
-Both add to `package.json` but stay client-side; no backend.
+  Not yet A/B-tested. May exhibit a similar tradeoff to QPS.
 
 ## 5. Hard-cases backlog (46 verified failures)
 
@@ -281,7 +302,9 @@ Documented for the next maintainer who'll be tempted:
    BM25 over-weighting on broad conceptual queries; try `bm25Weight=2`
    instead of 2.5 with paired test on gold + curated.
 6. ~~Graded sweep~~ ✅ shipped (§3) — confirmed DEFAULT is Pareto-optimal.
-7. **Plugin QPS / PT15 A/B**, if 3–5 leave headroom.
+7. ~~Plugin QPS / PT15 A/B~~ ❌ QPS A/B-tested; measured-mixed (big
+   synonym/identifier wins on gold, mined-test regressed 1.0-1.3% —
+   rejected). PT15 not yet tested.
 8. ~~CI integration~~ ✅ shipped (`.github/workflows/search-eval.yml`).
 9. **Real user logs ingest** if and when available — supersedes much
    of the above.
