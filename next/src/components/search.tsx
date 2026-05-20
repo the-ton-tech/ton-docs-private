@@ -34,9 +34,11 @@ type RemoteResult = {
   breadcrumbs?: string[]
 }
 
+const MIN_QUERY_LENGTH = 3
+
 async function runSearch(query: string): Promise<SortedResult[]> {
   const q = query.trim()
-  if (q.length === 0) return []
+  if (q.length < MIN_QUERY_LENGTH) return []
   const res = await fetch(`${SEARCH_BASE}/search?q=${encodeURIComponent(q)}`)
   if (!res.ok) throw new Error(`search backend returned ${res.status}`)
   const {term, results} = (await res.json()) as {term: string; results: RemoteResult[]}
@@ -48,7 +50,10 @@ async function runSearch(query: string): Promise<SortedResult[]> {
 const searchClient: SearchClient = {search: runSearch, deps: []}
 
 export default function DefaultSearchDialog(props: SharedProps) {
-  const {search: searchValue, setSearch, query} = useDocsSearch({client: searchClient})
+  const {search: searchValue, setSearch, query} = useDocsSearch({
+    client: searchClient,
+    delayMs: 300,
+  })
 
   return (
     <SearchDialog
