@@ -1,0 +1,152 @@
+name: Deploy Orama search index
+
+# Triggers:
+#   - push to main, only when something that affects the index can change
+#     (MDX content / Next config / orama-server / this workflow)
+#   - manual: run from the Actions tab when a hand-rebuilt index is needed
+#
+# Concurrency: serialize deploys per branch so a fast follow-on push doesn't
+# race the previous run and ship an older index over a newer one.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "next/**"
+      - "orama-server/**"
+      - ".github/workflows/deploy-orama-index.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-orama-index
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Match the VPS install (Node 22.22). MUST stay in sync with the engines
+  # field of next/package.json and the systemd unit.
+  NODE_VERSION: "22"
+  REMOTE_HOST: ${{ vars.ORAMA_SSH_HOST || 'docs-ton.space' }}
+  REMOTE_USER: ${{ vars.ORAMA_SSH_USER || 'root' }}
+  REMOTE_REPO: /root/ton-docs-private
+  REMOTE_INDEX: /root/ton-docs-private/orama-server/index.json
+
+jobs:
+  deploy:
+    name: Build & ship index
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      HUSKY: "0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Need the full tree for fumadocs-mdx to discover every page.
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: next/package-lock.json
+
+      - name: Install Next dependencies
+        working-directory: next
+        run: npm ci
+
+      - name: Generate Fumadocs source
+        working-directory: next
+        run: npm run generated-source
+
+      - name: Build (produces out/api/search — the Orama index JSON)
+        working-directory: next
+        run: npm run build
+
+      - name: Sanity-check the index artifact
+        working-directory: next
+        run: |
+          test -f out/api/search
+          size=$(wc -c < out/api/search)
+          echo "index size: $size bytes"
+          # Empty/tiny output would mean the static export silently produced
+          # nothing — fail loud before we ship a broken index to prod.
+          if [ "$size" -lt 1000000 ]; then
+            echo "::error::index is suspiciously small ($size bytes), aborting"
+            exit 1
+          fi
+          # Validate it parses as JSON.
+          node -e "JSON.parse(require('fs').readFileSync('out/api/search','utf8'))"
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ORAMA_SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # Pin host keys so the deploy refuses to talk to anything that
+          # isn't the real server (defense against MITM if DNS is hijacked).
+          # Captured from the live host on 2026-05-20.
+          cat > ~/.ssh/known_hosts <<EOF
+          docs-ton.space ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOzFJ7kjlGtJVG0rgP72r4UnOjkRArNsGLeY5rKBf7qo
+          188.166.162.253 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOzFJ7kjlGtJVG0rgP72r4UnOjkRArNsGLeY5rKBf7qo
+          EOF
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Pull latest server code on VPS
+        # `git pull` keeps server.mjs / search-core.mjs / package*.json in sync
+        # with what was just built from. If package-lock changed, reinstall.
+        # All other times it's a no-op fast-forward.
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" bash -se <<'REMOTE'
+          set -euo pipefail
+          cd /root/ton-docs-private
+          git fetch --quiet origin main
+          git reset --hard origin/main
+          # If orama-server deps moved, reinstall before the new server.mjs runs.
+          if ! diff -q orama-server/package-lock.json orama-server/node_modules/.package-lock.json >/dev/null 2>&1 ; then
+            echo "orama-server deps changed — reinstalling"
+            (cd orama-server && npm ci --omit=dev --no-audit --no-fund)
+          fi
+          REMOTE
+
+      - name: Ship index to VPS (atomic replace)
+        # Upload to a sibling tmp file, then rename in one syscall. This way
+        # the running service never observes a half-written index.json (which
+        # would crash JSON.parse at startup if it caught us mid-stream).
+        run: |
+          scp -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            next/out/api/search \
+            "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_INDEX}.new"
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" \
+            "mv -f '${REMOTE_INDEX}.new' '${REMOTE_INDEX}' && chown orama:orama '${REMOTE_INDEX}'"
+
+      - name: Restart service (auto-purges nginx cache via ExecStartPost)
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" \
+            "systemctl restart orama-search && \
+             for i in 1 2 3 4 5 6 7 8 9 10 ; do \
+               ss -tlnp | grep -q :7700 && break ; sleep 1 ; \
+             done && \
+             curl -fsS http://127.0.0.1:7700/health"
+
+      - name: Smoke-test public endpoint
+        # Hit the cache-busted query path so we know the new index is live —
+        # not a stale nginx-cached response from before the restart.
+        run: |
+          BUST="$(date +%s)"
+          for q in tolk jetton "ton%20connect" ; do
+            url="https://${REMOTE_HOST}/search?q=${q}&_=${BUST}"
+            top=$(curl -fsS "$url" | jq -r '.results | map(select(.type=="page")) | .[0].url')
+            echo "  q=${q} top=${top}"
+            test -n "$top"
+          done
