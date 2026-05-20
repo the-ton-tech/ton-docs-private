@@ -9,7 +9,7 @@ name: Deploy Orama search index
 # race the previous run and ship an older index over a newer one.
 on:
   push:
-    branches: [main]
+    branches: [main, orama-backend]
     paths:
       - "next/**"
       - "orama-server/**"
