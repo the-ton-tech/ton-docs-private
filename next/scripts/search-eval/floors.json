@@ -26,26 +26,26 @@
       "ndcg10": 0.86
     },
     "slack": 0.01,
-    "commit": "78f1942",
+    "commit": "0b47f9f",
     "date": "2026-05-20",
     "last_observed": {
-      "hit1": 0.8301,
-      "mrr": 0.8553,
-      "ndcg10": 0.8679
+      "hit1": 0.8287,
+      "mrr": 0.8542,
+      "ndcg10": 0.8671
     }
   },
   "gold": {
     "n": 112,
     "floors": {
-      "hit1": 0.72,
-      "ndcgGraded10": 0.63
+      "hit1": 0.74,
+      "ndcgGraded10": 0.64
     },
     "slack": 0.02,
-    "commit": "78f1942",
+    "commit": "0b47f9f",
     "date": "2026-05-20",
     "last_observed": {
-      "hit1": 0.75,
-      "ndcgGraded10": 0.6574
+      "hit1": 0.7679,
+      "ndcgGraded10": 0.6655
     }
   }
 }
