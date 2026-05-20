@@ -198,10 +198,8 @@ CTA
 CTAs
 d3fl4t3
 Daniil
-dapp
 dApp
 DApp
-dapps
 dApps
 DApps
 datacenters
