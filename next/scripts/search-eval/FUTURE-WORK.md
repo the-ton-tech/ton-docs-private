@@ -16,14 +16,15 @@ agreement.
 
 | metric         | baseline | tuned   | Δ        | p       |
 | -------------- | -------- | ------- | -------- | ------- |
-| Hit@1 (binary) | 0.5014   | 0.5301  | +0.0287  |         |
-| MRR            | 0.5587   | 0.5846  | +0.0258  | 0.008 ▲ |
-| nDCG-graded@10 | 0.4982   | 0.5112  | +0.0129  | 0.102   |
-| ERR@10         | 0.4506   | 0.4656  | +0.0149  | 0.043 ▲ |
-| grade@1 mean   | 1.52     | 1.58    | +0.0630  | 0.030 ▲ |
+| Hit@1 (binary) | 0.5014   | 0.5358  | +0.0344  |         |
+| MRR            | 0.5587   | 0.5900  | +0.0312  | 0.004 ▲ |
+| nDCG-graded@10 | 0.4982   | 0.5134  | +0.0152  | 0.081   |
+| ERR@10         | 0.4506   | 0.4669  | +0.0163  | 0.049 ▲ |
+| grade@1 mean   | 1.52     | 1.59    | +0.0659  | 0.046 ▲ |
 
 3 of 4 graded metrics significantly improved; nDCG_g is directional but
-not significant on n=349. The graded sweep (§3) is now feasible.
+not significant on n=349. The shape-conditional code-symbol bonus (§4
+below) added another ~+0.006 hit@1 over the prior measurement.
 
 **Optional further scaling:** if more headroom is wanted, scale to
 ~3000 ratings (1 per validated query × 3 sessions across the full
@@ -33,25 +34,28 @@ round of tuning.
 
 ## 2. Targeted fixes from Phase 7's per-intent diagnostic
 
-Gold-slice graded nDCG@10 by intent (DEFAULT_TUNING, n=349 — full slice):
+Gold-slice graded nDCG@10 by intent (DEFAULT_TUNING with codeSymbolWeight=1,
+n=349 — full slice):
 
 | intent          | nDCG_g@10 | mean grade@1 |
 | --------------- | --------- | ------------ |
-| navigational    | 0.718     | 2.46         |
-| exact           | 0.542     | 1.56         |
-| troubleshooting | 0.517     | 1.61         |
-| typo            | 0.493     | 1.38         |
-| concept         | 0.476     | 1.46         |
+| navigational    | 0.717     | 2.46         |
+| exact           | 0.537     | 1.56         |
+| troubleshooting | 0.520     | 1.63         |
+| typo            | 0.496     | 1.38         |
+| concept         | 0.473     | 1.46         |
+| identifier      | 0.427     | 1.32         |
 | **synonym**     | **0.424** | **1.30**     |
-| **identifier**  | **0.408** | **1.32**     |
 
 The partial-data analysis (n=112) flagged `exact` as the weak spot at
 0.31 — that finding was **noise from the small sample**. On the full
-349-query slice `exact` is at 0.542, mid-pack. The actual weak intents
-are **`synonym` (0.424)** and **`identifier` (0.408)**, both below 0.43.
-**`concept` regressed** vs baseline (-0.024) on the full slice — likely
-the BM25 blend overweighting term-density on broad conceptual queries;
-worth a targeted ablation.
+349-query slice `exact` is at 0.537, mid-pack. After the shape-
+conditional code-symbol bonus shipped this round, `identifier` is no
+longer the weakest intent (was 0.408, now 0.427). The actual remaining
+weak intent is **`synonym` (0.424)** — pages whose ground-truth match
+relies on vocabulary the page doesn't use verbatim. `concept` regressed
+vs baseline (-0.024) — likely the BM25 blend overweighting term-density
+on broad conceptual queries; worth a targeted ablation.
 
 Hypotheses worth measuring on the held-out + gold:
 

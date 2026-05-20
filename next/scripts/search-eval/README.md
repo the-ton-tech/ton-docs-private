@@ -159,24 +159,24 @@ sample): **Krippendorff α median 1.000**, p10 = 0.964, max = 1.000 —
   satisfied at rank r)
 - **mean grade-at-rank-1** (out of 3 — "did we put the BEST page first?")
 
-| metric         | baseline | shipped tuned | Δ        | p      |
-| -------------- | -------- | ------------- | -------- | ------ |
-| Hit@1 (binary) | 0.5014   | **0.5301**    | +0.0287  |        |
-| MRR            | 0.5587   | **0.5846**    | +0.0258  | 0.008 ▲ |
-| nDCG-graded@10 | 0.4982   | **0.5112**    | +0.0129  | 0.102  |
-| ERR@10         | 0.4506   | **0.4656**    | +0.0149  | 0.043 ▲ |
-| grade@1 mean   | 1.52     | **1.58**      | +0.0630  | 0.030 ▲ |
+| metric         | baseline | shipped tuned | Δ        | p       |
+| -------------- | -------- | ------------- | -------- | ------- |
+| Hit@1 (binary) | 0.5014   | **0.5358**    | +0.0344  |         |
+| MRR            | 0.5587   | **0.5900**    | +0.0312  | 0.004 ▲ |
+| nDCG-graded@10 | 0.4982   | **0.5134**    | +0.0152  | 0.081   |
+| ERR@10         | 0.4506   | **0.4669**    | +0.0163  | 0.049 ▲ |
+| grade@1 mean   | 1.52     | **1.59**      | +0.0659  | 0.046 ▲ |
 
 3 of 4 graded metrics significantly improve on n=349 (paired permutation,
-10k iters). nDCG_g@10 is directionally positive (p=0.10) — the BM25 blend
-moves first-place outcomes more than it shifts the tail distribution.
+10k iters). nDCG_g@10 is directionally positive (p=0.08) — the BM25 blend
++ code-symbol bonus move first-place outcomes more than they shift the
+tail distribution.
 
-**Per-intent diagnostic (nDCG_g@10, tuned)**: navigational 0.718,
-exact 0.542, troubleshooting 0.517, concept 0.476, typo 0.493,
-synonym 0.424, identifier 0.408. The remaining headroom is on
-**synonym** and **identifier** intents (both <0.43) — `concept`
-unexpectedly regressed vs baseline on the full slice (-0.024), worth
-investigating as a future-work target.
+**Per-intent diagnostic (nDCG_g@10, tuned)**: navigational 0.717,
+exact 0.537, troubleshooting 0.520, typo 0.496, concept 0.473,
+identifier 0.427, synonym 0.424. The remaining headroom is on
+**synonym** and **concept** intents — `identifier` improved with the
+shape-conditional code-symbol bonus (0.408 → 0.427 on this round).
 
 ### New pieces
 
