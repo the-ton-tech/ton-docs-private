@@ -41,20 +41,21 @@ function buildCorpusBinds() {
 // rsync/git pull, after which the systemd unit can be restarted to refresh.
 const CORPUS_BINDS = buildCorpusBinds()
 
-// We bind /dev from the host (handy for /dev/null redirects) but omit /proc
-// on purpose: text utilities like rg/find don't need it, and exposing it
-// makes `rg / pattern` recurse into /proc/* and emit noisy permission
-// errors that drown the real matches.
+// All shell utilities live in a single dot-prefixed mount `/.tools` so they
+// stay invisible to `ls /` (which hides dotfiles by default). That folder
+// holds a static toolset prepared at deploy time: busybox-static for sh +
+// coreutils + find/grep/sed/awk/sort/uniq/cut/wc/etc, plus standalone
+// ripgrep (musl static-pie), jq (statically linked), and tree (dynamic,
+// patchelf'd to look up its interpreter + libc inside /.tools/lib).
+//
+// `/tmp` is given a hidden tmpfs at `/.tmp`; TMPDIR points there so heredocs
+// and other shell temp writes have somewhere to go without exposing a /tmp
+// node at the visible root. No /proc, no /dev, no /etc, no /bin, no /lib —
+// the LLM sees a pristine docs-only filesystem.
 const SYSTEM_BINDS = [
   "--tmpfs", "/",
-  "--tmpfs", "/tmp",
-  "--ro-bind", "/dev", "/dev",
-  "--ro-bind", "/usr", "/usr",
-  "--ro-bind", "/lib", "/lib",
-  "--ro-bind", "/lib64", "/lib64",
-  "--ro-bind", "/bin", "/bin",
-  "--ro-bind", "/sbin", "/sbin",
-  "--ro-bind", "/etc", "/etc",
+  "--tmpfs", "/.tmp",
+  "--ro-bind", "/opt/ton-mcp/sandbox-tools", "/.tools",
 ]
 
 // We deliberately do NOT pass --unshare-net (Ubuntu 24's AppArmor blocks the
@@ -72,8 +73,9 @@ const NAMESPACE_FLAGS = [
 
 const ENV_FLAGS = [
   "--clearenv",
-  "--setenv", "PATH", "/usr/bin:/bin",
-  "--setenv", "HOME", "/tmp",
+  "--setenv", "PATH", "/.tools",
+  "--setenv", "HOME", "/.tmp",
+  "--setenv", "TMPDIR", "/.tmp",
   "--setenv", "LANG", "C.UTF-8",
   "--setenv", "LC_ALL", "C.UTF-8",
   "--setenv", "TERM", "dumb",
@@ -94,7 +96,7 @@ export async function runSandboxedCommand(command) {
     ...ENV_FLAGS,
     "--chdir", "/",
     "--",
-    "/bin/sh", "-c", command,
+    "/.tools/sh", "-c", command,
   ]
 
   return new Promise(resolve => {

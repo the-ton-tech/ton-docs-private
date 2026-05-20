@@ -150,17 +150,81 @@ app.post("/mcp", async (req, res) => {
   }
 })
 
-// The Streamable HTTP transport defines GET and DELETE for stateful sessions
-// (server -> client SSE, session termination). We do not run sessions, so
-// return 405 explicitly per the spec to keep clients honest.
-const methodNotAllowed = (_req, res) =>
+// Manifest used as a human-readable handshake response when someone visits
+// /mcp from a browser. Mirrors the schema of the mcp.json client config so
+// it can be copy-pasted into Cursor/Claude Desktop "mcpServers" entries.
+const MANIFEST = {
+  server: {name: "TON Docs", version: "1.0.0", transport: "http"},
+  capabilities: {
+    tools: {
+      search_ton_docs: {
+        name: "search_ton_docs",
+        description: SEARCH_DESCRIPTION,
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {type: "string", description: "A query to search the content with."},
+          },
+          required: ["query"],
+        },
+      },
+      query_docs_filesystem_ton_docs: {
+        name: "query_docs_filesystem_ton_docs",
+        description: FS_DESCRIPTION,
+        inputSchema: {
+          type: "object",
+          properties: {
+            command: {
+              type: "string",
+              description:
+                "A shell command to run against the virtualized documentation filesystem " +
+                "(e.g., `rg -il \"keyword\" /`, `tree / -L 2`, `head -80 /path/file.mdx`).",
+            },
+          },
+          required: ["command"],
+        },
+      },
+    },
+    resources: [
+      {
+        uri: "mintlify://skills/mintlify",
+        name: "mintlify",
+        description:
+          "Use when building smart contracts, deploying to mainnet/testnet, working with wallets and tokens " +
+          "(Jettons/NFTs), querying blockchain data via APIs, or developing dApps on TON. Reach for this skill " +
+          "when agents need to understand contract development workflows, blockchain interactions, or TON-specific patterns.",
+        mimeType: "text/markdown",
+      },
+    ],
+    prompts: [],
+  },
+}
+
+// GET /mcp: real MCP clients ask for text/event-stream (SSE subscription).
+// Browsers, curl, and humans ask for HTML/JSON — give them the manifest so
+// the URL is actually useful when opened directly. We do not run a stateful
+// session, so SSE clients still get 405 per the spec.
+app.get("/mcp", (req, res) => {
+  const accept = String(req.headers.accept || "")
+  if (accept.includes("text/event-stream")) {
+    res.status(405).json({
+      jsonrpc: "2.0",
+      error: {code: -32000, message: "Method not allowed."},
+      id: null,
+    })
+    return
+  }
+  res.json(MANIFEST)
+})
+
+// DELETE is reserved for session termination, which we never start.
+app.delete("/mcp", (_req, res) =>
   res.status(405).json({
     jsonrpc: "2.0",
     error: {code: -32000, message: "Method not allowed."},
     id: null,
-  })
-app.get("/mcp", methodNotAllowed)
-app.delete("/mcp", methodNotAllowed)
+  }),
+)
 
 const httpServer = app.listen(PORT, HOST, () => {
   console.log(`[mcp] listening on http://${HOST}:${PORT}`)
