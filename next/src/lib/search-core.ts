@@ -243,6 +243,17 @@ export interface Tuning {
    * heading hits weigh comparably to per-token heading hits.
    */
   headingMatchWeight: number
+  /**
+   * Weight on Orama's BM25 over a *title-only* second pass (`where:
+   * {type:"page"}`). The page rows have content equal to the title, so a
+   * second exact-tolerance Orama pass restricted to them returns the
+   * per-page BM25 of the title surface alone — high IDF for rare title
+   * tokens, document length is the title length (very short). Min-max
+   * normalized over the candidate set before being added (`w * tb /
+   * maxTb`) so the contribution is bounded and corpus-portable, matching
+   * the bm25Weight blend pattern. 0 disables.
+   */
+  titleBM25Weight: number
 }
 
 /**
@@ -295,6 +306,13 @@ export const DEFAULT_TUNING: Tuning = {
   // On the gold slice this also lifts troubleshooting from 0.497 to 0.527
   // (one of the four worst-performing intents per FUTURE-WORK §2).
   headingMatchWeight: 0.2,
+  // titleBM25Weight: measured negative at every weight (0.5/1/2). The
+  // shipped bm25Weight already captures title signal because the page
+  // row's content IS the title, so a separate title-only Orama pass
+  // contributes mostly noise. Curated -1pp Hit@1, mined-test -0.6pp
+  // MRR at w=0.5. Kept as a lever for re-ablation if the corpus
+  // changes (e.g. very long titles become common), but ships off.
+  titleBM25Weight: 0,
 }
 
 /**
@@ -324,6 +342,7 @@ export const BASELINE_TUNING: Tuning = {
   titlePrefixWeight: 0,
   stemReRank: false,
   headingMatchWeight: 0,
+  titleBM25Weight: 0,
 }
 
 export function normalizeQuery(query: string): string {
@@ -502,6 +521,32 @@ export async function runRankedSearch(
   for (const g of groups.values()) if (g.bm25 > maxBm25) maxBm25 = g.bm25
   const queryNorm = tokens.join(" ")
 
+  // Title-only BM25: optional second Orama pass restricted to `type:"page"`
+  // rows (content = title). Returns per-page Orama relevance of the title
+  // surface alone, which gives high IDF + small document length to rare
+  // title tokens. Min-max normalized into [0, titleBM25Weight] so the
+  // contribution is bounded the same way bm25Weight is.
+  const titleBM25: Map<string, number> = new Map()
+  let maxTitleBM25 = 0
+  if (tuning.titleBM25Weight > 0) {
+    const tRes = (await search(db, {
+      term,
+      tolerance: 0,
+      properties: ["content"],
+      where: {type: "page"},
+      limit: MAX_RESULTS,
+      ...(tuning.relevance ? {relevance: tuning.relevance} : {}),
+    })) as unknown as {hits?: {score?: number; document: unknown}[]}
+    for (const hit of tRes.hits ?? []) {
+      const doc = hit.document as IndexedDoc
+      if (typeof hit.score === "number") {
+        const prev = titleBM25.get(doc.url) ?? 0
+        if (hit.score > prev) titleBM25.set(doc.url, hit.score)
+      }
+    }
+    for (const v of titleBM25.values()) if (v > maxTitleBM25) maxTitleBM25 = v
+  }
+
   // Stem-aware re-rank: pre-compute per-token stem arrays + per-page stemmed
   // title / haystack / url word sets. Without this, the score function does
   // raw `title.includes("validating")` against a title "Validation" and
@@ -608,6 +653,10 @@ export async function runRankedSearch(
     // a canonical one on relevance alone (measured to regress if unbounded).
     if (tuning.bm25Weight > 0 && maxBm25 > 0) {
       s += tuning.bm25Weight * (bm25 / maxBm25)
+    }
+    if (tuning.titleBM25Weight > 0 && maxTitleBM25 > 0) {
+      const tb = titleBM25.get(page.url) ?? 0
+      if (tb > 0) s += tuning.titleBM25Weight * (tb / maxTitleBM25)
     }
     if (tuning.structHitWeight > 0) {
       // Hand-curated `#Keywords` rows always count. `#Code symbols` rows only
