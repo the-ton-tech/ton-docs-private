@@ -67,13 +67,13 @@ function JourneyCard({title, description, steps}: JourneyProps) {
         {title}
       </h3>
       <p className="text-pretty text-base text-fd-muted-foreground">{description}</p>
-      <div className="mt-3 overflow-x-auto no-scrollbar">
-        <div className="flex flex-row gap-4 py-1">
+      <div className="mt-3 -mx-6 overflow-x-auto no-scrollbar [scroll-snap-type:x_proximity] [scroll-padding-left:1.5rem]">
+        <div className="flex w-max flex-row gap-4 py-1 px-6">
           {steps.map(step => (
             <Link
               key={step.href}
               href={step.href}
-              className="group flex-none w-52 rounded-2xl border border-fd-border bg-fd-background/60 px-5 py-4 transition-colors hover:border-fd-primary"
+              className="group flex-none w-52 rounded-2xl border border-fd-border bg-fd-background/60 px-5 py-4 transition-colors hover:border-fd-primary [scroll-snap-align:start]"
             >
               <h4 className="text-sm font-semibold text-fd-foreground group-hover:text-fd-primary">
                 {step.title}
@@ -94,7 +94,7 @@ export default function Page() {
     <HomeLayout {...baseOptions()}>
       <main className="mx-auto w-full max-w-5xl px-6 pb-24">
         <section className="relative isolate py-8 sm:py-12 lg:py-16">
-          <div aria-hidden className="absolute inset-x-0 -top-40 -z-10 overflow-hidden blur-3xl">
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-40 -z-10 overflow-hidden blur-3xl">
             <div
               style={{
                 clipPath:
@@ -154,7 +154,7 @@ export default function Page() {
         <section
           id="troubleshooting"
           tabIndex={-1}
-          className="mt-12 flex flex-col gap-4 focus:outline-none"
+          className="mt-12 flex flex-col gap-4 focus:outline-none max-md:hidden"
         >
           <div>
             <h2 className="text-balance text-2xl font-semibold tracking-tight text-fd-foreground">
