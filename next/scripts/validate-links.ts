@@ -88,13 +88,6 @@ interface StaleLinkReport {
   origin: "chain" | "fuzzy" | "broken"
 }
 
-interface FrontmatterDiff {
-  id: string
-  field: "title" | "description"
-  upstream: string | undefined
-  current: string | undefined
-}
-
 interface SitemapIssue {
   kind: "missing-page" | "extra-url" | "canonical-broken" | "robots-blocks"
   detail: string
@@ -128,7 +121,6 @@ interface RunFlags {
   checkRedirects: boolean
   checkChains: boolean
   checkInternalStale: boolean
-  checkFrontmatter: boolean
   checkSitemap: boolean
   checkAssets: boolean
   checkAnchors: boolean
@@ -137,7 +129,6 @@ interface RunFlags {
   flattenChains: boolean
   fixInternal: boolean
   enforcePermanent: boolean
-  fixFrontmatter: boolean
   repairRedirects: boolean
   // Misc
   baseline: number
@@ -160,17 +151,8 @@ interface Indices {
   legacyUrls: Set<string>
   /** id → current slug (with leading `/`). */
   idToCurrentSlug: Map<string, string>
-  /** Upstream .mdx ids (pre-cutover only) mapped to {title, description}. */
-  upstreamFrontmatter: Map<string, FrontmatterFields>
-  /** New-side .mdx mapping (same id space). */
-  newFrontmatter: Map<string, FrontmatterFields>
   /** docs.json redirects (pre-cutover; empty post-cutover). */
   docsJsonRedirects: Redirect[]
-}
-
-interface FrontmatterFields {
-  title?: string
-  description?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +174,6 @@ function parseFlags(argv: string[]): RunFlags {
     has("--check-redirects") ||
     has("--check-chains") ||
     has("--check-internal-stale") ||
-    has("--check-frontmatter") ||
     has("--check-sitemap") ||
     has("--check-assets")
 
@@ -202,7 +183,6 @@ function parseFlags(argv: string[]): RunFlags {
     checkRedirects: all || has("--check-redirects"),
     checkChains: all || has("--check-chains"),
     checkInternalStale: all || has("--check-internal-stale"),
-    checkFrontmatter: all || has("--check-frontmatter"),
     checkSitemap: all || has("--check-sitemap"),
     checkAssets: all || has("--check-assets"),
     checkAnchors: has("--check-anchors"),
@@ -210,7 +190,6 @@ function parseFlags(argv: string[]): RunFlags {
     flattenChains: has("--flatten-chains"),
     fixInternal: has("--fix-internal"),
     enforcePermanent: has("--enforce-permanent"),
-    fixFrontmatter: has("--fix-frontmatter"),
     repairRedirects: has("--repair-redirects"),
     baseline: intArg("--baseline", Number.parseInt(process.env.LINKS_BASELINE ?? "345", 10)),
     verbose: has("--verbose"),
@@ -228,7 +207,6 @@ Audit scopes (narrow the run; default is all):
   --check-redirects        Legacy URL coverage via redirects.mjs
   --check-chains           Chain detection + permanent:true (loops always hard-error)
   --check-internal-stale   MDX internal links that target a redirect source
-  --check-frontmatter      title + description parity vs upstream .mdx
   --check-sitemap          sitemap.ts / canonical / robots wiring
   --check-assets           Flag files in public/ that nothing references
   --check-anchors          opt-in #fragment verification (false-positive prone)
@@ -241,9 +219,6 @@ Mutations (each touches one surface; default is none):
                            longest-common-suffix matching to find the right
                            page when the redirect's destination is broken.
   --enforce-permanent      Upgrade any permanent:false entries to true
-  --fix-frontmatter        Strip auto-injected title/description fields when
-                           upstream had them absent or empty (restores Pass E
-                           parity without touching human edits)
   --repair-redirects       Rewrite the destination of redirects whose chain
                            lands on a non-page or loops. Picks the real page
                            by matching the source's basename + path suffix
@@ -391,15 +366,6 @@ function parseScalarField(fm: string, key: string): string | undefined {
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
-
-function extractFrontmatterFields(source: string): FrontmatterFields {
-  const parsed = parseFm(source)
-  if (!parsed.hasFrontmatter) return {}
-  return {
-    title: parseScalarField(parsed.frontmatter, "title"),
-    description: parseScalarField(parsed.frontmatter, "description"),
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -746,31 +712,6 @@ async function buildIdToCurrentSlug(): Promise<Map<string, string>> {
         out.set(node.id, slug)
       }
     }
-  }
-  return out
-}
-
-function buildUpstreamFrontmatter(rels: string[]): Map<string, FrontmatterFields> {
-  const out = new Map<string, FrontmatterFields>()
-  for (const rel of rels) {
-    const abs = path.join(REPO_ROOT, rel)
-    let source: string
-    try {
-      source = fs.readFileSync(abs, "utf8")
-    } catch {
-      continue
-    }
-    const id = rel.replace(/\.mdx$/, "")
-    out.set(id, extractFrontmatterFields(source))
-  }
-  return out
-}
-
-function buildNewFrontmatter(pages: PageRecord[]): Map<string, FrontmatterFields> {
-  const out = new Map<string, FrontmatterFields>()
-  for (const p of pages) {
-    if (!p.id) continue
-    out.set(p.id, extractFrontmatterFields(p.source))
   }
   return out
 }
@@ -1259,51 +1200,6 @@ function runPassR(idx: Indices): {
 }
 
 /**
- * Pass E — frontmatter parity (pre-cutover only).
- *
- * For every id present in both `upstreamFrontmatter` and `newFrontmatter`,
- * diff `title` and `description`. Mismatches are SEO-relevant (Google treats
- * the page title and meta description as primary ranking signals; rewriting
- * either resets the snippet match). We surface them so a human can decide
- * whether each rewrite is intentional. There is no `--fix` for this pass —
- * the new MDX is the source of truth after cutover.
- *
- * When `!HAS_LEGACY_DOCS` (post-cutover) the pass is skipped with an explicit
- * log line and is never counted as a regression.
- */
-function runPassE(idx: Indices): {diffs: FrontmatterDiff[]; skipped: boolean} {
-  if (!HAS_LEGACY_DOCS) return {diffs: [], skipped: true}
-  const {upstreamFrontmatter, newFrontmatter} = idx
-  const diffs: FrontmatterDiff[] = []
-  // Upstream-empty → current-has-value is an addition, not a loss; the new
-  // MDX is the source of truth after cutover (per pass docs). We only flag
-  // genuine regressions: a value disappearing or being rewritten.
-  const isRegression = (upstream: string | undefined, current: string | undefined) => {
-    const u = upstream ?? ""
-    const c = current ?? ""
-    if (u === c) return false
-    if (u === "") return false
-    return true
-  }
-  for (const [id, upstream] of upstreamFrontmatter) {
-    const current = newFrontmatter.get(id)
-    if (!current) continue // page no longer exists in the new tree
-    if (isRegression(upstream.title, current.title)) {
-      diffs.push({id, field: "title", upstream: upstream.title, current: current.title})
-    }
-    if (isRegression(upstream.description, current.description)) {
-      diffs.push({
-        id,
-        field: "description",
-        upstream: upstream.description,
-        current: current.description,
-      })
-    }
-  }
-  return {diffs, skipped: false}
-}
-
-/**
  * Pass F — sitemap, canonical, and robots wiring.
  *
  * Three static-source assertions (no fumadocs-mdx import; the script must
@@ -1490,10 +1386,6 @@ async function buildIndices(flags: RunFlags): Promise<Indices> {
   const docsJsonRedirects = await loadDocsJsonRedirects()
   const legacyUrls = deriveLegacyUrls(redirectMap, docsJsonRedirects, upstreamMdx)
   const idToCurrentSlug = await buildIdToCurrentSlug()
-  const upstreamFrontmatter = HAS_LEGACY_DOCS
-    ? buildUpstreamFrontmatter(upstreamMdx)
-    : new Map<string, FrontmatterFields>()
-  const newFrontmatter = buildNewFrontmatter(pages)
 
   const knownUrls = new Set<string>(pageSlugs)
   for (const source of redirectMap.keys()) {
@@ -1518,8 +1410,6 @@ async function buildIndices(flags: RunFlags): Promise<Indices> {
     redirectMap,
     legacyUrls,
     idToCurrentSlug,
-    upstreamFrontmatter,
-    newFrontmatter,
     docsJsonRedirects,
   }
 }
@@ -1542,7 +1432,6 @@ async function main(): Promise<void> {
   let passCChains: ChainReport[] = []
   let passCNonPermanent: PermissivenessReport[] = []
   let passDStale: StaleLinkReport[] = []
-  let passEDiffs: FrontmatterDiff[] = []
 
   if (flags.checkLinks) {
     const {errors} = runPassA(idx)
@@ -1655,25 +1544,6 @@ async function main(): Promise<void> {
     console.log(`  stale-internal: ${stale.length} link(s) need rewriting`)
   }
 
-  if (flags.checkFrontmatter) {
-    const {diffs, skipped} = runPassE(idx)
-    passEDiffs = diffs
-    if (skipped) {
-      console.log("  frontmatter: skipped (no upstream to diff against)")
-    } else {
-      if (diffs.length > 0 && !flags.fixFrontmatter) regressionCount += diffs.length
-      if (flags.verbose && diffs.length > 0) {
-        for (const d of diffs.slice(0, 10)) {
-          const u = JSON.stringify(d.upstream ?? null)
-          const c = JSON.stringify(d.current ?? null)
-          console.log(`    ${d.id}.${d.field}: ${u}  →  ${c}`)
-        }
-        if (diffs.length > 10) console.log(`    ... and ${diffs.length - 10} more`)
-      }
-      console.log(`  frontmatter: ${diffs.length} mismatch(es)`)
-    }
-  }
-
   if (flags.checkSitemap) {
     const {issues} = runPassF(idx)
     if (issues.length > 0) regressionCount += issues.length
@@ -1714,9 +1584,6 @@ async function main(): Promise<void> {
   }
   if (flags.fixInternal && passDStale.length > 0) {
     await applyStaleLinkRewrites(passDStale, flags.verbose)
-  }
-  if (flags.fixFrontmatter && passEDiffs.length > 0) {
-    await applyFrontmatterRestores(idx, passEDiffs, flags.verbose)
   }
   // Silence "unused" warnings on unresolvables — they are surfaced to stdout
   // for human review but not currently fed into further mutators.
@@ -1883,87 +1750,6 @@ async function applyStaleLinkRewrites(stale: StaleLinkReport[], verbose: boolean
     }
   }
   console.log(`  fixed internal links: ${rewrittenLinks} rewrites across ${touchedFiles} file(s)`)
-}
-
-/**
- * Restore upstream frontmatter parity by stripping `title` / `description`
- * fields the migration auto-injected onto pages that had none upstream. We
- * only act when:
- *
- *  - Upstream had the field absent or empty string.
- *  - The current value looks auto-injected, i.e. equals the slug-as-string
- *    (which is what `patchFrontmatter` writes) or an empty quoted string.
- *
- * This is conservative on purpose: any human-edited title or description is
- * left untouched. The two values combined cover the OpenAPI auto-title
- * regression that Pass E surfaces, without modifying intentional metadata.
- */
-async function applyFrontmatterRestores(
-  idx: Indices,
-  diffs: FrontmatterDiff[],
-  verbose: boolean,
-): Promise<void> {
-  const {pages, pageBySlug, idToCurrentSlug} = idx
-  // Build a one-shot id → PageRecord index by scanning frontmatter. This
-  // catches orphaned pages whose `id` exists on disk but isn't referenced
-  // by the nav config (and is therefore absent from `idToCurrentSlug`).
-  const pageById = new Map<string, PageRecord>()
-  for (const p of pages) {
-    const m = p.source.match(/^---\n([\s\S]*?)\n---/)
-    if (!m) continue
-    const idLine = m[1].match(/^id:\s*(.+)$/m)
-    if (idLine) pageById.set(idLine[1].trim().replace(/^["']|["']$/g, ""), p)
-  }
-  // Group diffs by id.
-  const byId = new Map<string, FrontmatterDiff[]>()
-  for (const d of diffs) {
-    const arr = byId.get(d.id) ?? []
-    arr.push(d)
-    byId.set(d.id, arr)
-  }
-  let touched = 0
-  for (const [id, ds] of byId) {
-    const page =
-      pageById.get(id) ??
-      (idToCurrentSlug.get(id) ? pageBySlug.get(idToCurrentSlug.get(id)!) : undefined)
-    if (!page) continue
-    const original = await fsp.readFile(page.abs, "utf8")
-    const fmMatch = original.match(/^---\n([\s\S]*?)\n---/)
-    if (!fmMatch) continue
-    let fm = fmMatch[1]
-    const slugAsId = page.rel
-      .replace(/^content\/docs\//, "")
-      .replace(/\.mdx$/, "")
-      .replace(/\/index$/, "")
-    let mutated = false
-    for (const d of ds) {
-      const upstreamEmpty = !d.upstream || d.upstream === ""
-      if (!upstreamEmpty) continue
-      // Match the field's full line, capture the value.
-      const re = new RegExp(`^${d.field}:\\s*"([^"]*)"\\s*$`, "m")
-      const m = fm.match(re)
-      if (!m) continue
-      const value = m[1]
-      const isAutoTitle = d.field === "title" && value === slugAsId
-      const isAutoEmpty = d.field === "description" && value === ""
-      if (isAutoTitle || isAutoEmpty) {
-        fm = fm.replace(re, "").replace(/\n{2,}/g, "\n")
-        mutated = true
-      }
-    }
-    if (mutated) {
-      const next = original.replace(
-        /^---\n[\s\S]*?\n---/,
-        `---\n${fm.trim()}\n---`,
-      )
-      if (next !== original) {
-        await fsp.writeFile(page.abs, next, "utf8")
-        touched++
-        if (verbose) console.log(`    restored frontmatter: ${page.rel}`)
-      }
-    }
-  }
-  console.log(`  fixed frontmatter: ${touched} file(s) restored to upstream parity`)
 }
 
 /**
