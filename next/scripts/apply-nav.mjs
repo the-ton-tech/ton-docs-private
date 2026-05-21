@@ -26,11 +26,9 @@ import {promises as fs} from "node:fs"
 import path from "node:path"
 import {
   CONTENT_ROOT,
-  DOCS_JSON_PATH,
   NAV_BACKUP_DIR,
   NAV_OVERLAYS_PATH,
   REPO_ROOT,
-  attachOrphansToConfig,
   buildIdIndex,
   collectReferencedIds,
   getFrontmatterField,
@@ -43,11 +41,9 @@ import {
   readConfig,
   readRedirects,
   resolveCurrentSlug,
-  seedConfigFromDocsJson,
   setFrontmatterField,
   stampId,
   walkPages,
-  writeConfig,
   writeRedirects,
 } from "./nav-config.mjs"
 import {stableStringify} from "../src/lib/stable-stringify"
@@ -64,13 +60,9 @@ async function main() {
   if (DRY_RUN) console.log("(dry-run - no files will be written)")
 
   // -------------------------------------------------------------------------
-  // 1. Load (or seed) config. Seeding is deferred until after we've built the
-  //    id index so we can attach orphan .mdx files (OpenAPI-generated pages,
-  //    new files added post-Mintlify) to the deepest matching folder-backed
-  //    group automatically.
+  // 1. Load config.
   // -------------------------------------------------------------------------
-  let config = await readConfig()
-  const isFirstRun = !config
+  const config = await readConfig()
 
   // -------------------------------------------------------------------------
   // 2. Build id index from content/docs/**/*.mdx frontmatter.
@@ -88,16 +80,7 @@ async function main() {
     process.exit(1)
   }
 
-  if (isFirstRun) {
-    console.log("  no navigation.config.json found; seeding from docs.json + filesystem...")
-    const docs = await readJson(DOCS_JSON_PATH)
-    config = seedConfigFromDocsJson(docs)
-    attachOrphansToConfig(config, idToSlug.keys())
-    if (!DRY_RUN) await writeConfig(config)
-    console.log(`  seeded ${config.tabs.length} tab(s) (${idToSlug.size} pages)`)
-  } else {
-    console.log(`  loaded ${config.tabs.length} tab(s)`)
-  }
+  console.log(`  loaded ${config.tabs.length} tab(s)`)
 
   // -------------------------------------------------------------------------
   // 3. Validate config.
@@ -194,11 +177,6 @@ async function main() {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-async function readJson(file) {
-  const raw = await fs.readFile(file, "utf8")
-  return JSON.parse(raw)
-}
 
 async function pathExists(p) {
   try {

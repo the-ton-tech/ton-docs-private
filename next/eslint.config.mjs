@@ -11,7 +11,6 @@ const config = [
       "content/docs/**",
       "openapi/**",
       "redirects.mjs",
-      "scripts/migrate-content.mjs",
       "src/components/legacy/**",
     ],
   },
