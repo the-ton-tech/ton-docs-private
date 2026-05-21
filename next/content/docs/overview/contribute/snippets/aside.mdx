@@ -41,13 +41,11 @@ An `<Aside>` can have an optional [`type`](#type) attribute, which controls the 
 <Aside type="caution">Some cautionary content.</Aside>
 
 <Aside type="tip">
-
   Other content is also supported in asides.
 
   ```js
   // A code snippet, for example.
   ```
-
 </Aside>
 
 <Aside type="danger">Do not give your password to anyone.</Aside>
@@ -62,7 +60,10 @@ Override the default aside titles by using the [`title`](#title) attribute.
 </Aside>
 ```
 
-<Aside type="caution" title="Watch out!">
+<Aside
+  type="caution"
+  title="Watch out!"
+>
   A warning aside _with_ a custom title.
 </Aside>
 
@@ -93,14 +94,14 @@ The title of the aside to display. If `title` is not set, no title is displayed.
 
 The following components are shorthand for `<Aside>` with a specific type:
 
-| Component | Equivalent |
-|-----------|-----------|
-| `<Note>` | `<Aside type="note">` |
-| `<Info>` | `<Aside type="note">` |
-| `<Tip>` | `<Aside type="tip">` |
+| Component   | Equivalent               |
+| ----------- | ------------------------ |
+| `<Note>`    | `<Aside type="note">`    |
+| `<Info>`    | `<Aside type="note">`    |
+| `<Tip>`     | `<Aside type="tip">`     |
 | `<Warning>` | `<Aside type="caution">` |
 | `<Caution>` | `<Aside type="caution">` |
-| `<Danger>` | `<Aside type="danger">` |
-| `<Check>` | success callout |
+| `<Danger>`  | `<Aside type="danger">`  |
+| `<Check>`   | success callout          |
 
 Prefer using `<Aside>` directly for consistency.

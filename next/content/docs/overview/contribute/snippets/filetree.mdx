@@ -161,20 +161,53 @@ For cases where a data-driven approach is unnecessary, use the `<Tree>` componen
 ```
 
 <Tree>
-  <Tree.Folder name="app" defaultOpen>
-    <Tree.File name="layout.tsx" />
-    <Tree.File name="page.tsx" />
-    <Tree.Folder name="api" defaultOpen>
-      <Tree.Folder name="auth">
-        <Tree.File name="route.ts" />
+  <Tree.Folder
+    name="app"
+    defaultOpen
+  >
+    <Tree.File
+      name="layout.tsx"
+    />
+
+    <Tree.File
+      name="page.tsx"
+    />
+
+    <Tree.Folder
+      name="api"
+      defaultOpen
+    >
+      <Tree.Folder
+        name="auth"
+      >
+        <Tree.File
+          name="route.ts"
+        />
       </Tree.Folder>
-      <Tree.File name="route.ts" />
+
+      <Tree.File
+        name="route.ts"
+      />
     </Tree.Folder>
-    <Tree.Folder name="components">
-      <Tree.File name="button.tsx" />
-      <Tree.File name="dialog.tsx" />
-      <Tree.File name="tabs.tsx" />
+
+    <Tree.Folder
+      name="components"
+    >
+      <Tree.File
+        name="button.tsx"
+      />
+
+      <Tree.File
+        name="dialog.tsx"
+      />
+
+      <Tree.File
+        name="tabs.tsx"
+      />
     </Tree.Folder>
   </Tree.Folder>
-  <Tree.File name="package.json" />
+
+  <Tree.File
+    name="package.json"
+  />
 </Tree>

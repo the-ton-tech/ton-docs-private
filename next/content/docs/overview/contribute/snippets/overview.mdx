@@ -51,10 +51,15 @@ Display sequential instructions in a numbered format.
 ```
 
 <Steps>
-  <Step title="First step">
+  <Step
+    title="First step"
+  >
     Do something.
   </Step>
-  <Step title="Second step">
+
+  <Step
+    title="Second step"
+  >
     Do something else.
   </Step>
 </Steps>
@@ -75,10 +80,15 @@ Tabbed content container. Each `<Tab>` needs a `title`.
 ```
 
 <Tabs>
-  <Tab title="JavaScript">
+  <Tab
+    title="JavaScript"
+  >
     JavaScript example.
   </Tab>
-  <Tab title="Python">
+
+  <Tab
+    title="Python"
+  >
     Python example.
   </Tab>
 </Tabs>
@@ -100,13 +110,13 @@ x = 1
 ````
 
 <CodeGroup>
-```javascript title="example.js"
-const x = 1;
-```
+  ```javascript title="example.js"
+  const x = 1;
+  ```
 
-```python title="example.py"
-x = 1
-```
+  ```python title="example.py"
+  x = 1
+  ```
 </CodeGroup>
 
 ### Accordion and AccordionGroup
@@ -124,7 +134,9 @@ Collapsible sections for progressive disclosure.
 </AccordionGroup>
 ```
 
-<Accordion title="Click to expand">
+<Accordion
+  title="Click to expand"
+>
   Hidden content revealed on click.
 </Accordion>
 
@@ -138,7 +150,9 @@ A lighter collapsible section using native HTML `<details>`.
 </Expandable>
 ```
 
-<Expandable title="Show more">
+<Expandable
+  title="Show more"
+>
   Additional details here.
 </Expandable>
 
@@ -170,10 +184,18 @@ Highlighted content containers with icons. Prefer regular Markdown lists and use
 ```
 
 <CardGroup cols={2}>
-  <Card title="First card" icon="rocket" href="/overview/start-here">
+  <Card
+    title="First card"
+    icon="rocket"
+    href="/overview/start-here"
+  >
     Description of the first card.
   </Card>
-  <Card title="Second card" icon="code">
+
+  <Card
+    title="Second card"
+    icon="code"
+  >
     Description of the second card.
   </Card>
 </CardGroup>
@@ -226,7 +248,10 @@ Renders a [Lucide](https://lucide.dev/icons) icon by name. Avoid using standalon
 <Icon icon="rocket" size={24} />
 ```
 
-<Icon icon="rocket" size={24} />
+<Icon
+  icon="rocket"
+  size={24}
+/>
 
 ## Data components
 
@@ -242,11 +267,13 @@ Display directory structures with collapsible subdirectories.
 ]} />
 ```
 
-<FileTree items={[
-  "README.md",
-  { kind: "folder", name: "src", items: ["index.ts", "utils.ts"] },
-  "package.json",
-]} />
+<FileTree
+  items={["README.md", {
+    kind: "folder",
+    name: "src",
+    items: ["index.ts", "utils.ts"]
+  }, "package.json"]}
+/>
 
 ### ResponseField and ParamField
 
@@ -262,11 +289,18 @@ Document API response fields and parameters.
 </ResponseField>
 ```
 
-<ParamField name="address" type="string" required>
+<ParamField
+  name="address"
+  type="string"
+  required
+>
   The wallet address to query.
 </ParamField>
 
-<ResponseField name="balance" type="number">
+<ResponseField
+  name="balance"
+  type="number"
+>
   The wallet balance in nanotons.
 </ResponseField>
 
@@ -288,15 +322,15 @@ Regular text with a <Badge>default</Badge> badge.
 
 These components are shorthand aliases for `<Aside>` with specific types:
 
-| Component | Equivalent |
-|-----------|-----------|
-| `<Note>` | `<Aside type="note">` |
-| `<Info>` | `<Aside type="note">` |
-| `<Tip>` | `<Aside type="tip">` |
+| Component   | Equivalent               |
+| ----------- | ------------------------ |
+| `<Note>`    | `<Aside type="note">`    |
+| `<Info>`    | `<Aside type="note">`    |
+| `<Tip>`     | `<Aside type="tip">`     |
 | `<Warning>` | `<Aside type="caution">` |
 | `<Caution>` | `<Aside type="caution">` |
-| `<Danger>` | `<Aside type="danger">` |
-| `<Check>` | success callout |
+| `<Danger>`  | `<Aside type="danger">`  |
+| `<Check>`   | success callout          |
 
 Prefer using `<Aside>` directly for consistency.
 
