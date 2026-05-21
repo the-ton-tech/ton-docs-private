@@ -46,7 +46,6 @@ export default async function Page(props: PageProps) {
       full={isWide || page.data.full}
       tableOfContent={{
         style: "clerk",
-        enabled: !page.data.hideToc,
       }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>

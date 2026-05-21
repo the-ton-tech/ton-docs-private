@@ -32,7 +32,6 @@ export const docs = defineDocs({
         twitterImage: z.string().optional(),
         tag: z.string().optional(),
         keywords: z.array(z.string()).optional(),
-        hideToc: z.boolean().optional(),
       })
       // Avoid build aborts when a single page has malformed frontmatter; the
       // page just renders with default values and we surface the issue in the
