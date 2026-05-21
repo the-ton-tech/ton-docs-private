@@ -12,10 +12,6 @@ updates:
     cooldown:
       default-days: 7
     versioning-strategy: increase
-    allow:
-      - dependency-name: "cspell"
-      - dependency-name: "husky"
-      - dependency-name: "mint"
     ignore:
       - dependency-name: "remark*"
       - dependency-name: "unified*"
