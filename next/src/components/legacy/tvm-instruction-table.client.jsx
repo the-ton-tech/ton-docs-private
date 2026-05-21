@@ -1773,6 +1773,7 @@ export const TvmInstructionTable = () => {
   border: 1px solid rgb(var(--gray-400) / 0.14);
   border-radius: 12px;
   background: var(--tvm-surface-secondary);
+  overflow: hidden;
 }
 
 .tvm-spec-grid-scroll {
@@ -1893,8 +1894,8 @@ export const TvmInstructionTable = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 1em;
+  height: 1em;
   border-radius: 4px;
   border: none;
   background: transparent;
@@ -1903,6 +1904,7 @@ export const TvmInstructionTable = () => {
   opacity: 0;
   transition: opacity 0.15s ease-in-out, color 0.15s ease-in-out;
   flex-shrink: 0;
+  font-size: 1.15rem;
 }
 
 .tvm-spec-row:hover .tvm-copy-link,
@@ -1915,8 +1917,8 @@ export const TvmInstructionTable = () => {
 }
 
 .tvm-copy-link svg {
-  width: 13px;
-  height: 13px;
+  width: 1em;
+  height: 1em;
 }
 
 .tvm-copy-link.is-copied {
@@ -1926,9 +1928,9 @@ export const TvmInstructionTable = () => {
 
 .tvm-name-line {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .tvm-row-indicator {
