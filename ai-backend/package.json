@@ -1,0 +1,29 @@
+{
+  "name": "ton-docs-ai",
+  "version": "1.0.0",
+  "description": "AI chat assistant backend for the TON blockchain documentation site. Streams OpenRouter-backed answers grounded in the docs index.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.0.3",
+    "@openrouter/ai-sdk-provider": "^2.9.0",
+    "ai": "^6.0.190",
+    "dotenv": "^17.4.2",
+    "flexsearch": "0.8.212",
+    "hono": "4.12.22",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "tsx": "4.22.3",
+    "typescript": "5.9.3"
+  }
+}

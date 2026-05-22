@@ -1,0 +1,55 @@
+/**
+ * Reads and validates environment variables, then exports a typed config object.
+ * Throws a clear error on startup if a required variable is missing or invalid.
+ */
+
+function readString(name: string, fallback: string): string {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  return raw.trim();
+}
+
+function readInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const parsed = Number.parseInt(raw.trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`Invalid value for ${name}: expected a positive integer, got "${raw}"`);
+  }
+  return parsed;
+}
+
+const openrouterKey = process.env.OPENROUTER_KEY?.trim();
+if (!openrouterKey) {
+  throw new Error(
+    "Missing required environment variable OPENROUTER_KEY. " +
+      "Copy .env.example to .env and set your OpenRouter API key.",
+  );
+}
+
+const allowedOrigins = readString("ALLOWED_ORIGINS", "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter((o) => o.length > 0);
+
+export interface Config {
+  openrouterKey: string;
+  model: string;
+  port: number;
+  allowedOrigins: string[];
+  docsLlmsUrl: string;
+  dailyRequestCap: number;
+  perIpDailyCap: number;
+  docsIndexRefreshMinutes: number;
+}
+
+export const config: Config = {
+  openrouterKey,
+  model: readString("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free"),
+  port: readInt("PORT", 8787),
+  allowedOrigins,
+  docsLlmsUrl: readString("DOCS_LLMS_URL", "https://docs.ton.org/llms-full.txt"),
+  dailyRequestCap: readInt("DAILY_REQUEST_CAP", 45),
+  perIpDailyCap: readInt("PER_IP_DAILY_CAP", 10),
+  docsIndexRefreshMinutes: readInt("DOCS_INDEX_REFRESH_MINUTES", 360),
+};
