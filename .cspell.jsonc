@@ -69,7 +69,7 @@
     },
     // Do not check for banned words (denylists or flagWords) in certain files
     {
-      "filename": "contribute/style-guide*.mdx",
+      "filename": "**/contribute/style-guide*.mdx",
       "ignoreWords": [
         "tos",
         "DOI",
@@ -131,8 +131,20 @@
       "filename": "**/appkit/reference/appkit*.mdx",
       "ignoreWords": [
         "Id",
+        "TonConnect",
         "bp",
         "id"
+      ]
+    },
+    {
+      "filename": "**/ton-connect/api-reference/*.mdx",
+      "ignoreWords": [
+        "ES",
+        "MS",
+        "TonConnect",
+        "boc",
+        "id",
+        "qr"
       ]
     }
   ],
@@ -148,6 +160,7 @@
     "tolk/features/standard-library.mdx",
     // Generated files
     "tvm/instructions.mdx",
+    "next/content/docs/blockchain-basics/tvm/instructions.mdx",
     // Binaries
     "**/*.boc",
     // Code
