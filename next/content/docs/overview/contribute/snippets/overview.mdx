@@ -255,25 +255,29 @@ Renders a [Lucide](https://lucide.dev/icons) icon by name. Avoid using standalon
 
 ## Data components
 
-### FileTree
+### Tree
 
-Display directory structures with collapsible subdirectories.
+Display directory structures with collapsible subdirectories using `<Tree.Folder>` and `<Tree.File>` sub-components. Supports MDX content inside children. See [detailed documentation](/overview/contribute/snippets/tree).
 
 ```mdx
-<FileTree items={[
-  "README.md",
-  { kind: "folder", name: "src", items: ["index.ts", "utils.ts"] },
-  "package.json",
-]} />
+<Tree>
+  <Tree.File name="README.md" />
+  <Tree.Folder name="src" defaultOpen>
+    <Tree.File name="index.ts" />
+    <Tree.File name="utils.ts" />
+  </Tree.Folder>
+  <Tree.File name="package.json" />
+</Tree>
 ```
 
-<FileTree
-  items={["README.md", {
-    kind: "folder",
-    name: "src",
-    items: ["index.ts", "utils.ts"]
-  }, "package.json"]}
-/>
+<Tree>
+  <Tree.File name="README.md" />
+  <Tree.Folder name="src" defaultOpen>
+    <Tree.File name="index.ts" />
+    <Tree.File name="utils.ts" />
+  </Tree.Folder>
+  <Tree.File name="package.json" />
+</Tree>
 
 ### ResponseField and ParamField
 
@@ -342,6 +346,13 @@ These components have better alternatives:
 1. `<Frame>` — use [`<Image>`](/overview/contribute/snippets/image) instead, which includes framing, zoom, and dark theme support.
 1. `<Icon>` — do not use standalone unless icons in other components or code blocks are insufficient in the given case.
 
+These components were evaluated and do not fit the documentation UI:
+
+1. `<FileTree>` — data-driven variant, replaced by [`<Tree>`](#tree) which supports native MDX content.
+1. `<SourceCodeLink>` — pill-button style does not fit inline text, tables, or lists. Use regular Markdown links instead.
+1. `<RequestExample>` / `<ResponseExample>` — create a nested "field inside field" effect. Use fenced code blocks with `title` instead.
+1. `<CommandOptions>` / `<CommandOption>` — existing tables and lists for CLI flags are clearer.
+
 These components are currently unused:
 
 1. `<Banner>` — reserved for special occasions and public releases.
@@ -358,7 +369,7 @@ These components are used in specific contexts:
 
 ## Custom components
 
-TON documentation includes custom components built for various needs. See items on the left navigation panel within the "Components and snippets" group under the "Contribute" section, such as: [Aside](/overview/contribute/snippets/aside), [Image](/overview/contribute/snippets/image), etc.
+TON documentation includes custom components built for various needs. See items on the left navigation panel within the "Components and snippets" group under the "Contribute" section, such as: [Aside](/overview/contribute/snippets/aside), [Tree](/overview/contribute/snippets/tree), [Image](/overview/contribute/snippets/image), etc.
 
 ## Styling
 
