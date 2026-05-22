@@ -46,7 +46,7 @@ export default function Layout({children}: {children: ReactNode}) {
         <AISearchPanel />
         <AISearchTrigger
           position="float"
-          className="bg-fd-secondary text-fd-secondary-foreground border rounded-full px-3 py-2 text-sm font-medium hover:bg-fd-accent hover:text-fd-accent-foreground"
+          className="bg-fd-secondary text-fd-secondary-foreground border rounded-lg px-3 py-2 text-sm font-medium hover:bg-fd-accent hover:text-fd-accent-foreground"
         >
           <Sparkles className="size-4" />
           Ask AI

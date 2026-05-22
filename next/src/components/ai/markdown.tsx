@@ -55,6 +55,25 @@ export function rehypeWrapWords() {
   }
 }
 
+// The docs `.prose` heading scale is tuned for full-width articles and looks
+// oversized in the narrow chat column. Inline styles override `.prose` here.
+const compactHeading =
+  (Tag: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") =>
+  function Heading(props: ComponentProps<"h2">) {
+    return (
+      <Tag
+        {...props}
+        style={{
+          marginTop: "0.875rem",
+          marginBottom: "0.25rem",
+          fontSize: "0.9375rem",
+          fontWeight: 600,
+          lineHeight: 1.4,
+        }}
+      />
+    )
+  }
+
 function createProcessor(): Processor {
   const processor = remark().use(remarkGfm).use(remarkRehype).use(rehypeWrapWords)
 
@@ -72,6 +91,12 @@ function createProcessor(): Processor {
           ...defaultMdxComponents,
           pre: Pre,
           img: undefined, // use JSX
+          h1: compactHeading("h1"),
+          h2: compactHeading("h2"),
+          h3: compactHeading("h3"),
+          h4: compactHeading("h4"),
+          h5: compactHeading("h5"),
+          h6: compactHeading("h6"),
         },
       })
     },

@@ -11,11 +11,11 @@ import {
   useRef,
   useState,
 } from "react"
-import {Loader2, MessageCircleIcon, RefreshCw, SearchIcon, Send, X} from "lucide-react"
+import {Loader2, RefreshCw, Send, Sparkles, X} from "lucide-react"
 import {cn} from "../../lib/cn"
 import {buttonVariants} from "../ui/button"
 import {useChat, type UseChatHelpers} from "@ai-sdk/react"
-import {DefaultChatTransport, type Tool, type UIMessage, type UIToolInvocation} from "ai"
+import {DefaultChatTransport, type UIMessage} from "ai"
 import {Markdown} from "./markdown"
 import {Presence} from "@radix-ui/react-presence"
 
@@ -42,18 +42,6 @@ export type ChatUIMessage = UIMessage<
   }
 >
 
-/**
- * Client-side shape of the backend's `search` tool, used only to render tool
- * invocations in the UI. `input`/`output` match what the backend streams.
- */
-export type SearchTool = {
-  input: {
-    query: string
-    limit?: number
-  }
-  output: unknown[]
-}
-
 const Context = createContext<{
   open: boolean
   setOpen: (open: boolean) => void
@@ -66,13 +54,13 @@ export function AISearchPanelHeader({className, ...props}: ComponentProps<"div">
   return (
     <div
       className={cn(
-        "sticky top-0 flex items-start gap-2 border rounded-xl bg-fd-secondary text-fd-secondary-foreground shadow-sm",
+        "sticky top-0 flex items-start gap-2 rounded-xl border bg-fd-card text-fd-card-foreground",
         className,
       )}
       {...props}
     >
       <div className="px-3 py-2 flex-1">
-        <p className="text-sm font-medium mb-2">Ask AI</p>
+        <p className="mb-1 text-sm font-semibold">Ask AI</p>
         <p className="text-xs text-fd-muted-foreground">
           AI can be inaccurate, please verify the answers.
         </p>
@@ -85,7 +73,7 @@ export function AISearchPanelHeader({className, ...props}: ComponentProps<"div">
           buttonVariants({
             size: "icon-sm",
             color: "ghost",
-            className: "text-fd-muted-foreground rounded-full",
+            className: "m-1.5 text-fd-muted-foreground",
           }),
         )}
         onClick={() => setOpen(false)}
@@ -111,7 +99,7 @@ export function AISearchInputActions() {
             buttonVariants({
               color: "secondary",
               size: "sm",
-              className: "rounded-full gap-1.5",
+              className: "gap-1.5",
             }),
           )}
           onClick={() => regenerate()}
@@ -126,7 +114,6 @@ export function AISearchInputActions() {
           buttonVariants({
             color: "secondary",
             size: "sm",
-            className: "rounded-full",
           }),
         )}
         onClick={() => setMessages([])}
@@ -171,7 +158,7 @@ export function AISearchInput(props: ComponentProps<"form">) {
   }, [isLoading])
 
   return (
-    <form {...props} className={cn("flex items-start pe-2", props.className)} onSubmit={onStart}>
+    <form {...props} className={cn("flex items-end pe-2", props.className)} onSubmit={onStart}>
       <Input
         value={input}
         placeholder={isLoading ? "AI is answering..." : "Ask a question"}
@@ -195,7 +182,7 @@ export function AISearchInput(props: ComponentProps<"form">) {
           className={cn(
             buttonVariants({
               color: "secondary",
-              className: "transition-all rounded-full mt-2 gap-2",
+              className: "transition-all mb-2 gap-2",
             }),
           )}
           onClick={stop}
@@ -210,7 +197,7 @@ export function AISearchInput(props: ComponentProps<"form">) {
           className={cn(
             buttonVariants({
               color: "primary",
-              className: "transition-all rounded-full mt-2",
+              className: "transition-all mb-2",
             }),
           )}
           disabled={input.length === 0}
@@ -284,27 +271,14 @@ function Input(props: ComponentProps<"textarea">) {
 }
 
 const roleName: Record<string, string> = {
-  user: "you",
+  user: "You",
   assistant: "TON Docs AI",
 }
 
 function Message({message, ...props}: {message: ChatUIMessage} & ComponentProps<"div">) {
   let markdown = ""
-  const searchCalls: UIToolInvocation<SearchTool>[] = []
-
   for (const part of message.parts ?? []) {
-    if (part.type === "text") {
-      markdown += part.text
-      continue
-    }
-
-    if (part.type.startsWith("tool-")) {
-      const toolName = part.type.slice("tool-".length)
-      const p = part as UIToolInvocation<Tool>
-
-      if (toolName !== "search" || !p.toolCallId) continue
-      searchCalls.push(p as UIToolInvocation<SearchTool>)
-    }
+    if (part.type === "text") markdown += part.text
   }
 
   return (
@@ -320,22 +294,6 @@ function Message({message, ...props}: {message: ChatUIMessage} & ComponentProps<
       <div className="prose text-sm">
         <Markdown text={markdown} />
       </div>
-
-      {searchCalls.map(call => {
-        return (
-          <div
-            key={call.toolCallId}
-            className="flex flex-row gap-2 items-center mt-3 rounded-lg border bg-fd-secondary text-fd-muted-foreground text-xs p-2"
-          >
-            <SearchIcon className="size-4" />
-            {call.state === "output-error" || call.state === "output-denied" ? (
-              <p className="text-fd-error">{call.errorText ?? "Failed to search"}</p>
-            ) : (
-              <p>{!call.output ? "Searching…" : `${call.output.length} search results`}</p>
-            )}
-          </div>
-        )
-      })}
     </div>
   )
 }
@@ -366,7 +324,7 @@ export function AISearchTrigger({
       data-state={open ? "open" : "closed"}
       className={cn(
         position === "float" && [
-          "fixed bottom-4 flex items-center justify-center gap-2 w-24 whitespace-nowrap inset-e-[calc(--spacing(4)+var(--removed-body-scroll-bar-size,0px))] shadow-lg z-20 transition-[translate,opacity]",
+          "fixed bottom-4 flex items-center gap-2 whitespace-nowrap inset-e-[calc(--spacing(4)+var(--removed-body-scroll-bar-size,0px))] shadow-lg z-20 transition-[translate,opacity]",
           open && "translate-y-10 opacity-0",
         ],
         className,
@@ -416,20 +374,20 @@ export function AISearchPanel() {
       <Presence present={open}>
         <div
           className={cn(
-            "overflow-hidden z-30 bg-fd-card text-fd-card-foreground [--ai-chat-width:400px] 2xl:[--ai-chat-width:460px]",
-            "max-lg:fixed max-lg:inset-x-2 max-lg:inset-y-4 max-lg:border max-lg:rounded-2xl max-lg:shadow-xl",
+            "overflow-hidden z-30 bg-fd-background text-fd-foreground [--ai-chat-width:400px] 2xl:[--ai-chat-width:460px]",
+            "max-lg:fixed max-lg:inset-3 max-lg:border max-lg:rounded-2xl max-lg:shadow-xl",
             "lg:sticky lg:top-0 lg:h-dvh lg:border-s lg:ms-auto lg:in-[#nd-docs-layout]:[grid-area:toc] lg:in-[#nd-notebook-layout]:row-span-full lg:in-[#nd-notebook-layout]:col-start-5",
             open
               ? "animate-fd-dialog-in lg:animate-[ask-ai-open_200ms]"
               : "animate-fd-dialog-out lg:animate-[ask-ai-close_200ms]",
           )}
         >
-          <div className="flex flex-col size-full p-2 lg:p-3 lg:w-(--ai-chat-width)">
+          <div className="flex flex-col size-full gap-2 p-2 lg:p-3 lg:w-(--ai-chat-width)">
             <AISearchPanelHeader />
             <AISearchPanelList className="flex-1" />
-            <div className="rounded-xl border bg-fd-secondary text-fd-secondary-foreground shadow-sm has-focus-visible:shadow-md">
+            <div className="rounded-xl border bg-fd-card text-fd-card-foreground has-focus-visible:border-fd-ring has-focus-visible:ring-1 has-focus-visible:ring-fd-ring">
               <AISearchInput />
-              <div className="flex items-center gap-1.5 p-1 empty:hidden">
+              <div className="flex items-center gap-1.5 px-3 pt-1 pb-2 empty:hidden">
                 <AISearchInputActions />
               </div>
             </div>
@@ -456,14 +414,14 @@ export function AISearchPanelList({className, style, ...props}: ComponentProps<"
     >
       {messages.length === 0 ? (
         <div className="text-sm text-fd-muted-foreground/80 size-full flex flex-col items-center justify-center text-center gap-2">
-          <MessageCircleIcon fill="currentColor" stroke="none" />
+          <Sparkles className="size-6 text-fd-muted-foreground/60" />
           <p onClick={e => e.stopPropagation()}>Start a new chat below.</p>
         </div>
       ) : (
-        <div className="flex flex-col px-3 gap-4">
+        <div className="flex flex-col gap-4 px-[13px]">
           {chat.error && (
-            <div className="p-2 bg-fd-secondary text-fd-secondary-foreground border rounded-lg">
-              <p className="text-xs text-fd-muted-foreground mb-1">
+            <div className="p-2 bg-fd-card text-fd-card-foreground border rounded-xl">
+              <p className="text-xs text-fd-error mb-1">
                 Request Failed: {chat.error.name}
               </p>
               <p className="text-sm">{chat.error.message}</p>
