@@ -37,10 +37,9 @@ export interface Config {
   model: string;
   port: number;
   allowedOrigins: string[];
-  docsLlmsUrl: string;
+  oramaSearchUrl: string;
   dailyRequestCap: number;
   perIpDailyCap: number;
-  docsIndexRefreshMinutes: number;
 }
 
 export const config: Config = {
@@ -48,8 +47,7 @@ export const config: Config = {
   model: readString("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free"),
   port: readInt("PORT", 8787),
   allowedOrigins,
-  docsLlmsUrl: readString("DOCS_LLMS_URL", "https://docs.ton.org/llms-full.txt"),
+  oramaSearchUrl: readString("ORAMA_SEARCH_URL", "http://127.0.0.1:7700").replace(/\/+$/, ""),
   dailyRequestCap: readInt("DAILY_REQUEST_CAP", 45),
   perIpDailyCap: readInt("PER_IP_DAILY_CAP", 10),
-  docsIndexRefreshMinutes: readInt("DOCS_INDEX_REFRESH_MINUTES", 360),
 };

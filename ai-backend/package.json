@@ -17,7 +17,6 @@
     "@openrouter/ai-sdk-provider": "^2.9.0",
     "ai": "^6.0.190",
     "dotenv": "^17.4.2",
-    "flexsearch": "0.8.212",
     "hono": "4.12.22",
     "zod": "^4.4.3"
   },

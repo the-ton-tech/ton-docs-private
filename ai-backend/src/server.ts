@@ -17,7 +17,6 @@ import { config } from "./config.js";
 import { resolveOrigin } from "./cors.js";
 import { runChat } from "./chat.js";
 import { allowPerIp, clientIp, dailyStats, tryConsume } from "./ratelimit.js";
-import { indexedPageCount, startIndexing } from "./search.js";
 
 const app = new Hono();
 
@@ -59,7 +58,6 @@ app.get("/api/health", (c) => {
   const daily = dailyStats();
   return c.json({
     ok: true,
-    indexedPages: indexedPageCount(),
     dailyUsed: daily.used,
     dailyCap: daily.cap,
   });
@@ -108,8 +106,6 @@ app.post("/api/chat", async (c) => {
 });
 
 // --- Startup ----------------------------------------------------------------
-startIndexing();
-
 serve(
   {
     fetch: app.fetch,
@@ -119,6 +115,7 @@ serve(
   () => {
     console.log(`[server] TON Docs AI listening on http://127.0.0.1:${config.port}`);
     console.log(`[server] Model: ${config.model}`);
+    console.log(`[server] Orama search: ${config.oramaSearchUrl}`);
     console.log(
       `[server] Allowed origins: https://docs.ton.org, topteam Vercel previews` +
         (config.allowedOrigins.length > 0
