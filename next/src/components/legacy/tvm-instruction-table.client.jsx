@@ -1146,6 +1146,37 @@ export const TvmInstructionTable = () => {
           <div className="tvm-detail-heading">
             <div className="tvm-detail-header-main">
               <h4 className="tvm-detail-title">{instruction.mnemonic}</h4>
+              <button
+                type="button"
+                className={`tvm-copy-link${copied[instruction.uid] ? " is-copied" : ""}`}
+                aria-label={copied[instruction.uid] ? "Copied" : "Copy link to instruction"}
+                onClick={() => {
+                  const anchorId = instruction.anchorId || buildAnchorId(instruction);
+                  copyAnchorUrl(anchorId)
+                    .then(() => {
+                      setCopied((prev) => ({ ...prev, [instruction.uid]: true }));
+                      setTimeout(() => {
+                        setCopied((prev) => {
+                          const { [instruction.uid]: _omit, ...rest } = prev;
+                          return rest;
+                        });
+                      }, 1500);
+                    })
+                    .catch(() => {});
+                }}
+                title={copied[instruction.uid] ? "Copied" : "Copy link"}
+              >
+                {copied[instruction.uid] ? (
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M10.59 13.41a1.996 1.996 0 0 0 2.82 0l3.59-3.59a2 2 0 0 0-2.83-2.83l-1.17 1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M13.41 10.59a1.996 1.996 0 0 0-2.82 0L7 14.18a2 2 0 1 0 2.83 2.83l1.17-1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
           <div className="tvm-detail-actions">
@@ -1402,7 +1433,7 @@ export const TvmInstructionTable = () => {
   --tvm-surface-secondary: rgb(var(--gray-50) / 0.65);
   --tvm-text-primary: var(--mint-text-primary, rgb(var(--gray-800)));
   --tvm-text-secondary: var(--mint-text-secondary, rgb(var(--gray-600) / 0.85));
-  --tvm-text-muted: var(--mint-text-tertiary, rgb(var(--gray-400) / 0.68));
+  --tvm-text-muted: var(--mint-text-tertiary, rgb(var(--gray-400)));
   --tvm-accent: rgb(var(--primary));
   --tvm-accent-soft: rgb(var(--primary) / 0.16);
   --tvm-accent-strong: rgb(var(--primary-light));
@@ -1421,17 +1452,17 @@ export const TvmInstructionTable = () => {
   --tvm-stack-conditional-border: rgb(var(--primary-dark) / 0.32);
   --tvm-stack-label: var(--mint-text-tertiary, rgb(var(--gray-600) / 0.65));
   --tvm-pill-muted-bg: rgb(var(--gray-400) / 0.12);
-  --tvm-row-padding-y: 0.85rem;
-  --tvm-row-padding-x: 1rem;
+  --tvm-row-padding-y: 0.5rem;
+  --tvm-row-padding-x: 0.75rem;
   --tvm-chip-padding-y: 0.2rem;
   --tvm-chip-padding-x: 0.6rem;
   --tvm-control-height: 2.75rem;
   color: var(--tvm-text-primary);
-  background: var(--tvm-surface);
-  border: 1px solid var(--tvm-border);
-  border-radius: 14px;
-  padding: 1.5rem;
-  box-shadow: 0 24px 60px -40px rgb(var(--gray-900) / 0.9);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 :where(.dark) .tvm-instruction-app {
@@ -1455,8 +1486,8 @@ export const TvmInstructionTable = () => {
   --tvm-surface: rgb(var(--gray-950));
   --tvm-surface-secondary: rgb(var(--gray-900) / 0.85);
   --tvm-text-primary: rgb(var(--gray-100));
-  --tvm-text-secondary: rgb(var(--gray-300));
-  --tvm-text-muted: rgb(var(--gray-400) / 0.9);
+  --tvm-text-secondary: rgb(var(--gray-400));
+  --tvm-text-muted: rgb(var(--gray-400) / 0.7);
   --tvm-accent: rgb(var(--primary-light));
   --tvm-accent-soft: rgb(var(--primary) / 0.22);
   --tvm-accent-strong: rgb(var(--primary));
@@ -1469,21 +1500,21 @@ export const TvmInstructionTable = () => {
   --tvm-stack-const-bg: rgb(var(--primary-dark) / 0.4);
   --tvm-stack-const-text: rgb(var(--primary-light));
   --tvm-stack-array-bg: rgb(var(--primary) / 0.25);
-  --tvm-stack-array-text: rgb(var(--gray-50));
+  --tvm-stack-array-text: var(--tvm-text-primary);
   --tvm-stack-conditional-bg: rgb(var(--primary-dark) / 0.38);
   --tvm-stack-conditional-text: rgb(var(--primary-light));
   --tvm-stack-conditional-border: rgb(var(--primary) / 0.5);
   --tvm-stack-label: rgb(var(--gray-400) / 0.85);
   --tvm-pill-muted-bg: rgb(var(--gray-800) / 0.85);
-  box-shadow: 0 24px 80px -60px rgb(0 0 0 / 0.65);
+  box-shadow: none;
   color-scheme: dark;
 }
 
 .tvm-instruction-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
 }
 
 .tvm-toolbar-search {
@@ -1685,7 +1716,7 @@ export const TvmInstructionTable = () => {
 }
 
 .tvm-instruction-meta {
-  margin-bottom: 1rem;
+  margin-bottom: 0.65rem;
   font-size: 0.85rem;
   color: var(--tvm-text-secondary);
   display: flex;
@@ -1770,10 +1801,10 @@ export const TvmInstructionTable = () => {
 }
 
 .tvm-spec-grid-container {
-  border: 1px solid var(--tvm-border);
+  border: 1px solid rgb(var(--gray-400) / 0.14);
   border-radius: 12px;
   background: var(--tvm-surface-secondary);
-  box-shadow: inset 0 1px 0 rgb(var(--gray-400) / 0.08);
+  overflow: hidden;
 }
 
 .tvm-spec-grid-scroll {
@@ -1791,51 +1822,53 @@ export const TvmInstructionTable = () => {
 
 .tvm-spec-header,
 .tvm-spec-row {
-  --tvm-grid-template: 60px 110px 260px minmax(320px, 2fr);
+  --tvm-grid-template: 110px 260px minmax(320px, 2fr);
   display: grid;
   grid-template-columns: var(--tvm-grid-template);
-  min-width: 860px;
+  min-width: 700px;
 }
 
 .tvm-spec-header {
-  background: rgb(var(--gray-400) / 0.12);
+  background: rgb(var(--gray-400) / 0.06);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.7rem;
-  color: var(--tvm-text-secondary);
+  font-size: 0.68rem;
+  color: var(--tvm-text-muted);
 }
 
 :where(.dark) .tvm-instruction-app .tvm-spec-header {
-  background: rgb(var(--gray-800) / 0.65);
+  background: rgb(var(--gray-800) / 0.35);
   color: var(--tvm-text-muted);
 }
 
 .tvm-spec-header > div {
-  padding: calc(var(--tvm-row-padding-y) - 0.1rem) var(--tvm-row-padding-x);
-  font-weight: 600;
+  padding: 0.4rem var(--tvm-row-padding-x);
+  font-weight: 500;
 }
 
 .tvm-spec-row {
-  border-top: 1px solid var(--tvm-border);
+  border-top: 1px solid rgb(var(--gray-400) / 0.12);
   transition: background 0.2s ease-in-out;
   cursor: pointer;
   align-items: center;
 }
 
-.tvm-spec-row:hover {
-  background: rgb(var(--primary) / 0.08);
+@media (hover: hover) {
+  .tvm-spec-row:not(.tvm-spec-row--detail):hover {
+    background: rgb(var(--primary) / 0.04);
+  }
+
+  :where(.dark) .tvm-instruction-app .tvm-spec-row:not(.tvm-spec-row--detail):hover {
+    background: rgb(var(--primary) / 0.1);
+  }
 }
 
 .tvm-spec-row.is-expanded {
-  background: rgb(var(--primary) / 0.12);
-}
-
-:where(.dark) .tvm-instruction-app .tvm-spec-row:hover {
-  background: rgb(var(--primary) / 0.18);
+  background: rgb(var(--primary) / 0.06);
 }
 
 :where(.dark) .tvm-instruction-app .tvm-spec-row.is-expanded {
-  background: rgb(var(--primary) / 0.26);
+  background: rgb(var(--primary) / 0.14);
 }
 
 .tvm-spec-row.is-anchor-target {
@@ -1857,7 +1890,7 @@ export const TvmInstructionTable = () => {
   padding: var(--tvm-row-padding-y) var(--tvm-row-padding-x);
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
   min-width: 0;
   color: var(--tvm-text-primary);
 }
@@ -1871,54 +1904,56 @@ export const TvmInstructionTable = () => {
   font-size: 0.85rem;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
 }
 
-.tvm-spec-cell--anchor {
-  justify-content: center;
-  align-items: center;
+.tvm-spec-cell--opcode code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .tvm-spec-cell--name {
   gap: 0.4rem;
-}
-
-.tvm-name-line {
-  position: relative;
+  overflow: hidden;
 }
 
 .tvm-copy-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid var(--tvm-border);
-  background: var(--tvm-surface-secondary);
-  color: var(--tvm-text-secondary);
+  width: 1em;
+  height: 1em;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--tvm-text-muted);
   cursor: pointer;
+  transition: color 0.15s ease-in-out;
+  flex-shrink: 0;
+  font-size: 1.15rem;
 }
 
 .tvm-copy-link:hover {
-  border-color: var(--tvm-border-strong);
+  color: var(--tvm-accent-strong);
 }
 
 .tvm-copy-link svg {
-  width: 14px;
-  height: 14px;
+  width: 1em;
+  height: 1em;
 }
 
 .tvm-copy-link.is-copied {
-  border-color: var(--tvm-accent-strong);
-  background: var(--tvm-accent-soft);
+  opacity: 1;
   color: var(--tvm-accent-strong);
 }
 
 .tvm-name-line {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .tvm-row-indicator {
@@ -1958,7 +1993,11 @@ export const TvmInstructionTable = () => {
   font-size: 1rem;
   font-weight: 600;
   color: var(--tvm-text-primary);
-  white-space: pre;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .tvm-spec-cell--gas {
@@ -1979,11 +2018,17 @@ export const TvmInstructionTable = () => {
 .tvm-description {
   font-size: 0.92rem;
   line-height: 1.45;
-  color: var(--tvm-text-secondary);
+  color: var(--tvm-text-muted);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.tvm-description code {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tvm-description-meta {
@@ -1992,23 +2037,31 @@ export const TvmInstructionTable = () => {
   gap: 0.35rem;
 }
 
+.tvm-opcode-chip {
+  display: none;
+}
+
 .tvm-category-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
+  padding: 0.5rem;
+  border-radius: 16px;
   background: var(--tvm-accent-soft);
   color: var(--tvm-accent-subtle);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
   letter-spacing: 0.03em;
 }
 
 .tvm-inline-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.18rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
+  padding: 0.5rem;
+  border-radius: 16px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   background: var(--tvm-accent-soft);
@@ -2041,7 +2094,10 @@ export const TvmInstructionTable = () => {
   background: var(--tvm-pill-muted-bg);
   font-size: 0.72rem;
   font-family: 'JetBrains Mono', 'Menlo', 'Monaco', monospace;
-  color: var(--tvm-text-secondary);
+  color: var(--tvm-text-muted);
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tvm-stack-columns {
@@ -2090,6 +2146,9 @@ export const TvmInstructionTable = () => {
   font-size: 0.75rem;
   font-family: 'JetBrains Mono', 'Menlo', 'Monaco', monospace;
   width: fit-content;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tvm-instruction-app.is-density-compact .tvm-stack-pill {
@@ -2204,10 +2263,10 @@ export const TvmInstructionTable = () => {
 
 .tvm-detail-panel {
   background: var(--tvm-surface);
-  border: 1px solid var(--tvm-border);
-  border-radius: 14px;
-  padding: 1rem 1.15rem 1.25rem;
-  box-shadow: 0 18px 40px -30px rgb(var(--gray-900) / 0.7);
+  border: 1px solid rgb(var(--gray-400) / 0.14);
+  border-radius: 12px;
+  padding: 0.85rem 1rem 1rem;
+  box-shadow: 0 8px 24px -16px rgb(var(--gray-900) / 0.3);
 }
 
 .tvm-detail-panel.is-anchor-target {
@@ -2226,7 +2285,7 @@ export const TvmInstructionTable = () => {
 
 .tvm-detail-header-main {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.45rem;
   flex-wrap: wrap;
 }
@@ -2364,6 +2423,7 @@ export const TvmInstructionTable = () => {
   font-size: 0.78rem;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   background: rgb(var(--gray-200) / 0.08);
   border: 1px solid var(--tvm-border);
   border-radius: 8px;
@@ -2371,6 +2431,10 @@ export const TvmInstructionTable = () => {
   color: var(--tvm-text-primary);
   overflow-x: auto;
   max-width: 100%;
+}
+
+:where(.dark) .tvm-instruction-app .tvm-detail-code {
+  background: rgb(var(--gray-900) / 0.6);
 }
 
 .tvm-detail-code--inline {
@@ -2397,7 +2461,7 @@ export const TvmInstructionTable = () => {
   flex-direction: column;
   gap: 0.5rem;
   background: var(--tvm-surface-secondary);
-  border: 1px solid rgb(var(--gray-400) / 0.3);
+  border: 1px solid var(--tvm-border);
   border-radius: 12px;
   padding: 0.85rem 0.95rem;
 }
@@ -2575,6 +2639,40 @@ export const TvmInstructionTable = () => {
   background: rgb(var(--gray-900) / 0.7);
 }
 
+@media (min-width: 901px) {
+  .tvm-spec-row:not(.tvm-spec-row--detail) {
+    position: relative;
+  }
+
+  .tvm-spec-row:not(.tvm-spec-row--detail) .tvm-row-indicator {
+    position: absolute;
+    right: var(--tvm-row-padding-x);
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0;
+  }
+
+  .tvm-spec-row:not(.tvm-spec-row--detail) .tvm-row-indicator.is-expanded {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .tvm-spec-row:not(.tvm-spec-row--detail) .tvm-spec-cell--description {
+    padding-right: calc(var(--tvm-row-padding-x) + 28px);
+  }
+}
+
+@media (max-width: 1024px) {
+  .tvm-instruction-app {
+    padding: 0;
+  }
+
+  .tvm-spec-header,
+  .tvm-spec-row {
+    --tvm-grid-template: 95px 220px minmax(280px, 2fr);
+    min-width: 620px;
+  }
+}
+
 @media (max-width: 1040px) {
   .tvm-instruction-toolbar {
     flex-direction: column;
@@ -2598,29 +2696,57 @@ export const TvmInstructionTable = () => {
 
   .tvm-spec-row,
   .tvm-spec-row--detail {
-    --tvm-grid-template: 48px minmax(0, 1fr);
+    --tvm-grid-template: minmax(0, 1fr);
     grid-template-columns: var(--tvm-grid-template);
     min-width: 0;
     align-items: start;
   }
 
-  .tvm-spec-row .tvm-spec-cell--anchor {
-    grid-row: span 2;
+  .tvm-spec-row:not(.tvm-spec-row--detail) {
+    padding: 0.5rem 0;
   }
 
   .tvm-spec-row .tvm-spec-cell--opcode {
-    grid-row: 1;
-    grid-column: 2 / -1;
-    justify-content: flex-start;
-    align-items: baseline;
+    display: none;
   }
 
   .tvm-spec-row .tvm-spec-cell--name {
-    grid-column: 2 / -1;
+    grid-column: 1 / -1;
+    gap: 1rem;
+  }
+
+  .tvm-name-line {
+    gap: 0.6rem;
+  }
+
+  .tvm-opcode-chip {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', 'Menlo', 'Monaco', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0 0.5rem;
+    border-radius: 6px;
+    background: var(--tvm-pill-muted-bg);
+    color: var(--tvm-text-secondary);
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
   }
 
   .tvm-spec-row .tvm-spec-cell--description {
     grid-column: 1 / -1;
+    gap: 1rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .tvm-spec-cell--full {
+    padding: 0;
+  }
+
+  .tvm-detail-panel {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
@@ -2631,6 +2757,12 @@ export const TvmInstructionTable = () => {
 
   .tvm-detail-columns {
     flex-direction: column;
+  }
+
+  .tvm-detail-main,
+  .tvm-detail-side {
+    flex: 1 1 auto;
+    width: 100%;
   }
 
   .tvm-detail-section {
@@ -2934,7 +3066,7 @@ export const TvmInstructionTable = () => {
 
 .tvm-alias-meta {
   font-size: 0.75rem;
-  color: var(--tvm-text-secondary);
+  color: var(--tvm-text-muted);
 }
 
 .tvm-alias-description {
@@ -2956,7 +3088,7 @@ export const TvmInstructionTable = () => {
   padding: 0.18rem 0.45rem;
   border-radius: 6px;
   background: var(--tvm-pill-muted-bg);
-  color: var(--tvm-text-secondary);
+  color: var(--tvm-text-muted);
   font-size: 0.72rem;
 }
 
@@ -2978,20 +3110,12 @@ export const TvmInstructionTable = () => {
   color: var(--tvm-accent-strong);
 }
 
-@media (max-width: 1024px) {
-  .tvm-instruction-app {
-    padding: 1.1rem;
-  }
-
-  .tvm-spec-header,
-  .tvm-spec-row {
-    --tvm-grid-template: 48px 95px 220px minmax(280px, 2fr);
-    min-width: 720px;
-  }
-}
-
 @media (max-width: 768px) {
-  .tvm-field {
+  .tvm-field,
+  .tvm-toolbar-filters .tvm-field,
+  .tvm-field--sort,
+  .tvm-field--category,
+  .tvm-field--subcategory {
     width: 100%;
     min-width: 0;
   }
@@ -3782,7 +3906,6 @@ export const TvmInstructionTable = () => {
       <div className="tvm-spec-grid-container">
         <div className="tvm-spec-grid-scroll">
           <div className="tvm-spec-header" role="row">
-            <div>Link</div>
             <div>Opcode</div>
             <div>Instruction</div>
             <div>Description</div>
@@ -3839,41 +3962,6 @@ export const TvmInstructionTable = () => {
                         }
                       }}
                     >
-                      <div className="tvm-spec-cell tvm-spec-cell--anchor">
-                        <button
-                          type="button"
-                          className={`tvm-copy-link ${copied[instruction.uid] ? "is-copied" : ""}`}
-                          aria-label={copied[instruction.uid] ? "Copied" : "Copy link to instruction"}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyAnchorUrl(anchorId)
-                              .then(() => {
-                                setCopied((prev) => ({ ...prev, [instruction.uid]: true }));
-                                setTimeout(() => {
-                                  setCopied((prev) => {
-                                    const { [instruction.uid]: _omit, ...rest } = prev;
-                                    return rest;
-                                  });
-                                }, 1500);
-                              })
-                              .catch(() => {
-                                // ignore
-                              });
-                          }}
-                          title={copied[instruction.uid] ? "Copied" : "Copy link"}
-                        >
-                          {copied[instruction.uid] ? (
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                              <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          ) : (
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                              <path d="M10.59 13.41a1.996 1.996 0 0 0 2.82 0l3.59-3.59a2 2 0 0 0-2.83-2.83l-1.17 1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M13.41 10.59a1.996 1.996 0 0 0-2.82 0L7 14.18a2 2 0 1 0 2.83 2.83l1.17-1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          )}
-                        </button>
-                      </div>
                       <div className="tvm-spec-cell tvm-spec-cell--opcode">
                         <code>
                           {highlightMatches(
@@ -3884,6 +3972,9 @@ export const TvmInstructionTable = () => {
                       </div>
                       <div className="tvm-spec-cell tvm-spec-cell--name">
                         <div className="tvm-name-line">
+                          <code className="tvm-opcode-chip" aria-hidden="true">
+                            {instruction.opcode || "—"}
+                          </code>
                           <span className="tvm-mnemonic">
                             {highlightMatches(
                               instruction.mnemonic,
