@@ -390,7 +390,7 @@ interface TonConnectUiOptionsWithConnector {
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `connector` | [`ITonConnect`](/applications/ton-connect/api-reference/sdk#itonconnect) | *Optional*. TonConnect instance. Can be helpful if you use custom ITonConnect implementation, or use both of @tonconnect/sdk and @tonconnect/ui in your app. |
+| `connector` | [`ITonConnect`](/applications/ton-connect/api-reference/sdk#itonconnect) | *Optional*. `TonConnect` instance. Can be helpful if you use custom ITonConnect implementation, or use both of @tonconnect/sdk and @tonconnect/ui in your app. |
 | `restoreConnection` | `boolean` | *Optional*. Try to restore existing session and reconnect to the corresponding wallet. |
 | `widgetRootId` | `string` | *Optional*. HTML element id to attach the modal window element. If not passed, `div#tc-widget-root` is appended to the end of `<body>` and used. Defaults to `'tc-widget-root'`. |
 | `eventDispatcher` | `EventDispatcher<RequestVersionEvent \| ResponseVersionEvent \| ConnectionStartedEvent \| ConnectionCompletedEvent \| ConnectionErrorEvent \| ConnectionRestoringStartedEvent \| ConnectionRestoringCompletedEvent \| ConnectionRestoringErrorEvent \| DisconnectionEvent \| TransactionSentForSignatureEvent \| TransactionSignedEvent \| TransactionSigningFailedEvent \| DataSentForSignatureEvent \| DataSignedEvent \| DataSigningFailedEvent \| WalletModalOpenedEvent \| SelectedWalletEvent>` | *Optional*. Event dispatcher to track user actions. By default, it uses `window.dispatchEvent` for browser environment. Defaults to `new BrowserEventDispatcher()`. |
@@ -402,7 +402,7 @@ interface TonConnectUiOptionsWithConnector {
 | `walletsPreferredFeatures` | [`RequiredFeatures`](/applications/ton-connect/api-reference/sdk#requiredfeatures) | *Optional*. Preferred features for wallets. If a wallet doesn't support the preferred features, it is moved to the end of the list. |
 | `actionsConfiguration` | `ActionConfiguration` | *Optional*. Configuration for action-period (e.g. sendTransaction) UI elements: modals and notifications and wallet behaviour (return strategy). |
 | `enableAndroidBackHandler` | `boolean` | *Optional*. Specifies whether the Android back button should be used to close modals and notifications on Android devices. |
-| `analytics` | `AnalyticsSettings` | *Optional*. Analytics configuration forwarded to the underlying TonConnect SDK instance. |
+| `analytics` | `AnalyticsSettings` | *Optional*. Analytics configuration forwarded to the underlying `TonConnect` SDK instance. |
 
 ### `TonConnectUiCreateOptionsBase`
 
@@ -464,7 +464,7 @@ interface TonConnectUiOptions {
 | `walletsPreferredFeatures` | [`RequiredFeatures`](/applications/ton-connect/api-reference/sdk#requiredfeatures) | *Optional*. Preferred features for wallets. If a wallet doesn't support the preferred features, it is moved to the end of the list. |
 | `actionsConfiguration` | `ActionConfiguration` | *Optional*. Configuration for action-period (e.g. sendTransaction) UI elements: modals and notifications and wallet behaviour (return strategy). |
 | `enableAndroidBackHandler` | `boolean` | *Optional*. Specifies whether the Android back button should be used to close modals and notifications on Android devices. |
-| `analytics` | `AnalyticsSettings` | *Optional*. Analytics configuration forwarded to the underlying TonConnect SDK instance. |
+| `analytics` | `AnalyticsSettings` | *Optional*. Analytics configuration forwarded to the underlying `TonConnect` SDK instance. |
 
 ### `UIPreferences`
 
@@ -720,7 +720,7 @@ enum THEME {
 
 ## Errors
 
-Every error from this package extends [`TonConnectUIError`](#tonconnectuierror), which itself extends [`TonConnectError`](/applications/ton-connect/api-reference/sdk#tonconnecterror). Use `err instanceof TonConnectUIError` to catch errors from this package; use `err instanceof TonConnectError` to catch anything raised by the TonConnect stack.
+Every error from this package extends [`TonConnectUIError`](#tonconnectuierror), which itself extends [`TonConnectError`](/applications/ton-connect/api-reference/sdk#tonconnecterror). Use `err instanceof TonConnectUIError` to catch errors from this package; use `err instanceof TonConnectError` to catch anything raised by TON Connect stack.
 
 ### `TonConnectUIError`
 

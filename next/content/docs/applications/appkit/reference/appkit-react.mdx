@@ -1043,7 +1043,7 @@ Returns: <code><a href="#useaddressreturntype">UseAddressReturnType</a></code> �
 
 #### useConnect
 
-Open a registered connector's connection flow (e.g., the TonConnect modal) and await its completion. Call `mutate` from a Connect button with the `connectorId` of the connector to drive. Once the user finishes the flow the new wallet becomes available via [`useSelectedWallet`](#useselectedwallet) / [`useConnectedWallets`](#useconnectedwallets). Throws `Error('Connector with id "<id>" not found')` when no connector with that id is registered — TanStack Query surfaces it via the mutation's `error`.
+Open a registered connector's connection flow (e.g., the TON Connect modal) and await its completion. Call `mutate` from a Connect button with the `connectorId` of the connector to drive. Once the user finishes the flow the new wallet becomes available via [`useSelectedWallet`](#useselectedwallet) / [`useConnectedWallets`](#useconnectedwallets). Throws `Error('Connector with id "<id>" not found')` when no connector with that id is registered — TanStack Query surfaces it via the mutation's `error`.
 
 | Parameter             | Type                                                                                    | Description                                                                                                                                                                             |
 | --------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1253,7 +1253,7 @@ return <NftItem nft={sampleNft} onClick={() => console.log('NFT clicked')} />;
 
 #### AppKitProvider
 
-Top-level React provider that wires AppKit, the TonConnect bridge and i18n into the component tree — wrap your app once near the root so descendant hooks ([`useAppKit`](#useappkit), [`useBalance`](#usebalance), …) and components can resolve their context.
+Top-level React provider that wires AppKit, the TON Connect bridge and i18n into the component tree — wrap your app once near the root so descendant hooks ([`useAppKit`](#useappkit), [`useBalance`](#usebalance), …) and components can resolve their context.
 
 | Prop       | Type                                                                        | Description                                                                                       |
 | ---------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |

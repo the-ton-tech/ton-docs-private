@@ -38,6 +38,9 @@ Andrew
 Andrey
 antecessor
 antecessors
+AppKit
+Appkit
+appkit
 Anton
 Antonoff
 Appender
@@ -109,6 +112,7 @@ Buildx
 bundler
 Burnosov
 Buterin
+CAIP
 callables
 Callables
 callee
@@ -209,6 +213,8 @@ datagrams
 DCA
 declarator
 decodable
+dedust
+DeDust
 decompiled
 Decompiled
 Decompiler
@@ -247,6 +253,8 @@ Dockerized
 Dodis
 Domínguez
 dotenv
+Defi
+DeFi
 dTON
 Duif
 Durov
@@ -254,6 +262,7 @@ Dyor
 DYOR
 DYX
 EIP
+eip
 Emelyanenko
 enablement
 endian
@@ -382,6 +391,7 @@ KYC
 Lamport
 Lange
 Larimer
+Layerswap
 Lateinit
 Latinisms
 Lavinia
@@ -430,6 +440,7 @@ memoization
 Memoizing
 mempool
 Mempool
+Mercuryo
 mergesort
 merkle
 Merkle
@@ -500,6 +511,7 @@ NFA
 nft
 nginx
 NFTs
+Nfts
 Nginx
 Niels
 Nikolay
@@ -740,9 +752,12 @@ tolk
 Tolk
 TON
 TON.cx
+TONCONNECT
 TONCO
 Toncoin
 toncoin.org
+TonConnect
+tonconnect
 Tonkeeper
 tonlib
 Tonscan
@@ -826,6 +841,8 @@ Vultr
 Wagmi
 walkthrough
 Walkthrough
+WalletKit
+walletkit
 Walletconnect
 wargame
 Watchlist

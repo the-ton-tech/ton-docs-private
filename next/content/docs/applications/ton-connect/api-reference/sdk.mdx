@@ -1712,7 +1712,7 @@ instances rather than constructing [`TonConnectError`](#tonconnecterror) directl
 | `LocalstorageNotFoundError` | Thrown when `Storage` was not specified in the [`DappMetadata`](#dappmetadata) and default `localStorage` was not detected in the Node.js environment. |
 | `UnknownError` | Unhandled unknown error. |
 | `WalletAlreadyConnectedError` | Thrown when wallet connection called but wallet already connected. To avoid the error, disconnect the wallet before doing a new connection. |
-| `WalletMissingRequiredFeaturesError` | Thrown when the connected wallet's `device.features` do not satisfy the features required by `walletsRequiredFeatures` (passed to the TonConnect constructor). The check happens after the wallet returns a successful connect response and runs through [`checkRequiredWalletFeatures`](#checkrequiredwalletfeatures). |
+| `WalletMissingRequiredFeaturesError` | Thrown when the connected wallet's `device.features` do not satisfy the features required by `walletsRequiredFeatures` (passed to the `TonConnect` constructor). The check happens after the wallet returns a successful connect response and runs through [`checkRequiredWalletFeatures`](#checkrequiredwalletfeatures). |
 | `WalletNotConnectedError` | Thrown when send transaction or other protocol methods called while wallet is not connected. |
 | `WalletNotInjectedError` | Thrown when there is an attempt to connect to the injected wallet while it is not exists in the webpage. |
 | `WalletNotSupportFeatureError` | Thrown when wallet doesn't support requested feature method. |
