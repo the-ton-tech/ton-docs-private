@@ -539,6 +539,22 @@ function proximitySpan(text: string, tokens: string[]): number {
 export type RawResult = Omit<SortedResult, "content"> & {content: string}
 
 /**
+ * URL-fragment suffixes of the synthetic, index-only content blocks that
+ * `buildIndex` (app/api/search/route.ts) appends to every page:
+ * `#Code symbols` (a de-duplicated bag of code identifiers mined from
+ * fenced/inline code), `#Keywords` (frontmatter synonyms) and `#Description`
+ * (the frontmatter summary). They exist purely to widen recall and feed the
+ * `score()` re-rank — they are not real page sections (the fragment resolves
+ * to no on-page anchor) and their content is unreadable token soup, so they
+ * must never surface as a visible result row.
+ */
+const SYNTHETIC_BLOCK_FRAGMENTS = ["#Code symbols", "#Keywords", "#Description"] as const
+
+function isSyntheticBlockUrl(url: string): boolean {
+  return SYNTHETIC_BLOCK_FRAGMENTS.some(fragment => url.endsWith(fragment))
+}
+
+/**
  * Run the full relevance pipeline against a loaded Orama index and return
  * ranked, de-duplicated rows ready for presentation (no highlighting applied).
  *
@@ -922,6 +938,10 @@ export async function runRankedSearch(
       url: page.url,
     })
     for (const doc of hits) {
+      // Synthetic index-only blocks (#Code symbols / #Keywords / #Description)
+      // boost recall and the score() re-rank but are not readable page
+      // sections, so they are dropped from the user-facing result list.
+      if (isSyntheticBlockUrl(doc.url)) continue
       raw.push({
         id: String(doc.id),
         // Index stores "head"; fumadocs' SortedResult/UI expects "heading".
