@@ -271,12 +271,26 @@ Display directory structures with collapsible subdirectories using `<Tree.Folder
 ```
 
 <Tree>
-  <Tree.File name="README.md" />
-  <Tree.Folder name="src" defaultOpen>
-    <Tree.File name="index.ts" />
-    <Tree.File name="utils.ts" />
+  <Tree.File
+    name="README.md"
+  />
+
+  <Tree.Folder
+    name="src"
+    defaultOpen
+  >
+    <Tree.File
+      name="index.ts"
+    />
+
+    <Tree.File
+      name="utils.ts"
+    />
   </Tree.Folder>
-  <Tree.File name="package.json" />
+
+  <Tree.File
+    name="package.json"
+  />
 </Tree>
 
 ### ResponseField and ParamField
