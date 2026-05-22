@@ -32,6 +32,9 @@ env:
   REMOTE_USER: ${{ vars.ORAMA_SSH_USER || 'root' }}
   REMOTE_REPO: /root/ton-docs-private
   REMOTE_INDEX: /root/ton-docs-private/orama-server/index.json
+  # Per-page Markdown directory served by the orama-search `/page` endpoint.
+  # Sits beside the index so the server's default LLMS_CONTENT_DIR finds it.
+  REMOTE_LLMS: /root/ton-docs-private/orama-server/llms-content
 
 jobs:
   deploy:
@@ -69,7 +72,7 @@ jobs:
         working-directory: next
         run: npm run build
 
-      - name: Sanity-check the index artifact
+      - name: Sanity-check the build artifacts
         working-directory: next
         run: |
           test -f out/api/search
@@ -83,6 +86,14 @@ jobs:
           fi
           # Validate it parses as JSON.
           node -e "JSON.parse(require('fs').readFileSync('out/api/search','utf8'))"
+          # Per-page Markdown export served by the orama-search /page endpoint.
+          test -d out/llms.mdx
+          md_count=$(find out/llms.mdx -name '*.md' | wc -l)
+          echo "page content files: $md_count"
+          if [ "$md_count" -lt 100 ]; then
+            echo "::error::llms.mdx export has only $md_count .md files, aborting"
+            exit 1
+          fi
 
       - name: Configure SSH
         env:
@@ -135,6 +146,19 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
             "${REMOTE_USER}@${REMOTE_HOST}" \
             "mv -f '${REMOTE_INDEX}.new' '${REMOTE_INDEX}' && chown orama:orama '${REMOTE_INDEX}'"
+
+      - name: Ship per-page content to VPS
+        # The rendered per-page Markdown the orama-search `/page` endpoint
+        # serves. rsync replaces each file atomically and --delete prunes
+        # pages dropped from the docs; the restart below reloads it all.
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
+            next/out/llms.mdx/ \
+            "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_LLMS}/"
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" \
+            "chown -R orama:orama '${REMOTE_LLMS}'"
 
       - name: Restart service (auto-purges nginx cache via ExecStartPost)
         run: |

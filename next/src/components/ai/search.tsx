@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react"
-import {BookOpen, Check, Copy, RotateCcw, Search, Send, Sparkles, Square, X} from "lucide-react"
+import {Check, Copy, RotateCcw, Search, Send, Sparkles, Square, X} from "lucide-react"
 import {cn} from "../../lib/cn"
 import {buttonVariants} from "../ui/button"
 import {useChat, type UseChatHelpers} from "@ai-sdk/react"
@@ -363,54 +363,45 @@ function ToolStatusRow({
 }
 
 /**
- * Render a `search` / `fetch_page` tool call so the user can see the assistant
- * grounding its answer in the docs instead of staring at a blank wait.
+ * Render a `search` tool call so the user can see the assistant grounding its
+ * answer in the docs instead of staring at a blank wait.
  */
 function ToolActivity({part}: {part: ToolUIPartLike}) {
+  if (part.type !== "tool-search") return null
+
   const busy = part.state === "input-streaming" || part.state === "input-available"
-
-  if (part.type === "tool-search") {
-    if (busy) return <ToolStatusRow icon={Search} label="Searching the documentation…" busy />
-    if (part.state === "output-error") {
-      return <ToolStatusRow icon={Search} label="Documentation search failed" />
-    }
-    const output = part.output as
-      | {results?: {title?: string; url?: string}[]; error?: string}
-      | undefined
-    if (!output || output.error || !output.results) {
-      return <ToolStatusRow icon={Search} label="Documentation search unavailable" />
-    }
-    const results = output.results
-    if (results.length === 0) {
-      return <ToolStatusRow icon={Search} label="No matching documentation found" />
-    }
-    return (
-      <details className="text-xs text-fd-muted-foreground">
-        <summary className="flex cursor-pointer select-none items-center gap-1.5 [&::-webkit-details-marker]:hidden">
-          <Search className="size-3.5 shrink-0" />
-          <span>
-            Searched the documentation · {results.length}{" "}
-            {results.length === 1 ? "page" : "pages"}
-          </span>
-        </summary>
-        <ul className="mt-1 ms-5 flex flex-col gap-0.5">
-          {results.map((result, i) => (
-            <li key={i} className="truncate">
-              {result.title ?? result.url ?? "Untitled page"}
-            </li>
-          ))}
-        </ul>
-      </details>
-    )
+  if (busy) return <ToolStatusRow icon={Search} label="Searching the documentation…" busy />
+  if (part.state === "output-error") {
+    return <ToolStatusRow icon={Search} label="Documentation search failed" />
   }
-
-  // tool-fetch_page
-  if (busy) return <ToolStatusRow icon={BookOpen} label="Reading a documentation page…" busy />
-  const output = part.output as {url?: string; error?: string} | undefined
-  if (part.state === "output-error" || !output || output.error) {
-    return <ToolStatusRow icon={BookOpen} label="Could not read the page" />
+  const output = part.output as
+    | {results?: {title?: string; url?: string}[]; error?: string}
+    | undefined
+  if (!output || output.error || !output.results) {
+    return <ToolStatusRow icon={Search} label="Documentation search unavailable" />
   }
-  return <ToolStatusRow icon={BookOpen} label="Read a documentation page" />
+  const results = output.results
+  if (results.length === 0) {
+    return <ToolStatusRow icon={Search} label="No matching documentation found" />
+  }
+  return (
+    <details className="text-xs text-fd-muted-foreground">
+      <summary className="flex cursor-pointer select-none items-center gap-1.5 [&::-webkit-details-marker]:hidden">
+        <Search className="size-3.5 shrink-0" />
+        <span>
+          Searched the documentation · {results.length}{" "}
+          {results.length === 1 ? "page" : "pages"}
+        </span>
+      </summary>
+      <ul className="mt-1 ms-5 flex flex-col gap-0.5">
+        {results.map((result, i) => (
+          <li key={i} className="truncate">
+            {result.title ?? result.url ?? "Untitled page"}
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
 }
 
 function MessageParts({message}: {message: ChatUIMessage}) {

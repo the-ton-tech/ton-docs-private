@@ -15,23 +15,20 @@ import { z } from "zod";
 import { config } from "./config.js";
 import { openrouter } from "./openrouter.js";
 import { searchDocs } from "./search.js";
-import { fetchDocPage } from "./page.js";
 
 export const SYSTEM_PROMPT = `You are the AI assistant for the official TON blockchain documentation at docs.ton.org. You help developers and users by answering their questions strictly from the TON documentation.
 
-# Tools
-You have two tools:
-- \`search\` — finds relevant documentation pages. For each page it returns a title, breadcrumbs, an absolute url, and a content snippet.
-- \`fetch_page\` — returns the full Markdown of one documentation page given its url. Use it when a snippet is not enough to answer accurately: multi-step guides, full code examples, or complete API and parameter details.
+# Tool
+You have one tool:
+- \`search\` — finds relevant documentation pages. For each page it returns a title, breadcrumbs, an absolute url, and the page's full Markdown content (prose and code).
 
 # How to answer
 1. Always call \`search\` before answering a question about TON — never answer from prior knowledge, which may be outdated or wrong. This applies to follow-up questions too.
 2. For a follow-up question, first rewrite it into a standalone query using the conversation so far (resolve "it", "this", "that", and similar references), then search with that.
 3. Write each search query as a short keyword phrase — 2 to 5 content words, no question words such as "how", "what" or "why". The index matches keywords, not sentences. Split a multi-part question into one search per part.
 4. If the first results look weak or irrelevant, search again with different keywords or synonyms before answering.
-5. When the snippets do not fully cover the question, call \`fetch_page\` on the most relevant result and read the full page before answering.
-6. Ground every factual statement in content returned by the tools. Do not add, guess, or fill in details that are not there. If the documentation does not cover the question, say so plainly and point to the closest related page — never invent an answer.
-7. If \`search\` reports that it is unavailable, tell the user the documentation search is temporarily down and ask them to retry — do not answer from memory.
+5. Ground every factual statement in content returned by \`search\`. Do not add, guess, or fill in details that are not there. If the documentation does not cover the question, say so plainly and point to the closest related page — never invent an answer.
+6. If \`search\` reports that it is unavailable, tell the user the documentation search is temporarily down and ask them to retry — do not answer from memory.
 
 # Scope and safety
 - You only answer questions about TON and its documentation. If a question is unrelated, briefly say it is outside your scope and do not answer it.
@@ -55,8 +52,9 @@ You have two tools:
 const search = tool({
   description:
     "Search the official TON blockchain documentation for pages relevant to a query. " +
-    "Returns up to `limit` pages, each with a title, breadcrumbs, an absolute url, and a " +
-    "content snippet. Use short keyword queries. Call this before answering any TON question.",
+    "Returns up to `limit` pages, each with a title, breadcrumbs, an absolute url, and " +
+    "the page's full Markdown content. Use short keyword queries. Call this before " +
+    "answering any TON question.",
   inputSchema: z.object({
     query: z
       .string()
@@ -65,10 +63,10 @@ const search = tool({
       .number()
       .int()
       .min(1)
-      .max(20)
+      .max(10)
       .optional()
-      .default(8)
-      .describe("Maximum number of doc pages to return."),
+      .default(6)
+      .describe("Maximum number of doc pages to return, each with full content."),
   }),
   execute: async ({ query, limit }) => {
     try {
@@ -80,32 +78,6 @@ const search = tool({
         error:
           "The documentation search is temporarily unavailable. Tell the user the docs " +
           "search is down and to try again shortly; do not answer from memory.",
-      };
-    }
-  },
-});
-
-/**
- * The full-page fetch tool. The model calls it with a page url from the
- * search results to read that page's complete Markdown.
- */
-const fetchPage = tool({
-  description:
-    "Fetch the full Markdown of one TON documentation page, including code examples and " +
-    "complete API details. Use after `search` when a snippet is not enough to answer " +
-    "accurately. Pass the `url` of a page taken verbatim from the search results.",
-  inputSchema: z.object({
-    url: z
-      .string()
-      .describe("Absolute documentation page url, taken verbatim from a search result."),
-  }),
-  execute: async ({ url }) => {
-    try {
-      return await fetchDocPage(url);
-    } catch (err) {
-      console.warn(`[fetch_page] tool error: ${(err as Error).message}`);
-      return {
-        error: `Could not load that page: ${(err as Error).message} Rely on the search snippet instead.`,
       };
     }
   },
@@ -148,10 +120,10 @@ export async function runChat(messages: UIMessage[], abortSignal: AbortSignal) {
     model: openrouter.chat(config.model),
     system,
     messages: await convertToModelMessages(messages),
-    tools: { search, fetch_page: fetchPage },
+    tools: { search },
     // Deterministic output: this is grounded extraction, not creative writing.
     temperature: 0,
-    stopWhen: stepCountIs(8),
+    stopWhen: stepCountIs(6),
     toolChoice: "auto",
     // Force a `search` on the first step so the model can never skip
     // retrieval and answer from memory; later steps decide for themselves.
