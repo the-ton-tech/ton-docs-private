@@ -57,8 +57,7 @@ export function rehypeWrapWords() {
 
 // The docs `.prose` heading scale is tuned for full-width articles and looks
 // oversized in the narrow chat column. Inline styles override `.prose` here.
-const compactHeading =
-  (Tag: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") =>
+const compactHeading = (Tag: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") =>
   function Heading(props: ComponentProps<"h2">) {
     return (
       <Tag

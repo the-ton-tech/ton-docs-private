@@ -50,7 +50,11 @@ async function runSearch(query: string): Promise<SortedResult[]> {
 const searchClient: SearchClient = {search: runSearch, deps: []}
 
 export default function DefaultSearchDialog(props: SharedProps) {
-  const {search: searchValue, setSearch, query} = useDocsSearch({
+  const {
+    search: searchValue,
+    setSearch,
+    query,
+  } = useDocsSearch({
     client: searchClient,
     delayMs: 300,
   })

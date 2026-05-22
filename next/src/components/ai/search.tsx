@@ -25,8 +25,7 @@ import {Presence} from "@radix-ui/react-presence"
  * chat endpoint lives on a separate service. `NEXT_PUBLIC_` vars are inlined
  * at build time; this URL is not a secret.
  */
-const AI_BACKEND_URL =
-  process.env.NEXT_PUBLIC_AI_BACKEND_URL ?? "https://docs-ton.space/api/chat"
+const AI_BACKEND_URL = process.env.NEXT_PUBLIC_AI_BACKEND_URL ?? "https://docs-ton.space/api/chat"
 
 /**
  * Shape of the chat messages exchanged with the external backend. Mirrors the
@@ -272,9 +271,7 @@ function Message({message, ...props}: {message: ChatUIMessage} & ComponentProps<
 }
 
 function messageHasText(message: ChatUIMessage): boolean {
-  return (message.parts ?? []).some(
-    part => part.type === "text" && part.text.trim().length > 0,
-  )
+  return (message.parts ?? []).some(part => part.type === "text" && part.text.trim().length > 0)
 }
 
 function LoadingDots() {
@@ -305,9 +302,7 @@ export function AISearch({children}: {children: ReactNode}) {
     }),
   })
 
-  return (
-    <Context value={useMemo(() => ({chat, open, setOpen}), [chat, open])}>{children}</Context>
-  )
+  return <Context value={useMemo(() => ({chat, open, setOpen}), [chat, open])}>{children}</Context>
 }
 
 export function AISearchTrigger({
@@ -401,9 +396,7 @@ export function AISearchPanelList({className, style, ...props}: ComponentProps<"
   // After a question is sent, show a "thinking" indicator until the first
   // answer text streams in — the backend runs its search tool in between.
   const pending = isLoading && (last?.role !== "assistant" || !messageHasText(last))
-  const visibleMessages = messages.filter(
-    msg => msg.role !== "assistant" || messageHasText(msg),
-  )
+  const visibleMessages = messages.filter(msg => msg.role !== "assistant" || messageHasText(msg))
 
   return (
     <List
@@ -424,9 +417,7 @@ export function AISearchPanelList({className, style, ...props}: ComponentProps<"
         <div className="flex flex-col gap-4 px-[13px]">
           {chat.error && (
             <div className="p-2 bg-fd-card text-fd-card-foreground border rounded-xl">
-              <p className="text-xs text-fd-error mb-1">
-                Request Failed: {chat.error.name}
-              </p>
+              <p className="text-xs text-fd-error mb-1">Request Failed: {chat.error.name}</p>
               <p className="text-sm">{chat.error.message}</p>
             </div>
           )}
