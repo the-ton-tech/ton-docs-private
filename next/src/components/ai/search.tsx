@@ -271,6 +271,31 @@ function Message({message, ...props}: {message: ChatUIMessage} & ComponentProps<
   )
 }
 
+function messageHasText(message: ChatUIMessage): boolean {
+  return (message.parts ?? []).some(
+    part => part.type === "text" && part.text.trim().length > 0,
+  )
+}
+
+function LoadingDots() {
+  return (
+    <span className="flex gap-1 py-1" role="status" aria-label="Generating response">
+      <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground [animation-delay:-0.3s]" />
+      <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground [animation-delay:-0.15s]" />
+      <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground" />
+    </span>
+  )
+}
+
+function PendingMessage() {
+  return (
+    <div>
+      <p className="mb-1 text-sm font-medium text-fd-primary">{roleName.assistant}</p>
+      <LoadingDots />
+    </div>
+  )
+}
+
 export function AISearch({children}: {children: ReactNode}) {
   const [open, setOpen] = useState(false)
   const chat = useChat<ChatUIMessage>({
@@ -371,6 +396,14 @@ export function AISearchPanel() {
 export function AISearchPanelList({className, style, ...props}: ComponentProps<"div">) {
   const chat = useChatContext()
   const messages = chat.messages.filter(msg => msg.role !== "system")
+  const isLoading = chat.status === "submitted" || chat.status === "streaming"
+  const last = messages[messages.length - 1]
+  // After a question is sent, show a "thinking" indicator until the first
+  // answer text streams in — the backend runs its search tool in between.
+  const pending = isLoading && (last?.role !== "assistant" || !messageHasText(last))
+  const visibleMessages = messages.filter(
+    msg => msg.role !== "assistant" || messageHasText(msg),
+  )
 
   return (
     <List
@@ -397,9 +430,10 @@ export function AISearchPanelList({className, style, ...props}: ComponentProps<"
               <p className="text-sm">{chat.error.message}</p>
             </div>
           )}
-          {messages.map(item => (
+          {visibleMessages.map(item => (
             <Message key={item.id} message={item} />
           ))}
+          {pending && <PendingMessage />}
         </div>
       )}
     </List>
