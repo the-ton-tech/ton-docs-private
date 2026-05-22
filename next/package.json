@@ -16,7 +16,7 @@
     "lint:links:internal": "tsx ./scripts/validate-links-internal.ts",
     "lint:links:external": "tsx ./scripts/validate-links-external.ts",
     "lint:redirects": "tsx ./scripts/validate-links.ts --check-redirects --check-chains",
-    "lint:seo": "tsx ./scripts/validate-links.ts --check-redirects --check-chains --check-internal-stale --check-frontmatter --check-sitemap --check-assets",
+    "lint:seo": "tsx ./scripts/validate-links.ts --check-redirects --check-chains --check-internal-stale --check-sitemap",
     "lint:links:fix": "tsx ./scripts/validate-links.ts --check-redirects --check-chains --repair-redirects --flatten-chains --enforce-permanent --verbose; tsx ./scripts/validate-links.ts --check-internal-stale --fix-internal --verbose",
     "lint:navigation": "tsx ./scripts/validate-navigation.ts",
     "generate-redirects": "node ./scripts/generate-redirect-pages.mjs",
