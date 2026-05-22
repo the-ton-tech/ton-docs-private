@@ -17,7 +17,7 @@ export function Expandable({
       <summary className="cursor-pointer select-none px-3 py-2 font-medium text-fd-foreground">
         {title ?? "Details"}
       </summary>
-      <div className="border-t border-fd-border px-3 py-2 text-fd-muted-foreground">{children}</div>
+      <div className="overflow-x-auto border-t border-fd-border px-3 py-2 text-fd-muted-foreground [&_table]:w-max [&_img]:min-w-[250px]">{children}</div>
     </details>
   )
 }
