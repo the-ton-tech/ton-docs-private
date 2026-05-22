@@ -5,10 +5,10 @@ export type FileTreeItem =
   | "..."
   | "…"
   | string
-  | {name: string; note?: string | string[]; kind: "file"}
+  | {name: string; note?: string; kind: "file"}
   | {
       name: string
-      note?: string | string[]
+      note?: string
       kind: "folder"
       open?: boolean
       items?: FileTreeItem[]
@@ -30,11 +30,10 @@ function renderItem(item: FileTreeItem, index: number, defaultOpen: boolean): Re
 
   if (item.kind === "file") {
     if (item.note) {
-      const noteStr = Array.isArray(item.note) ? item.note.join(", ") : item.note
       return (
         <div key={index}>
           <File name={item.name} />
-          <span className="block ps-8 -mt-1 pb-1 text-xs text-fd-muted-foreground">{noteStr}</span>
+          <span className="block ps-8 -mt-1 pb-1 text-xs text-fd-muted-foreground">{item.note}</span>
         </div>
       )
     }
@@ -43,41 +42,11 @@ function renderItem(item: FileTreeItem, index: number, defaultOpen: boolean): Re
 
   if (item.kind === "folder") {
     const isOpen = item.open ?? defaultOpen
-    const noteIsArray = Array.isArray(item.note)
     return (
       <Folder key={index} name={item.name} defaultOpen={isOpen}>
-        {item.note && !noteIsArray && (
+        {item.note && (
           <span className="block whitespace-pre-line px-2 -mt-0.5 pb-0.5 text-xs text-fd-muted-foreground">{item.note}</span>
         )}
-        {noteIsArray && (() => {
-          const lines = item.note as string[]
-          const elements: ReactNode[] = []
-          let listItems: string[] = []
-
-          const flushList = () => {
-            if (listItems.length > 0) {
-              elements.push(
-                <ul key={`ul-${elements.length}`} className="list-disc px-2 py-0.5 ps-6 text-xs text-fd-muted-foreground">
-                  {listItems.map((li, i) => <li key={i} className="my-0.5">{li}</li>)}
-                </ul>
-              )
-              listItems = []
-            }
-          }
-
-          for (const line of lines) {
-            if (line.startsWith("- ")) {
-              listItems.push(line.slice(2))
-            } else {
-              flushList()
-              elements.push(
-                <span key={`t-${elements.length}`} className="block whitespace-pre-line px-2 -mt-0.5 pb-0.5 text-xs text-fd-muted-foreground">{line}</span>
-              )
-            }
-          }
-          flushList()
-          return elements
-        })()}
         {item.items?.map((child, childIdx) => renderItem(child, childIdx, defaultOpen))}
       </Folder>
     )
@@ -91,18 +60,31 @@ export function FileTree({items = [], defaultOpen = true}: FileTreeProps) {
 }
 
 /**
- * Mintlify exposed a built-in `<Tree>` JSX element accepting `<Tree.Folder>`
- * and `<Tree.File>` children. We re-implement that surface on top of Fumadocs'
- * `Files`, so authors can keep using the compositional form without imports.
+ * Compositional form — content inside folders/files is regular MDX,
+ * compiled by the MDX pipeline (links, lists, bold, etc. work natively).
  */
 export function Tree({children}: {children?: ReactNode}) {
   return <Files className="[&_svg]:shrink-0">{children}</Files>
 }
 
-Tree.Folder = function TreeFolder(props: ComponentProps<typeof Folder>) {
-  return <Folder {...props} />
+Tree.Folder = function TreeFolder({children, ...props}: ComponentProps<typeof Folder>) {
+  return (
+    <Folder {...props}>
+      <div className="px-2 mt-0.5 pb-0.5 text-xs text-fd-muted-foreground [&_ul]:list-disc [&_ul]:ps-4 [&_ul]:my-0.5 [&_li]:my-0.5 [&_a]:text-fd-foreground [&_a]:underline">
+        {children}
+      </div>
+    </Folder>
+  )
 }
 
-Tree.File = function TreeFile(props: ComponentProps<typeof File>) {
+Tree.File = function TreeFile({children, ...props}: ComponentProps<typeof File> & {children?: ReactNode}) {
+  if (children) {
+    return (
+      <div>
+        <File {...props} />
+        <div className="ps-8 mt-0.5 pb-1 text-xs text-fd-muted-foreground">{children}</div>
+      </div>
+    )
+  }
   return <File {...props} />
 }
