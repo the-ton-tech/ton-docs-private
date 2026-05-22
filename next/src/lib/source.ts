@@ -1,6 +1,6 @@
 import { docs } from "collections/server"
 import { findPath, type Folder, type Item } from "fumadocs-core/page-tree"
-import { createGetUrl, loader } from "fumadocs-core/source"
+import { loader } from "fumadocs-core/source"
 import { icons } from "lucide-react"
 import { readFileSync } from "node:fs"
 import path from "node:path"
@@ -19,15 +19,6 @@ function toPascalCase(name: string): string {
     .filter(Boolean)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join("")
-}
-
-/** Humanize a slug segment for display, e.g. `get-started` -> `Get Started`. */
-function humanizeSlug(slug: string): string {
-  return slug
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ")
 }
 
 function resolveLucideIcon(name: string | undefined) {
@@ -77,14 +68,6 @@ const navOverlays = loadNavOverlays()
 export type TaggedItem = Item & { $tag?: string }
 export type TaggedFolder = Folder & { $tag?: string }
 
-// URL builder mirroring the `loader({ baseUrl: "/" })` config below. Used by
-// the `folder` page-tree transformer to mint the `url` for an orphan intro
-// page. Fumadocs 16.9's `PageTreeBuilder` no longer exposes a `file()` method
-// (it previously returned the already-built `Item` for a file path); the
-// supported path now is to read the page from the build's `ContentStorage`
-// and assemble the `Item` ourselves.
-const getNodeUrl = createGetUrl("/")
-
 export const source = loader({
   baseUrl: "/",
   source: docs.toFumadocsSource(),
@@ -133,38 +116,12 @@ export const source = loader({
           // registered at <folderPath>.<format>, so unequal => orphan exists.
           const orphanFilePath = this.builder.resolveFlattenPath(folderPath, "page")
           if (orphanFilePath !== folderPath) {
-            const file = this.storage.read(orphanFilePath)
-            if (file?.format === "page") {
-              const orphanUrl = getNodeUrl(file.slugs, this.locale)
-              // Dedup by URL: guards against re-running on an already-handled
-              // node (cached folder builds short-circuit upstream, but the
-              // explicit check keeps the transformation idempotent).
-              const already = node.children.some(
-                child => child.type === "page" && child.url === orphanUrl,
-              )
-              if (!already) {
-                // Mirror the `file` transformer above: a `sidebarTitle` in
-                // frontmatter overrides the display name, and a config-only
-                // `$tag` from `nav-overlays.json` is stamped on the node.
-                const data = file.data as { sidebarTitle?: string }
-                const orphan: TaggedItem = {
-                  type: "page",
-                  // Fallback chain mirrors fumadocs' own buildFile: explicit
-                  // `sidebarTitle`, then frontmatter `title`, then a humanized
-                  // last slug segment (not the raw URL path).
-                  name:
-                    data.sidebarTitle ??
-                    file.data.title ??
-                    humanizeSlug(file.slugs.at(-1) ?? orphanUrl),
-                  description: file.data.description,
-                  icon: resolveLucideIcon(file.data.icon),
-                  url: orphanUrl,
-                  $ref: orphanFilePath,
-                }
-                const orphanTag = navOverlays.tagByItemUrl?.[orphanUrl]
-                if (orphanTag) orphan.$tag = orphanTag
-                node.children.unshift(orphan)
-              }
+            const orphan = this.builder.file(orphanFilePath)
+            // includes() guards against re-running on an already-handled
+            // node (cached folder builds short-circuit upstream, but the
+            // explicit check keeps the transformation idempotent).
+            if (orphan && !node.children.includes(orphan)) {
+              node.children.unshift(orphan)
             }
           }
           return node
