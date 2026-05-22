@@ -133,9 +133,9 @@ The dApp persists its keypair, the wallet's `client_id`, the bridge URL, and the
 
 A session is not bound to a single browser tab — reloads and cross-tab sharing work as long as storage persists.
 
-### Multi-device behaviour
+### Multi-device behavior
 
-A session is bound to wherever its keypair lives. The protocol does not synchronise keypairs across devices.
+A session is bound to wherever its keypair lives. The protocol does not synchronize keypairs across devices.
 
 - **Tabs in the same browser.** Same origin, same `localStorage`, one shared session.
 - **Different browsers, profiles, or devices.** Distinct storage means a distinct keypair. The user goes through the connect flow on each, producing separate sessions.

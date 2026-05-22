@@ -9,7 +9,7 @@ description: ""
 
 An _embedded request_ packs an action — `sendTransaction`, `signMessage` or `signData` — into the wallet's connect URL via the `e` query parameter. A compatible wallet bundles the connect approval and the action into one screen and returns the signed result with the connect response, saving the second round-trip.
 
-This optimisation applies to mobile deep links and universal links. Desktop QR scans and the in-wallet JS bridge fall back to the standard two-step flow automatically.
+This optimization applies to mobile deep links and universal links. Desktop QR scans and the in-wallet JS bridge fall back to the standard two-step flow automatically.
 
 ## How it works
 
@@ -54,11 +54,11 @@ type EmbeddedTResponse<TResponse> =
 
 The envelope is the same shape regardless of whether the wallet was already connected when you called the method. When the wallet is connected, the SDK runs the normal bridge flow and wraps the result in `{ hasResponse: true, response }` — so the dApp keeps one linear code path.
 
-### Behaviour matrix
+### Behavior matrix
 
-| Wallet state at call time      | `enableEmbeddedRequest` | Behaviour                                                                                            | Return                                                          |
+| Wallet state at call time      | `enableEmbeddedRequest` | Behavior                                                                                            | Return                                                          |
 | ------------------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Connected                      | not set                 | Bridge flow (existing behaviour).                                                                    | `SendTransactionResponse` / `SignDataResponse` / `SignMessageResponse` |
+| Connected                      | not set                 | Bridge flow (existing behavior).                                                                    | `SendTransactionResponse` / `SignDataResponse` / `SignMessageResponse` |
 | Connected                      | `true`                  | Bridge flow, wrapped in the envelope.                                                                | `{ hasResponse: true, response }`                               |
 | Not connected                  | not set                 | Throws `TonConnectUIError('Connect wallet to …')`.                                                   | —                                                               |
 | Not connected, wallet folds it | `true`                  | Connect URL carries `e=…`; the wallet returns connect and signed result together.                    | `{ hasResponse: true, response }`                               |
