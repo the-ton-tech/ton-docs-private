@@ -1822,16 +1822,18 @@ export const TvmInstructionTable = () => {
   align-items: center;
 }
 
-.tvm-spec-row:hover {
-  background: rgb(var(--primary) / 0.04);
+@media (hover: hover) {
+  .tvm-spec-row:not(.tvm-spec-row--detail):hover {
+    background: rgb(var(--primary) / 0.04);
+  }
+
+  :where(.dark) .tvm-instruction-app .tvm-spec-row:not(.tvm-spec-row--detail):hover {
+    background: rgb(var(--primary) / 0.1);
+  }
 }
 
 .tvm-spec-row.is-expanded {
   background: rgb(var(--primary) / 0.06);
-}
-
-:where(.dark) .tvm-instruction-app .tvm-spec-row:hover {
-  background: rgb(var(--primary) / 0.1);
 }
 
 :where(.dark) .tvm-instruction-app .tvm-spec-row.is-expanded {
@@ -1857,7 +1859,7 @@ export const TvmInstructionTable = () => {
   padding: var(--tvm-row-padding-y) var(--tvm-row-padding-x);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
   min-width: 0;
   color: var(--tvm-text-primary);
 }
@@ -1884,10 +1886,6 @@ export const TvmInstructionTable = () => {
 .tvm-spec-cell--name {
   gap: 0.4rem;
   overflow: hidden;
-}
-
-.tvm-name-line {
-  position: relative;
 }
 
 .tvm-copy-link {
@@ -2000,6 +1998,12 @@ export const TvmInstructionTable = () => {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.tvm-description code {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tvm-description-meta {
@@ -2011,20 +2015,24 @@ export const TvmInstructionTable = () => {
 .tvm-category-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
+  padding: 0.5rem;
+  border-radius: 16px;
   background: var(--tvm-accent-soft);
   color: var(--tvm-accent-subtle);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
   letter-spacing: 0.03em;
 }
 
 .tvm-inline-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.18rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
+  padding: 0.5rem;
+  border-radius: 16px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   background: var(--tvm-accent-soft);
@@ -2058,6 +2066,9 @@ export const TvmInstructionTable = () => {
   font-size: 0.72rem;
   font-family: 'JetBrains Mono', 'Menlo', 'Monaco', monospace;
   color: var(--tvm-text-muted);
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tvm-stack-columns {
@@ -2106,6 +2117,9 @@ export const TvmInstructionTable = () => {
   font-size: 0.75rem;
   font-family: 'JetBrains Mono', 'Menlo', 'Monaco', monospace;
   width: fit-content;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tvm-instruction-app.is-density-compact .tvm-stack-pill {
@@ -2380,6 +2394,7 @@ export const TvmInstructionTable = () => {
   font-size: 0.78rem;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   background: rgb(var(--gray-200) / 0.08);
   border: 1px solid var(--tvm-border);
   border-radius: 8px;
@@ -2417,7 +2432,7 @@ export const TvmInstructionTable = () => {
   flex-direction: column;
   gap: 0.5rem;
   background: var(--tvm-surface-secondary);
-  border: 1px solid rgb(var(--gray-400) / 0.3);
+  border: 1px solid var(--tvm-border);
   border-radius: 12px;
   padding: 0.85rem 0.95rem;
 }
@@ -2595,6 +2610,40 @@ export const TvmInstructionTable = () => {
   background: rgb(var(--gray-900) / 0.7);
 }
 
+@media (min-width: 901px) {
+  .tvm-spec-row:not(.tvm-spec-row--detail) {
+    position: relative;
+  }
+
+  .tvm-spec-row:not(.tvm-spec-row--detail) .tvm-row-indicator {
+    position: absolute;
+    right: var(--tvm-row-padding-x);
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0;
+  }
+
+  .tvm-spec-row:not(.tvm-spec-row--detail) .tvm-row-indicator.is-expanded {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .tvm-spec-row:not(.tvm-spec-row--detail) .tvm-spec-cell--description {
+    padding-right: calc(var(--tvm-row-padding-x) + 28px);
+  }
+}
+
+@media (max-width: 1024px) {
+  .tvm-instruction-app {
+    padding: 0;
+  }
+
+  .tvm-spec-header,
+  .tvm-spec-row {
+    --tvm-grid-template: 95px 220px minmax(280px, 2fr);
+    min-width: 620px;
+  }
+}
+
 @media (max-width: 1040px) {
   .tvm-instruction-toolbar {
     flex-direction: column;
@@ -2637,6 +2686,17 @@ export const TvmInstructionTable = () => {
 
   .tvm-spec-row .tvm-spec-cell--description {
     grid-column: 1 / -1;
+    padding-bottom: 0.85rem;
+  }
+
+  .tvm-spec-cell--full {
+    padding: 0;
+  }
+
+  .tvm-detail-panel {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
@@ -2647,6 +2707,12 @@ export const TvmInstructionTable = () => {
 
   .tvm-detail-columns {
     flex-direction: column;
+  }
+
+  .tvm-detail-main,
+  .tvm-detail-side {
+    flex: 1 1 auto;
+    width: 100%;
   }
 
   .tvm-detail-section {
@@ -2994,20 +3060,12 @@ export const TvmInstructionTable = () => {
   color: var(--tvm-accent-strong);
 }
 
-@media (max-width: 1024px) {
-  .tvm-instruction-app {
-    padding: 0;
-  }
-
-  .tvm-spec-header,
-  .tvm-spec-row {
-    --tvm-grid-template: 95px 220px minmax(280px, 2fr);
-    min-width: 620px;
-  }
-}
-
 @media (max-width: 768px) {
-  .tvm-field {
+  .tvm-field,
+  .tvm-toolbar-filters .tvm-field,
+  .tvm-field--sort,
+  .tvm-field--category,
+  .tvm-field--subcategory {
     width: 100%;
     min-width: 0;
   }
