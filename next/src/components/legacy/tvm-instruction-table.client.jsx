@@ -1146,6 +1146,37 @@ export const TvmInstructionTable = () => {
           <div className="tvm-detail-heading">
             <div className="tvm-detail-header-main">
               <h4 className="tvm-detail-title">{instruction.mnemonic}</h4>
+              <button
+                type="button"
+                className={`tvm-copy-link${copied[instruction.uid] ? " is-copied" : ""}`}
+                aria-label={copied[instruction.uid] ? "Copied" : "Copy link to instruction"}
+                onClick={() => {
+                  const anchorId = instruction.anchorId || buildAnchorId(instruction);
+                  copyAnchorUrl(anchorId)
+                    .then(() => {
+                      setCopied((prev) => ({ ...prev, [instruction.uid]: true }));
+                      setTimeout(() => {
+                        setCopied((prev) => {
+                          const { [instruction.uid]: _omit, ...rest } = prev;
+                          return rest;
+                        });
+                      }, 1500);
+                    })
+                    .catch(() => {});
+                }}
+                title={copied[instruction.uid] ? "Copied" : "Copy link"}
+              >
+                {copied[instruction.uid] ? (
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M10.59 13.41a1.996 1.996 0 0 0 2.82 0l3.59-3.59a2 2 0 0 0-2.83-2.83l-1.17 1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M13.41 10.59a1.996 1.996 0 0 0-2.82 0L7 14.18a2 2 0 1 0 2.83 2.83l1.17-1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
           <div className="tvm-detail-actions">
@@ -1899,15 +1930,9 @@ export const TvmInstructionTable = () => {
   background: transparent;
   color: var(--tvm-text-muted);
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease-in-out, color 0.15s ease-in-out;
+  transition: color 0.15s ease-in-out;
   flex-shrink: 0;
   font-size: 1.15rem;
-}
-
-.tvm-spec-row:hover .tvm-copy-link,
-.tvm-copy-link:focus-visible {
-  opacity: 1;
 }
 
 .tvm-copy-link:hover {
@@ -2010,6 +2035,10 @@ export const TvmInstructionTable = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+}
+
+.tvm-opcode-chip {
+  display: none;
 }
 
 .tvm-category-pill {
@@ -2256,7 +2285,7 @@ export const TvmInstructionTable = () => {
 
 .tvm-detail-header-main {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.45rem;
   flex-wrap: wrap;
 }
@@ -2673,19 +2702,40 @@ export const TvmInstructionTable = () => {
     align-items: start;
   }
 
+  .tvm-spec-row:not(.tvm-spec-row--detail) {
+    padding: 0.5rem 0;
+  }
+
   .tvm-spec-row .tvm-spec-cell--opcode {
-    grid-row: 1;
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    align-items: baseline;
+    display: none;
   }
 
   .tvm-spec-row .tvm-spec-cell--name {
     grid-column: 1 / -1;
+    gap: 1rem;
+  }
+
+  .tvm-name-line {
+    gap: 0.6rem;
+  }
+
+  .tvm-opcode-chip {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', 'Menlo', 'Monaco', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0 0.5rem;
+    border-radius: 6px;
+    background: var(--tvm-pill-muted-bg);
+    color: var(--tvm-text-secondary);
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
   }
 
   .tvm-spec-row .tvm-spec-cell--description {
     grid-column: 1 / -1;
+    gap: 1rem;
     padding-bottom: 0.85rem;
   }
 
@@ -3922,43 +3972,15 @@ export const TvmInstructionTable = () => {
                       </div>
                       <div className="tvm-spec-cell tvm-spec-cell--name">
                         <div className="tvm-name-line">
+                          <code className="tvm-opcode-chip" aria-hidden="true">
+                            {instruction.opcode || "—"}
+                          </code>
                           <span className="tvm-mnemonic">
                             {highlightMatches(
                               instruction.mnemonic,
                               searchTokens
                             )}
                           </span>
-                          <button
-                            type="button"
-                            className={`tvm-copy-link${copied[instruction.uid] ? " is-copied" : ""}`}
-                            aria-label={copied[instruction.uid] ? "Copied" : "Copy link to instruction"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              copyAnchorUrl(anchorId)
-                                .then(() => {
-                                  setCopied((prev) => ({ ...prev, [instruction.uid]: true }));
-                                  setTimeout(() => {
-                                    setCopied((prev) => {
-                                      const { [instruction.uid]: _omit, ...rest } = prev;
-                                      return rest;
-                                    });
-                                  }, 1500);
-                                })
-                                .catch(() => {});
-                            }}
-                            title={copied[instruction.uid] ? "Copied" : "Copy link"}
-                          >
-                            {copied[instruction.uid] ? (
-                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            ) : (
-                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path d="M10.59 13.41a1.996 1.996 0 0 0 2.82 0l3.59-3.59a2 2 0 0 0-2.83-2.83l-1.17 1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M13.41 10.59a1.996 1.996 0 0 0-2.82 0L7 14.18a2 2 0 1 0 2.83 2.83l1.17-1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            )}
-                          </button>
                           {instruction.since > 0 && (
                             <span className="tvm-inline-badge">
                               {instruction.since != 9999 ? `since v${instruction.since}` : 'unimplemented yet' }
