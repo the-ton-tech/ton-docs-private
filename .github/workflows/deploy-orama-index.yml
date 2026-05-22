@@ -1,18 +1,19 @@
-name: Deploy Orama search index
+name: Deploy Orama search index and AI backend
 
 # Triggers:
-#   - push to main, only when something that affects the index can change
-#     (MDX content / Next config / orama-server / this workflow)
+#   - push to main, only when something deployed to the VPS can change
+#     (MDX content / Next config / orama-server / ai-backend / this workflow)
 #   - manual: run from the Actions tab when a hand-rebuilt index is needed
 #
 # Concurrency: serialize deploys per branch so a fast follow-on push doesn't
 # race the previous run and ship an older index over a newer one.
 on:
   push:
-    branches: [main, orama-backend]
+    branches: [main, feat/openrouter-ai-assistant]
     paths:
       - "next/**"
       - "orama-server/**"
+      - "ai-backend/**"
       - ".github/workflows/deploy-orama-index.yml"
   workflow_dispatch:
 
@@ -156,3 +157,27 @@ jobs:
             echo "  q=${q} top=${top}"
             test -n "$top"
           done
+
+      - name: Deploy AI backend on VPS
+        # The AI chat backend (ai-backend/) runs as the `ton-docs-ai` systemd
+        # service from /opt/ton-docs-ai — a deploy dir kept separate from the
+        # repo clone. Sync the freshly-pulled source there (.env is excluded
+        # so the prod OPENROUTER_KEY survives), reinstall deps, rebuild the
+        # TypeScript, then restart. The git reset in "Pull latest server code
+        # on VPS" already refreshed /root/ton-docs-private/ai-backend.
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" bash -se <<'REMOTE'
+          set -euo pipefail
+          rsync -a --delete --exclude='.env' --exclude='node_modules' \
+            /root/ton-docs-private/ai-backend/ /opt/ton-docs-ai/
+          cd /opt/ton-docs-ai
+          npm ci --no-audit --no-fund
+          npm run build
+          chown -R ton-docs-ai:ton-docs-ai /opt/ton-docs-ai
+          systemctl restart ton-docs-ai
+          for i in 1 2 3 4 5 6 7 8 9 10 ; do
+            ss -tlnp | grep -q :8787 && break ; sleep 1
+          done
+          curl -fsS http://127.0.0.1:8787/api/health
+          REMOTE
