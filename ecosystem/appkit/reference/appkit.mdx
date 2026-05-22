@@ -190,9 +190,9 @@ Build a TonConnect-backed [`Connector`](#connector) for AppKit. Pass the result 
 
 | Parameter                  | Type                                                            | Description                                                                                                                                                                                                 |
 | -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `config`\*                 | [`TonConnectConnectorConfig`](#tonconnectconnectorconfig)       | Connector ID, metadata override and `TonConnect` options or pre-built UI instance.                                                                                                                            |
+| `config`\*                 | [`TonConnectConnectorConfig`](#tonconnectconnectorconfig)       | Connector ID, metadata override and `TonConnect` options or pre-built UI instance.                                                                                                                          |
 | `config.id`                | `string`                                                        | Connector ID. Defaults to [`TONCONNECT_DEFAULT_CONNECTOR_ID`](#tonconnect_default_connector_id) (`'tonconnect'`). Set this when you need to register multiple TonConnect-flavoured connectors side by side. |
-| `config.metadata`          | <code><a href="#connectormetadata">ConnectorMetadata</a></code> | Display metadata override. Merged on top of TON Connect's default name and icon.                                                                                                                             |
+| `config.metadata`          | <code><a href="#connectormetadata">ConnectorMetadata</a></code> | Display metadata override. Merged on top of TON Connect's default name and icon.                                                                                                                            |
 | `config.tonConnectOptions` | `TonConnectUiCreateOptions`                                     | Options forwarded to the underlying `TonConnectUI` constructor (manifest URL, etc.). Ignored when `tonConnectUI` is supplied.                                                                               |
 | `config.tonConnectUI`      | `TonConnectUI`                                                  | Pre-built `TonConnectUI` instance to reuse. When set, the connector skips its own instantiation and `tonConnectOptions` is ignored.                                                                         |
 
@@ -2003,10 +2003,10 @@ Constructor: `new TonConnectWalletAdapter(config)`
 
 | Parameter                   | Type                                                              | Description                                                                                |
 | --------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `config`\*                  | [`TonConnectWalletAdapterConfig`](#tonconnectwalletadapterconfig) | TON Connect wallet + UI instance and the id of the connector that produced them.            |
+| `config`\*                  | [`TonConnectWalletAdapterConfig`](#tonconnectwalletadapterconfig) | TON Connect wallet + UI instance and the id of the connector that produced them.           |
 | `config.connectorId`\*      | `string`                                                          | ID of the connector that produced this wallet — surfaced as `WalletInterface.connectorId`. |
-| `config.tonConnectWallet`\* | `TonConnectWallet`                                                | Underlying TON Connect wallet object.                                                       |
-| `config.tonConnectUI`\*     | `TonConnectUI`                                                    | TON Connect UI instance used to drive `sendTransaction` and `signData` calls.               |
+| `config.tonConnectWallet`\* | `TonConnectWallet`                                                | Underlying TON Connect wallet object.                                                      |
+| `config.tonConnectUI`\*     | `TonConnectUI`                                                    | TON Connect UI instance used to drive `sendTransaction` and `signData` calls.              |
 
 ## Type
 
