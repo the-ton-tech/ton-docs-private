@@ -29,15 +29,24 @@ function renderItem(item: FileTreeItem, index: number, defaultOpen: boolean): Re
   }
 
   if (item.kind === "file") {
-    const display = item.note ? `${item.name} — ${item.note}` : item.name
-    return <File key={index} name={display} />
+    if (item.note) {
+      return (
+        <div key={index}>
+          <File name={item.name} />
+          <span className="block ps-8 -mt-1 pb-1 text-xs text-fd-muted-foreground">{item.note}</span>
+        </div>
+      )
+    }
+    return <File key={index} name={item.name} />
   }
 
   if (item.kind === "folder") {
     const isOpen = item.open ?? defaultOpen
-    const display = item.note ? `${item.name} — ${item.note}` : item.name
     return (
-      <Folder key={index} name={display} defaultOpen={isOpen}>
+      <Folder key={index} name={item.name} defaultOpen={isOpen}>
+        {item.note && (
+          <span className="block whitespace-pre-line px-2 -mt-0.5 pb-0.5 text-xs text-fd-muted-foreground">{item.note}</span>
+        )}
         {item.items?.map((child, childIdx) => renderItem(child, childIdx, defaultOpen))}
       </Folder>
     )
@@ -47,22 +56,35 @@ function renderItem(item: FileTreeItem, index: number, defaultOpen: boolean): Re
 }
 
 export function FileTree({items = [], defaultOpen = true}: FileTreeProps) {
-  return <Files>{items.map((item, idx) => renderItem(item, idx, defaultOpen))}</Files>
+  return <Files className="[&_svg]:shrink-0 [&_.ms-2]:ms-[15px]">{items.map((item, idx) => renderItem(item, idx, defaultOpen))}</Files>
 }
 
 /**
- * Mintlify exposed a built-in `<Tree>` JSX element accepting `<Tree.Folder>`
- * and `<Tree.File>` children. We re-implement that surface on top of Fumadocs'
- * `Files`, so authors can keep using the compositional form without imports.
+ * Compositional form — content inside folders/files is regular MDX,
+ * compiled by the MDX pipeline (links, lists, bold, etc. work natively).
  */
 export function Tree({children}: {children?: ReactNode}) {
-  return <Files>{children}</Files>
+  return <Files className="[&_svg]:shrink-0 [&_.ms-2]:ms-[15px]">{children}</Files>
 }
 
-Tree.Folder = function TreeFolder(props: ComponentProps<typeof Folder>) {
-  return <Folder {...props} />
+Tree.Folder = function TreeFolder({children, ...props}: ComponentProps<typeof Folder>) {
+  return (
+    <Folder {...props}>
+      <div className="px-2 mt-0.5 pb-0.5 text-xs text-fd-muted-foreground [&_ul]:list-disc [&_ul]:ps-4 [&_ul]:my-0.5 [&_li]:my-0.5 [&_a]:text-fd-foreground [&_a]:underline">
+        {children}
+      </div>
+    </Folder>
+  )
 }
 
-Tree.File = function TreeFile(props: ComponentProps<typeof File>) {
+Tree.File = function TreeFile({children, ...props}: ComponentProps<typeof File> & {children?: ReactNode}) {
+  if (children) {
+    return (
+      <div>
+        <File {...props} />
+        <div className="ps-8 mt-0.5 pb-1 text-xs text-fd-muted-foreground">{children}</div>
+      </div>
+    )
+  }
   return <File {...props} />
 }

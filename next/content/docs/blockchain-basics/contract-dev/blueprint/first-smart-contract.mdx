@@ -5,7 +5,6 @@ sidebarTitle: "First smart contract"
 description: ""
 ---
 
-
 <Aside type="note">
   [Acton](https://ton-blockchain.github.io/acton/docs/welcome) is the recommended tool for new smart contract projects. Blueprint remains supported for existing projects.
 </Aside>
@@ -36,20 +35,45 @@ This tutorial covers building, deploying, and interacting with a smart contract 
 
     The generated project structure is:
 
-    <FenceTable
+    <Tree>
+      <Tree.Folder
+        name="Example"
+        defaultOpen
+      >
+        <Tree.Folder
+          name="contracts"
+          defaultOpen
+        >
+          Smart contract source code
+          <Tree.File name="first_contract.tolk">Main contract file</Tree.File>
+        </Tree.Folder>
 
-    >
-      Example/
-      ├──contracts/                        # smart contract source code
-      │   └── first\_contract.tolk          # main contract file
-      ├── scripts/                         # deployment and on-chain interaction scripts
-      │   └── deployFirstContract.ts       # script to deploy the contract
-      ├── tests/                           # testing specifications
-      │   └── FirstContract.spec.ts        # contract test file
-      ├── wrappers/                        # TypeScript wrappers for contract interaction
-      │   ├── FirstContract.ts             # wrapper class for the smart contract
-      │   └── FirstContract.compile.ts     # configuration for compiling contract
-    </FenceTable>
+        <Tree.Folder
+          name="scripts"
+          defaultOpen
+        >
+          Deployment and on-chain interaction scripts
+          <Tree.File name="deployFirstContract.ts">Script to deploy the contract</Tree.File>
+        </Tree.Folder>
+
+        <Tree.Folder
+          name="tests"
+          defaultOpen
+        >
+          Testing specifications
+          <Tree.File name="FirstContract.spec.ts">Contract test file</Tree.File>
+        </Tree.Folder>
+
+        <Tree.Folder
+          name="wrappers"
+          defaultOpen
+        >
+          TypeScript wrappers for contract interaction
+          <Tree.File name="FirstContract.ts">Wrapper class for the smart contract</Tree.File>
+          <Tree.File name="FirstContract.compile.ts">Configuration for compiling contract</Tree.File>
+        </Tree.Folder>
+      </Tree.Folder>
+    </Tree>
   </Step>
 
   <Step
