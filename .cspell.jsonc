@@ -175,6 +175,10 @@
     "**/*.py*",
     "**/*.{ts,tsx}",
     "**/*.css",
+    // Standalone sub-projects with their own tooling — not docs content
+    "ai-backend/**",
+    "mcp-server/**",
+    "orama-server/**",
     // Miscellaneous
     "**/*.git*",
     "**/*.svg",
