@@ -59,6 +59,7 @@
         "TLB->TL-B",
         "TONAPI->TonAPI",
         "Toncenter->TON Center",
+        "TonConnect->TON Connect",
         "toncoins->Toncoin",
         "Toncoins->Toncoin",
         "WorkChain->workchain",
@@ -68,7 +69,7 @@
     },
     // Do not check for banned words (denylists or flagWords) in certain files
     {
-      "filename": "contribute/style-guide*.mdx",
+      "filename": "**/contribute/style-guide*.mdx",
       "ignoreWords": [
         "tos",
         "DOI",
@@ -125,17 +126,41 @@
       "ignoreWords": [
         "mcp", // lowercase in the title
       ],
+    },
+    {
+      "filename": "**/appkit/reference/appkit*.mdx",
+      "ignoreWords": [
+        "Id",
+        "TonConnect",
+        "bp",
+        "id"
+      ]
+    },
+    {
+      "filename": "**/ton-connect/api-reference/*.mdx",
+      "ignoreWords": [
+        "ES",
+        "MS",
+        "TonConnect",
+        "boc",
+        "id",
+        "qr"
+      ]
     }
   ],
   "ignorePaths": [
     // Some whitepapers
     "foundations/whitepapers/tblkch.mdx",
+    "next/content/docs/blockchain-basics/whitepapers/tblkch.mdx",
     "foundations/whitepapers/ton.mdx",
+    "next/content/docs/blockchain-basics/whitepapers/ton.mdx",
     "foundations/whitepapers/tvm.mdx",
+    "next/content/docs/blockchain-basics/whitepapers/tvm.mdx",
     "languages/fift/whitepaper.mdx",
     "tolk/features/standard-library.mdx",
     // Generated files
     "tvm/instructions.mdx",
+    "next/content/docs/blockchain-basics/tvm/instructions.mdx",
     // Binaries
     "**/*.boc",
     // Code
@@ -154,10 +179,18 @@
     "**/*.git*",
     "**/*.svg",
     "**/*.txt",
+    "**/*.jsx",
+    "**/*.mjs",
+    "**/*.yaml",
+    "next/*.*",
+    "next/grammars/*.*",
+    "next/openapi/*.*",
     "CODEOWNERS",
     "LICENSE-*",
     "snippets/tvm-instruction-table.jsx",
-    "snippets/catchain-visualizer.jsx"
+    "snippets/catchain-visualizer.jsx",
+    "next/README.md",
+    "next/CUTOVER.md"
   ],
   "ignoreRegExpList": [
     //
@@ -185,6 +218,7 @@
     // Custom patterns
     //
     "url: \".*?\"", // frontmatter url field
+    "^id: .+$", // frontmatter id field
     "\\s*[^\\s]*?=[\"'\\{]", // arbitrary JSX attribute names
     "=\\s*\".*?\"", // string values of JSX attributes
     "=\\s*'.*?'", // string values of JSX attributes

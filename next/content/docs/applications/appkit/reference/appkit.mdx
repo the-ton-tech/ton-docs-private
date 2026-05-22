@@ -192,9 +192,9 @@ Build a TonConnect-backed [`Connector`](#connector) for AppKit. Pass the result 
 
 | Parameter                  | Type                                                            | Description                                                                                                                                                                                                 |
 | -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `config`\*                 | [`TonConnectConnectorConfig`](#tonconnectconnectorconfig)       | Connector ID, metadata override and TonConnect options or pre-built UI instance.                                                                                                                            |
+| `config`\*                 | [`TonConnectConnectorConfig`](#tonconnectconnectorconfig)       | Connector ID, metadata override and `TonConnect` options or pre-built UI instance.                                                                                                                          |
 | `config.id`                | `string`                                                        | Connector ID. Defaults to [`TONCONNECT_DEFAULT_CONNECTOR_ID`](#tonconnect_default_connector_id) (`'tonconnect'`). Set this when you need to register multiple TonConnect-flavoured connectors side by side. |
-| `config.metadata`          | <code><a href="#connectormetadata">ConnectorMetadata</a></code> | Display metadata override. Merged on top of TonConnect's default name and icon.                                                                                                                             |
+| `config.metadata`          | <code><a href="#connectormetadata">ConnectorMetadata</a></code> | Display metadata override. Merged on top of TON Connect's default name and icon.                                                                                                                            |
 | `config.tonConnectOptions` | `TonConnectUiCreateOptions`                                     | Options forwarded to the underlying `TonConnectUI` constructor (manifest URL, etc.). Ignored when `tonConnectUI` is supplied.                                                                               |
 | `config.tonConnectUI`      | `TonConnectUI`                                                  | Pre-built `TonConnectUI` instance to reuse. When set, the connector skips its own instantiation and `tonConnectOptions` is ignored.                                                                         |
 
@@ -448,10 +448,10 @@ Returns: <code><a href="#getcryptoonrampstatusreturntype">GetCryptoOnrampStatusR
 
 Subscribe to crypto on-ramp provider lifecycle — fires `onChange` whenever a new provider is registered or the default crypto on-ramp provider switches.
 
-| Parameter               | Type                                                                            | Description                                                                                                   |
-| ----------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `appKit`\*              | [`AppKit`](#appkit)                                                             | Runtime instance.                                                                                             |
-| `parameters`\*          | [`WatchCryptoOnrampProvidersParameters`](#watchcryptoonrampprovidersparameters) | Update callback.                                                                                              |
+| Parameter               | Type                                                                            | Description                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `appKit`\*              | [`AppKit`](#appkit)                                                             | Runtime instance.                                                                                               |
+| `parameters`\*          | [`WatchCryptoOnrampProvidersParameters`](#watchcryptoonrampprovidersparameters) | Update callback.                                                                                                |
 | `parameters.onChange`\* | `() => void`                                                                    | Callback fired whenever a crypto on-ramp provider is registered or the default crypto on-ramp provider changes. |
 
 Returns: <code><a href="#watchcryptoonrampprovidersreturntype">WatchCryptoOnrampProvidersReturnType</a></code> — Unsubscribe function — call it to stop receiving updates.
@@ -1808,11 +1808,11 @@ Constructor: `new CryptoOnrampProvider()`
 
 Constructor: `new LayerswapCryptoOnrampProvider(config)`
 
-| Parameter       | Type                                                                        | Description                                                                                                          |
-| --------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `config`        | <code><a href="#layerswapproviderconfig">LayerswapProviderConfig</a></code> | Optional [`LayerswapProviderConfig`](#layerswapproviderconfig). Defaults are filled in for any field left undefined. |
-| `config.apiKey` | `string`                                                                    | Optional API key. Forwarded as `X-LS-APIKEY` when provided.                                                          |
-| `config.apiUrl` | `string`                                                                    | Override the base API URL. Defaults to `https://api.layerswap.io/api/v2` (see [Layerswap API V2](https://api.layerswap.io/swagger/index.html)).           |
+| Parameter       | Type                                                                        | Description                                                                                                                                     |
+| --------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config`        | <code><a href="#layerswapproviderconfig">LayerswapProviderConfig</a></code> | Optional [`LayerswapProviderConfig`](#layerswapproviderconfig). Defaults are filled in for any field left undefined.                            |
+| `config.apiKey` | `string`                                                                    | Optional API key. Forwarded as `X-LS-APIKEY` when provided.                                                                                     |
+| `config.apiUrl` | `string`                                                                    | Override the base API URL. Defaults to `https://api.layerswap.io/api/v2` (see [Layerswap API V2](https://api.layerswap.io/swagger/index.html)). |
 
 #### SwapsXyzCryptoOnrampProvider
 
@@ -1824,7 +1824,7 @@ Constructor: `new SwapsXyzCryptoOnrampProvider(config)`
 | ---------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `config`\*             | [`SwapsXyzProviderConfig`](#swapsxyzproviderconfig) | Configuration carrying the required `apiKey` plus optional URL/sender overrides.                                                                                           |
 | `config.apiKey`\*      | `string`                                            | API key issued by swaps.xyz (passed as `x-api-key`)                                                                                                                        |
-| `config.apiUrl`        | `string`                                            | Override the base API URL. Defaults to `https://api-v2.swaps.xyz/api` (see [Swaps API Documentation](https://docs.swaps.xyz).                                                                       |
+| `config.apiUrl`        | `string`                                            | Override the base API URL. Defaults to `https://api-v2.swaps.xyz/api` (see [Swaps API Documentation](https://docs.swaps.xyz).                                              |
 | `config.defaultSender` | `string`                                            | EVM address used as `sender` on getAction requests. Required by the API even for deposit flows where the actual payer is unknown. Defaults to a null address when omitted. |
 
 ### DeFi
@@ -1999,16 +1999,16 @@ Constructor: `new SwapProvider()`
 
 #### TonConnectWalletAdapter
 
-[`WalletInterface`](#walletinterface) implementation backed by a TonConnect wallet. Prefer the [`createTonConnectConnector`](#createtonconnectconnector) factory over instantiating this class directly — the connector builds the adapter for every wallet it tracks and apps interact with it through standard AppKit actions ([`sendTransaction`](#sendtransaction), [`signText`](#signtext)/[`signBinary`](#signbinary)/[`signCell`](#signcell)). On-chain reads (balance, jettons, NFTs) live on separate actions ([`getBalance`](#getbalance), [`getJettons`](#getjettons), [`getNfts`](#getnfts)) and don't go through this adapter.
+[`WalletInterface`](#walletinterface) implementation backed by a TON Connect wallet. Prefer the [`createTonConnectConnector`](#createtonconnectconnector) factory over instantiating this class directly — the connector builds the adapter for every wallet it tracks and apps interact with it through standard AppKit actions ([`sendTransaction`](#sendtransaction), [`signText`](#signtext)/[`signBinary`](#signbinary)/[`signCell`](#signcell)). On-chain reads (balance, jettons, NFTs) live on separate actions ([`getBalance`](#getbalance), [`getJettons`](#getjettons), [`getNfts`](#getnfts)) and don't go through this adapter.
 
 Constructor: `new TonConnectWalletAdapter(config)`
 
 | Parameter                   | Type                                                              | Description                                                                                |
 | --------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `config`\*                  | [`TonConnectWalletAdapterConfig`](#tonconnectwalletadapterconfig) | TonConnect wallet + UI instance and the id of the connector that produced them.            |
+| `config`\*                  | [`TonConnectWalletAdapterConfig`](#tonconnectwalletadapterconfig) | TON Connect wallet + UI instance and the id of the connector that produced them.           |
 | `config.connectorId`\*      | `string`                                                          | ID of the connector that produced this wallet — surfaced as `WalletInterface.connectorId`. |
-| `config.tonConnectWallet`\* | `TonConnectWallet`                                                | Underlying TonConnect wallet object.                                                       |
-| `config.tonConnectUI`\*     | `TonConnectUI`                                                    | TonConnect UI instance used to drive `sendTransaction` and `signData` calls.               |
+| `config.tonConnectWallet`\* | `TonConnectWallet`                                                | Underlying TON Connect wallet object.                                                      |
+| `config.tonConnectUI`\*     | `TonConnectUI`                                                    | TON Connect UI instance used to drive `sendTransaction` and `signData` calls.              |
 
 ## Type
 
@@ -2249,7 +2249,7 @@ type ConnectReturnType = void;
 
 #### Connector
 
-Wallet connector contract — the protocol-specific bridge (TonConnect, embedded wallet, …) AppKit drives once you register it via [`AppKitConfig`](#appkitconfig)'s `connectors`.
+Wallet connector contract — the protocol-specific bridge (TON Connect, embedded wallet, …) AppKit drives once you register it via [`AppKitConfig`](#appkitconfig)'s `connectors`.
 
 | Field                   | Type                                                                      | Description                                                                       |
 | ----------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -2573,10 +2573,10 @@ Interface that all crypto on-ramp providers must implement
 
 | Field                    | Type                                                                                                                                                                            | Description                                                                                                                                                                                   |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`\*                 | `'crypto-onramp'`                                                                                                                                                               | Provider kind discriminator pinned to `'crypto-onramp'` so [`registerProvider`](#registerprovider) routes it to the crypto on-ramp manager.                                                    |
+| `type`\*                 | `'crypto-onramp'`                                                                                                                                                               | Provider kind discriminator pinned to `'crypto-onramp'` so [`registerProvider`](#registerprovider) routes it to the crypto on-ramp manager.                                                   |
 | `providerId`\*           | `string`                                                                                                                                                                        | Unique identifier for the provider                                                                                                                                                            |
 | `getMetadata`\*          | <code>() => <a href="#cryptoonrampprovidermetadata">CryptoOnrampProviderMetadata</a></code>                                                                                     | Get static metadata for the provider (display name, logo, url).                                                                                                                               |
-| `getQuote`\*             | <code>(params: <a href="#cryptoonrampquoteparams">CryptoOnrampQuoteParams</a>\<TQuoteOptions>) => Promise\<<a href="#cryptoonrampquote">CryptoOnrampQuote</a>></code>           | Get a quote for on-ramping from another crypto asset into a TON asset                                                                                                                          |
+| `getQuote`\*             | <code>(params: <a href="#cryptoonrampquoteparams">CryptoOnrampQuoteParams</a>\<TQuoteOptions>) => Promise\<<a href="#cryptoonrampquote">CryptoOnrampQuote</a>></code>           | Get a quote for on-ramping from another crypto asset into a TON asset                                                                                                                         |
 | `createDeposit`\*        | <code>(params: <a href="#cryptoonrampdepositparams">CryptoOnrampDepositParams</a>\<TDepositOptions>) => Promise\<<a href="#cryptoonrampdeposit">CryptoOnrampDeposit</a>></code> | Create a deposit for a previously obtained quote                                                                                                                                              |
 | `getStatus`\*            | <code>(params: <a href="#cryptoonrampstatusparams">CryptoOnrampStatusParams</a>) => Promise\<<a href="#cryptoonrampstatus">CryptoOnrampStatus</a>></code>                       | Get the status of a deposit                                                                                                                                                                   |
 | `getSupportedNetworks`\* | <code>() => <a href="#network">Network</a>\[]</code>                                                                                                                            | Networks this provider can operate on. Consumers should check before calling provider methods. Implementations may return a static list or compute it dynamically (e.g. from runtime config). |
@@ -2616,7 +2616,7 @@ Crypto on-ramp quote response with pricing information.
 | `targetAmount`\*          | `string`              | Amount of target crypto to receive.                                            |
 | `rate`\*                  | `string`              | Exchange rate (amount of target per 1 unit of source)                          |
 | `recipientAddress`\*      | `string`              | TON address that will receive the target crypto.                               |
-| `providerId`\*            | `string`              | Identifier of the crypto on-ramp provider.                                      |
+| `providerId`\*            | `string`              | Identifier of the crypto on-ramp provider.                                     |
 | `metadata`                | `TMetadata = unknown` | Provider-specific metadata for the quote (e.g. raw response needed to execute) |
 
 #### CryptoOnrampQuoteParams
@@ -2627,7 +2627,7 @@ The target network is always TON, so only the source side is parameterised.
 
 | Field                     | Type                         | Description                                                                                                                                                                     |
 | ------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `amount`\*                | `string`                     | Amount to on-ramp (either source or target crypto, depending on isSourceAmount)                                                                                                  |
+| `amount`\*                | `string`                     | Amount to on-ramp (either source or target crypto, depending on isSourceAmount)                                                                                                 |
 | `sourceCurrencyAddress`\* | `string`                     | Source crypto currency address (contract address or 0x0... for native)                                                                                                          |
 | `sourceChain`\*           | `string`                     | Source chain identifier in CAIP-2 format (e.g. 'eip155:1' for Ethereum mainnet, 'eip155:42161' for Arbitrum One). Providers map this to their own chain identifiers internally. |
 | `targetCurrencyAddress`\* | `string`                     | Target crypto currency address on TON (contract address or 0x0... for native)                                                                                                   |
@@ -2683,7 +2683,7 @@ Options for [`getCryptoOnrampQuote`](#getcryptoonrampquote) — extends [`Crypto
 
 | Field                     | Type                         | Description                                                                                                                                                                     |
 | ------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `amount`\*                | `string`                     | Amount to on-ramp (either source or target crypto, depending on isSourceAmount)                                                                                                  |
+| `amount`\*                | `string`                     | Amount to on-ramp (either source or target crypto, depending on isSourceAmount)                                                                                                 |
 | `sourceCurrencyAddress`\* | `string`                     | Source crypto currency address (contract address or 0x0... for native)                                                                                                          |
 | `sourceChain`\*           | `string`                     | Source chain identifier in CAIP-2 format (e.g. 'eip155:1' for Ethereum mainnet, 'eip155:42161' for Arbitrum One). Providers map this to their own chain identifiers internally. |
 | `targetCurrencyAddress`\* | `string`                     | Target crypto currency address on TON (contract address or 0x0... for native)                                                                                                   |
@@ -2722,9 +2722,9 @@ type GetCryptoOnrampStatusReturnType = Promise<CryptoOnrampStatus>;
 
 Configuration accepted by [`createLayerswapProvider`](#createlayerswapprovider).
 
-| Field    | Type     | Description                                                                                                |
-| -------- | -------- | ---------------------------------------------------------------------------------------------------------- |
-| `apiKey` | `string` | Optional API key. Forwarded as `X-LS-APIKEY` when provided.                                                |
+| Field    | Type     | Description                                                                                                                                    |
+| -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKey` | `string` | Optional API key. Forwarded as `X-LS-APIKEY` when provided.                                                                                    |
 | `apiUrl` | `string` | Override the base API URL. Defaults to `https://api.layerswap.io/api/v2` (see [Layerswap API V2](https://api.layerswap.io/swagger/index.html). |
 
 #### LayerswapQuoteMetadata
@@ -2745,7 +2745,7 @@ Configuration accepted by [`createSwapsXyzProvider`](#createswapsxyzprovider).
 | Field           | Type     | Description                                                                                                                                                                |
 | --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apiKey`\*      | `string` | API key issued by swaps.xyz (passed as `x-api-key`)                                                                                                                        |
-| `apiUrl`        | `string` | Override the base API URL. Defaults to `https://api-v2.swaps.xyz/api` (see [Swaps API Documentation](https://docs.swaps.xyz).                                                                       |
+| `apiUrl`        | `string` | Override the base API URL. Defaults to `https://api-v2.swaps.xyz/api` (see [Swaps API Documentation](https://docs.swaps.xyz).                                              |
 | `defaultSender` | `string` | EVM address used as `sender` on getAction requests. Required by the API even for deposit flows where the actual payer is unknown. Defaults to a null address when omitted. |
 
 #### SwapsXyzQuoteMetadata
@@ -2769,8 +2769,8 @@ swaps.xyz-specific options forwarded through `providerOptions` on [`CryptoOnramp
 
 Parameters accepted by [`watchCryptoOnrampProviders`](#watchcryptoonrampproviders).
 
-| Field        | Type         | Description                                                                                                   |
-| ------------ | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| Field        | Type         | Description                                                                                                     |
+| ------------ | ------------ | --------------------------------------------------------------------------------------------------------------- |
 | `onChange`\* | `() => void` | Callback fired whenever a crypto on-ramp provider is registered or the default crypto on-ramp provider changes. |
 
 #### WatchCryptoOnrampProvidersReturnType
@@ -4357,13 +4357,13 @@ type SetSelectedWalletIdReturnType = void;
 
 #### TonConnectWalletAdapterConfig
 
-Configuration accepted by [`TonConnectWalletAdapter`](#tonconnectwalletadapter) when wrapping a TonConnect wallet for AppKit.
+Configuration accepted by [`TonConnectWalletAdapter`](#tonconnectwalletadapter) when wrapping a TON Connect wallet for AppKit.
 
 | Field                | Type               | Description                                                                                |
 | -------------------- | ------------------ | ------------------------------------------------------------------------------------------ |
 | `connectorId`\*      | `string`           | ID of the connector that produced this wallet — surfaced as `WalletInterface.connectorId`. |
-| `tonConnectWallet`\* | `TonConnectWallet` | Underlying TonConnect wallet object.                                                       |
-| `tonConnectUI`\*     | `TonConnectUI`     | TonConnect UI instance used to drive `sendTransaction` and `signData` calls.               |
+| `tonConnectWallet`\* | `TonConnectWallet` | Underlying TON Connect wallet object.                                                      |
+| `tonConnectUI`\*     | `TonConnectUI`     | TON Connect UI instance used to drive `sendTransaction` and `signData` calls.              |
 
 #### WalletInterface
 
@@ -4432,7 +4432,7 @@ const CONNECTOR_EVENTS = {
 
 #### TONCONNECT\_DEFAULT\_CONNECTOR\_ID
 
-Default id assigned to the TonConnect connector when none is supplied to [`createTonConnectConnector`](#createtonconnectconnector). Pass this to [`connect`](#connect) / [`disconnect`](#disconnect) to drive the TonConnect flow without hard-coding the literal.
+Default id assigned to the `TonConnect` connector when none is supplied to [`createTonConnectConnector`](#createtonconnectconnector). Pass this to [`connect`](#connect) / [`disconnect`](#disconnect) to drive the TON Connect flow without hard-coding the literal.
 
 ```ts
 const TONCONNECT_DEFAULT_CONNECTOR_ID = 'tonconnect';

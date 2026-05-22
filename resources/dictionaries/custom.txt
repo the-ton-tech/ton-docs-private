@@ -38,6 +38,9 @@ Andrew
 Andrey
 antecessor
 antecessors
+AppKit
+Appkit
+appkit
 Anton
 Antonoff
 Appender
@@ -80,6 +83,7 @@ bitcode
 bitmask
 Bitmask
 Bitshares
+behaviour
 bitshift
 bitstring
 bitstrings
@@ -98,6 +102,7 @@ BoC
 BoCs
 booleans
 Booleans
+boc
 bounceability
 bounceable
 Bounceable
@@ -109,6 +114,7 @@ Buildx
 bundler
 Burnosov
 Buterin
+CAIP
 callables
 Callables
 callee
@@ -116,6 +122,7 @@ callout
 callouts
 canonicalization
 catchain
+colour
 Catchain
 catchains
 Catchains
@@ -209,6 +216,8 @@ datagrams
 DCA
 declarator
 decodable
+dedust
+DeDust
 decompiled
 Decompiled
 Decompiler
@@ -226,6 +235,7 @@ deployer
 Deployer
 dequeued
 dequeueing
+deeplink
 dereference
 dereferenced
 deserialization
@@ -247,6 +257,8 @@ Dockerized
 Dodis
 Domínguez
 dotenv
+Defi
+DeFi
 dTON
 Duif
 Durov
@@ -254,6 +266,7 @@ Dyor
 DYOR
 DYX
 EIP
+eip
 Emelyanenko
 enablement
 endian
@@ -382,6 +395,7 @@ KYC
 Lamport
 Lange
 Larimer
+Layerswap
 Lateinit
 Latinisms
 Lavinia
@@ -430,6 +444,7 @@ memoization
 Memoizing
 mempool
 Mempool
+Mercuryo
 mergesort
 merkle
 Merkle
@@ -486,6 +501,7 @@ Namespace
 namespaces
 Namespaces
 nano
+nanocoins
 nanogram
 nanoton
 nanoTon
@@ -500,6 +516,7 @@ NFA
 nft
 nginx
 NFTs
+Nfts
 Nginx
 Niels
 Nikolay
@@ -584,6 +601,8 @@ queryable
 ragpull
 Ratelance
 reconnections
+recognise
+recognises
 recv
 redeclaration
 redeclared
@@ -596,6 +615,8 @@ Reindexes
 reindexing
 Reindexing
 reinitializes
+reown
+Reown
 reinstalls
 relatedly
 Relatedly
@@ -615,6 +636,7 @@ rldp
 rollup
 Rollup
 RPCs
+rpc
 RTT
 ruleset
 runbooks
@@ -740,9 +762,13 @@ tolk
 Tolk
 TON
 TON.cx
+TONCONNECT
 TONCO
 Toncoin
 toncoin.org
+Tonhub
+TonConnect
+tonconnect
 Tonkeeper
 tonlib
 Tonscan
@@ -826,6 +852,8 @@ Vultr
 Wagmi
 walkthrough
 Walkthrough
+WalletKit
+walletkit
 Walletconnect
 wargame
 Watchlist
