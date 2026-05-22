@@ -38,6 +38,7 @@ export interface Config {
   port: number;
   allowedOrigins: string[];
   oramaSearchUrl: string;
+  docsBaseUrl: string;
   dailyRequestCap: number;
   perIpDailyCap: number;
 }
@@ -48,6 +49,11 @@ export const config: Config = {
   port: readInt("PORT", 8787),
   allowedOrigins,
   oramaSearchUrl: readString("ORAMA_SEARCH_URL", "http://127.0.0.1:7700").replace(/\/+$/, ""),
+  // Public docs origin. Used both as the canonical base for citation links
+  // and as the source for the `fetch_page` tool (it reads `<docsBaseUrl>/
+  // llms.mdx/<path>.md`, the per-page Markdown the docs site statically
+  // exports). Override during a staging cutover.
+  docsBaseUrl: readString("DOCS_BASE_URL", "https://docs.ton.org").replace(/\/+$/, ""),
   dailyRequestCap: readInt("DAILY_REQUEST_CAP", 45),
   perIpDailyCap: readInt("PER_IP_DAILY_CAP", 10),
 };

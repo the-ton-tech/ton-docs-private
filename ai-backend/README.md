@@ -10,10 +10,11 @@ runtime, so this service runs separately and handles chat requests.
   `useChat` hook. It runs the AI SDK, forwards the conversation to
   [OpenRouter](https://openrouter.ai), and streams the answer back in the AI
   SDK v6 **UI Message Stream** format.
-- Grounds answers in the real documentation: it exposes a `search` tool that
-  queries the standalone Orama search service (see `orama-server/`), which
-  owns the docs index. The model is instructed to search before answering and
-  to cite the doc pages it used.
+- Grounds answers in the real documentation with two tools: `search` queries
+  the standalone Orama search service (see `orama-server/`) for relevant pages
+  with snippets, and `fetch_page` returns a full page's Markdown (read from the
+  docs site's `/llms.mdx/<path>.md` export) when a snippet is not enough. The
+  model is forced to search before answering and to cite the doc pages it used.
 - Protects the OpenRouter free-tier quota with a per-IP rate limit, a per-IP
   daily cap, and a global daily request cap.
 
@@ -131,6 +132,7 @@ Against a local dev server, replace the URL with
 | `PORT`                        | no       | `8787`                                    | Port the service listens on (localhost only).                          |
 | `ALLOWED_ORIGINS`             | no       | _(empty)_                                 | Extra CORS origins, comma-separated. `docs.ton.org` + topteam Vercel previews are always allowed. |
 | `ORAMA_SEARCH_URL`            | no       | `http://127.0.0.1:7700`                   | Base URL of the Orama search service backing the `search` tool.         |
+| `DOCS_BASE_URL`               | no       | `https://docs.ton.org`                    | Public docs origin: canonical base for citations and source for `fetch_page`. |
 | `DAILY_REQUEST_CAP`           | no       | `45`                                      | Max requests forwarded to OpenRouter per UTC day.                       |
 | `PER_IP_DAILY_CAP`            | no       | `10`                                      | Max requests per client IP per UTC day.                                 |
 

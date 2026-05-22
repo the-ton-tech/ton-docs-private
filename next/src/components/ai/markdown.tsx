@@ -88,6 +88,7 @@ function createProcessor(): Processor {
         Fragment,
         components: {
           ...defaultMdxComponents,
+          a: Anchor,
           pre: Pre,
           img: undefined, // use JSX
           h1: compactHeading("h1"),
@@ -117,6 +118,33 @@ function Pre(props: ComponentProps<"pre">) {
   if (lang === "mdx") lang = "md"
 
   return <DynamicCodeBlock lang={lang} code={content.trimEnd()} />
+}
+
+// Citations come back as absolute docs URLs (https://docs.ton.org/...).
+// Rewrite links that point at the docs site itself to a root-relative path so
+// following a citation is a client-side navigation — it keeps the chat panel
+// and conversation alive instead of full-reloading the page. Genuine external
+// links fall through to the fumadocs default (which opens a new tab).
+const INTERNAL_DOCS_HOSTS = ["docs.ton.org", "docs-ton.space"]
+
+function internalDocsPath(href: string): string | null {
+  let url: URL
+  try {
+    url = new URL(href, "https://docs.ton.org")
+  } catch {
+    return null
+  }
+  const isInternal =
+    INTERNAL_DOCS_HOSTS.includes(url.hostname) ||
+    (typeof window !== "undefined" && url.hostname === window.location.hostname)
+  if (!isInternal) return null
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
+function Anchor({href, ...props}: ComponentProps<"a">) {
+  const internal = typeof href === "string" ? internalDocsPath(href) : null
+  const DefaultAnchor = defaultMdxComponents.a ?? "a"
+  return <DefaultAnchor href={internal ?? href} {...props} />
 }
 
 const processor = createProcessor()

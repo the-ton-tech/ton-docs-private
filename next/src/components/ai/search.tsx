@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react"
-import {Send, Sparkles, Square, X} from "lucide-react"
+import {BookOpen, Check, Copy, RotateCcw, Search, Send, Sparkles, Square, X} from "lucide-react"
 import {cn} from "../../lib/cn"
 import {buttonVariants} from "../ui/button"
 import {useChat, type UseChatHelpers} from "@ai-sdk/react"
@@ -41,11 +41,116 @@ export type ChatUIMessage = UIMessage<
   }
 >
 
+/** Questions offered in the empty state to get a new user started. */
+const STARTER_QUESTIONS = [
+  "How do I deploy a smart contract on TON?",
+  "What is a jetton?",
+  "How does TON Connect work?",
+  "How do I send messages between contracts?",
+]
+
 const Context = createContext<{
   open: boolean
   setOpen: (open: boolean) => void
   chat: UseChatHelpers<ChatUIMessage>
 } | null>(null)
+
+/** Send a user message, attaching the current page so the backend has context. */
+function sendUserMessage(
+  sendMessage: UseChatHelpers<ChatUIMessage>["sendMessage"],
+  text: string,
+): void {
+  void sendMessage({
+    role: "user",
+    parts: [
+      {type: "data-client", data: {location: location.href}},
+      {type: "text", text},
+    ],
+  })
+}
+
+/** Concatenate the text parts of a message. */
+function collectText(message: ChatUIMessage): string {
+  let text = ""
+  for (const part of message.parts ?? []) {
+    if (part.type === "text") text += part.text
+  }
+  return text
+}
+
+/** True if a message has anything worth rendering (answer text or a tool call). */
+function hasRenderableContent(message: ChatUIMessage): boolean {
+  return (message.parts ?? []).some(
+    part =>
+      (part.type === "text" && part.text.trim().length > 0) || part.type.startsWith("tool-"),
+  )
+}
+
+/**
+ * Turn a backend error into a message a user can act on. The backend replies
+ * with opaque codes (`daily_limit`, `rate_limited`, …); map the ones we know
+ * and fall back to a generic message.
+ */
+function friendlyError(error: Error): string {
+  const message = (error.message ?? "").toLowerCase()
+  if (message.includes("ip_daily_limit")) {
+    return "You've reached your daily question limit. Please try again tomorrow."
+  }
+  if (message.includes("daily_limit")) {
+    return "The assistant has reached today's free usage limit. It resets at 00:00 UTC — please try again later."
+  }
+  if (message.includes("rate_limited")) {
+    return "You're sending messages too quickly. Please wait a moment and try again."
+  }
+  if (message.includes("payload_too_large")) {
+    return "That message is too long. Please shorten it and try again."
+  }
+  if (message.includes("429")) {
+    return "The assistant is busy or has hit its usage limit. Please try again in a little while."
+  }
+  return "Something went wrong while contacting the assistant. Please try again."
+}
+
+// --- Conversation persistence ----------------------------------------------
+// The chat lives in React state and is otherwise lost on a full reload. Keep
+// the last few turns in localStorage so a returning reader picks up where they
+// left off. Only settled conversations are saved (never a mid-stream answer).
+
+const StorageKeyMessages = "__ai_search_messages"
+const MaxPersistedMessages = 30
+
+function loadPersistedMessages(): ChatUIMessage[] {
+  try {
+    const raw = localStorage.getItem(StorageKeyMessages)
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (m): m is ChatUIMessage =>
+        !!m &&
+        typeof m === "object" &&
+        typeof (m as {role?: unknown}).role === "string" &&
+        Array.isArray((m as {parts?: unknown}).parts),
+    )
+  } catch {
+    return []
+  }
+}
+
+function persistMessages(messages: ChatUIMessage[]): void {
+  try {
+    if (messages.length === 0) {
+      localStorage.removeItem(StorageKeyMessages)
+      return
+    }
+    localStorage.setItem(
+      StorageKeyMessages,
+      JSON.stringify(messages.slice(-MaxPersistedMessages)),
+    )
+  } catch {
+    // Best-effort: ignore quota errors or unavailable localStorage.
+  }
+}
 
 export function AISearchPanelHeader({className, ...props}: ComponentProps<"div">) {
   const {setOpen} = useAISearchContext()
@@ -73,8 +178,8 @@ export function AISearchPanelHeader({className, ...props}: ComponentProps<"div">
         )}
 
         <button
+          type="button"
           aria-label="Close"
-          tabIndex={-1}
           className={cn(
             buttonVariants({
               size: "icon-sm",
@@ -105,21 +210,7 @@ export function AISearchInput(props: ComponentProps<"form">) {
     const message = input.trim()
     if (message.length === 0) return
 
-    void sendMessage({
-      role: "user",
-      parts: [
-        {
-          type: "data-client",
-          data: {
-            location: location.href,
-          },
-        },
-        {
-          type: "text",
-          text: message,
-        },
-      ],
-    })
+    sendUserMessage(sendMessage, message)
     setInput("")
     localStorage.removeItem(StorageKeyInput)
   }
@@ -247,31 +338,171 @@ const roleName: Record<string, string> = {
   assistant: "TON Docs AI",
 }
 
-function Message({message, ...props}: {message: ChatUIMessage} & ComponentProps<"div">) {
-  let markdown = ""
-  for (const part of message.parts ?? []) {
-    if (part.type === "text") markdown += part.text
-  }
+/** A tool-call part as it streams in — loosely typed; only render-time fields. */
+interface ToolUIPartLike {
+  type: string
+  state?: "input-streaming" | "input-available" | "output-available" | "output-error"
+  output?: unknown
+}
 
+function ToolStatusRow({
+  icon: Icon,
+  label,
+  busy,
+}: {
+  icon: typeof Search
+  label: string
+  busy?: boolean
+}) {
   return (
-    <div onClick={e => e.stopPropagation()} {...props}>
-      <p
-        className={cn(
-          "mb-1 text-sm font-medium text-fd-muted-foreground",
-          message.role === "assistant" && "text-fd-primary",
-        )}
-      >
-        {roleName[message.role] ?? "unknown"}
-      </p>
-      <div className="prose text-sm">
-        <Markdown text={markdown} />
-      </div>
+    <div className="flex items-center gap-1.5 text-xs text-fd-muted-foreground" role="status">
+      <Icon className={cn("size-3.5 shrink-0", busy && "animate-pulse")} />
+      <span>{label}</span>
     </div>
   )
 }
 
-function messageHasText(message: ChatUIMessage): boolean {
-  return (message.parts ?? []).some(part => part.type === "text" && part.text.trim().length > 0)
+/**
+ * Render a `search` / `fetch_page` tool call so the user can see the assistant
+ * grounding its answer in the docs instead of staring at a blank wait.
+ */
+function ToolActivity({part}: {part: ToolUIPartLike}) {
+  const busy = part.state === "input-streaming" || part.state === "input-available"
+
+  if (part.type === "tool-search") {
+    if (busy) return <ToolStatusRow icon={Search} label="Searching the documentation…" busy />
+    if (part.state === "output-error") {
+      return <ToolStatusRow icon={Search} label="Documentation search failed" />
+    }
+    const output = part.output as
+      | {results?: {title?: string; url?: string}[]; error?: string}
+      | undefined
+    if (!output || output.error || !output.results) {
+      return <ToolStatusRow icon={Search} label="Documentation search unavailable" />
+    }
+    const results = output.results
+    if (results.length === 0) {
+      return <ToolStatusRow icon={Search} label="No matching documentation found" />
+    }
+    return (
+      <details className="text-xs text-fd-muted-foreground">
+        <summary className="flex cursor-pointer select-none items-center gap-1.5 [&::-webkit-details-marker]:hidden">
+          <Search className="size-3.5 shrink-0" />
+          <span>
+            Searched the documentation · {results.length}{" "}
+            {results.length === 1 ? "page" : "pages"}
+          </span>
+        </summary>
+        <ul className="mt-1 ms-5 flex flex-col gap-0.5">
+          {results.map((result, i) => (
+            <li key={i} className="truncate">
+              {result.title ?? result.url ?? "Untitled page"}
+            </li>
+          ))}
+        </ul>
+      </details>
+    )
+  }
+
+  // tool-fetch_page
+  if (busy) return <ToolStatusRow icon={BookOpen} label="Reading a documentation page…" busy />
+  const output = part.output as {url?: string; error?: string} | undefined
+  if (part.state === "output-error" || !output || output.error) {
+    return <ToolStatusRow icon={BookOpen} label="Could not read the page" />
+  }
+  return <ToolStatusRow icon={BookOpen} label="Read a documentation page" />
+}
+
+function MessageParts({message}: {message: ChatUIMessage}) {
+  return (
+    <>
+      {(message.parts ?? []).map((part, i) => {
+        if (part.type === "text") {
+          if (part.text.trim().length === 0) return null
+          return (
+            <div key={i} className="prose text-sm">
+              <Markdown text={part.text} />
+            </div>
+          )
+        }
+        if (part.type.startsWith("tool-")) {
+          return <ToolActivity key={i} part={part as unknown as ToolUIPartLike} />
+        }
+        return null
+      })}
+    </>
+  )
+}
+
+function CopyButton({text}: {text: string}) {
+  const [copied, setCopied] = useState(false)
+
+  return (
+    <button
+      type="button"
+      aria-label={copied ? "Answer copied" : "Copy answer"}
+      onClick={() => {
+        void navigator.clipboard?.writeText(text)?.then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        })
+      }}
+      className={cn(
+        buttonVariants({
+          color: "ghost",
+          size: "icon-sm",
+          className: "text-fd-muted-foreground",
+        }),
+      )}
+    >
+      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+    </button>
+  )
+}
+
+function Message({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
+  const {regenerate, status} = useChatContext()
+  const isAssistant = message.role === "assistant"
+  const text = collectText(message)
+  const showActions = isAssistant && text.trim().length > 0
+  const canRegenerate = isAssistant && isLast && status === "ready"
+
+  return (
+    <div onClick={e => e.stopPropagation()}>
+      <p
+        className={cn(
+          "mb-1 text-sm font-medium text-fd-muted-foreground",
+          isAssistant && "text-fd-primary",
+        )}
+      >
+        {roleName[message.role] ?? "unknown"}
+      </p>
+      <div className="flex flex-col gap-1.5">
+        <MessageParts message={message} />
+      </div>
+      {showActions && (
+        <div className="mt-1.5 flex items-center gap-0.5">
+          <CopyButton text={text} />
+          {canRegenerate && (
+            <button
+              type="button"
+              aria-label="Regenerate answer"
+              onClick={() => regenerate()}
+              className={cn(
+                buttonVariants({
+                  color: "ghost",
+                  size: "icon-sm",
+                  className: "text-fd-muted-foreground",
+                }),
+              )}
+            >
+              <RotateCcw className="size-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function LoadingDots() {
@@ -293,6 +524,47 @@ function PendingMessage() {
   )
 }
 
+function EmptyState({chat}: {chat: UseChatHelpers<ChatUIMessage>}) {
+  return (
+    <div className="text-sm text-fd-muted-foreground/80 size-full flex flex-col items-center justify-center text-center gap-3 px-[13px]">
+      <Sparkles className="size-6 text-fd-muted-foreground/60" />
+      <p onClick={e => e.stopPropagation()}>
+        Ask anything about TON. Answers are grounded in the documentation.
+      </p>
+      <div className="flex w-full flex-col gap-1.5" onClick={e => e.stopPropagation()}>
+        {STARTER_QUESTIONS.map(question => (
+          <button
+            key={question}
+            type="button"
+            onClick={() => sendUserMessage(chat.sendMessage, question)}
+            className="rounded-lg border px-3 py-2 text-start text-fd-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
+          >
+            {question}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ErrorCard({error, onRetry}: {error: Error; onRetry: () => void}) {
+  return (
+    <div
+      role="alert"
+      className="flex flex-col gap-2 rounded-xl border bg-fd-card p-3 text-fd-card-foreground"
+    >
+      <p className="text-sm">{friendlyError(error)}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className={cn(buttonVariants({color: "secondary", size: "sm", className: "self-start"}))}
+      >
+        Try again
+      </button>
+    </div>
+  )
+}
+
 export function AISearch({children}: {children: ReactNode}) {
   const [open, setOpen] = useState(false)
   const chat = useChat<ChatUIMessage>({
@@ -301,6 +573,21 @@ export function AISearch({children}: {children: ReactNode}) {
       api: AI_BACKEND_URL,
     }),
   })
+
+  // Restore a persisted conversation once, after mount (client only).
+  const restored = useRef(false)
+  useEffect(() => {
+    if (restored.current) return
+    restored.current = true
+    const saved = loadPersistedMessages()
+    if (saved.length > 0) chat.setMessages(saved)
+  }, [chat])
+
+  // Persist the conversation whenever it settles — never a mid-stream answer.
+  useEffect(() => {
+    if (chat.status === "streaming" || chat.status === "submitted") return
+    persistMessages(chat.messages)
+  }, [chat.status, chat.messages])
 
   return <Context value={useMemo(() => ({chat, open, setOpen}), [chat, open])}>{children}</Context>
 }
@@ -366,6 +653,8 @@ export function AISearchPanel() {
       </Presence>
       <Presence present={open}>
         <div
+          role="dialog"
+          aria-label="Ask AI"
           className={cn(
             "overflow-hidden z-30 bg-fd-background text-fd-foreground [--ai-chat-width:400px] 2xl:[--ai-chat-width:460px]",
             "max-lg:fixed max-lg:inset-3 max-lg:border max-lg:rounded-2xl max-lg:shadow-xl",
@@ -394,12 +683,16 @@ export function AISearchPanelList({className, style, ...props}: ComponentProps<"
   const isLoading = chat.status === "submitted" || chat.status === "streaming"
   const last = messages[messages.length - 1]
   // After a question is sent, show a "thinking" indicator until the first
-  // answer text streams in — the backend runs its search tool in between.
-  const pending = isLoading && (last?.role !== "assistant" || !messageHasText(last))
-  const visibleMessages = messages.filter(msg => msg.role !== "assistant" || messageHasText(msg))
+  // part (a tool call or answer text) streams in.
+  const pending =
+    isLoading && (!last || last.role !== "assistant" || !hasRenderableContent(last))
+  const visibleMessages = messages.filter(
+    msg => msg.role !== "assistant" || hasRenderableContent(msg),
+  )
 
   return (
     <List
+      aria-live="polite"
       className={cn("py-4 overscroll-contain", className)}
       style={{
         maskImage:
@@ -409,20 +702,16 @@ export function AISearchPanelList({className, style, ...props}: ComponentProps<"
       {...props}
     >
       {messages.length === 0 ? (
-        <div className="text-sm text-fd-muted-foreground/80 size-full flex flex-col items-center justify-center text-center gap-2">
-          <Sparkles className="size-6 text-fd-muted-foreground/60" />
-          <p onClick={e => e.stopPropagation()}>Start a new chat below.</p>
-        </div>
+        <EmptyState chat={chat} />
       ) : (
         <div className="flex flex-col gap-4 px-[13px]">
-          {chat.error && (
-            <div className="p-2 bg-fd-card text-fd-card-foreground border rounded-xl">
-              <p className="text-xs text-fd-error mb-1">Request Failed: {chat.error.name}</p>
-              <p className="text-sm">{chat.error.message}</p>
-            </div>
-          )}
-          {visibleMessages.map(item => (
-            <Message key={item.id} message={item} />
+          {chat.error && <ErrorCard error={chat.error} onRetry={() => chat.regenerate()} />}
+          {visibleMessages.map((item, idx) => (
+            <Message
+              key={item.id}
+              message={item}
+              isLast={idx === visibleMessages.length - 1}
+            />
           ))}
           {pending && <PendingMessage />}
         </div>
