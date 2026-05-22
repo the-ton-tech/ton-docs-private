@@ -5,7 +5,6 @@ sidebarTitle: "First smart contract"
 description: ""
 ---
 
-
 <Aside type="note">
   [Acton](https://ton-blockchain.github.io/acton/docs/welcome) is the recommended tool for new smart contract projects. Blueprint remains supported for existing projects.
 </Aside>
@@ -36,23 +35,53 @@ This tutorial covers building, deploying, and interacting with a smart contract 
 
     The generated project structure is:
 
-    <FileTree items={[
-      { name: "Example", kind: "folder", items: [
-        { name: "contracts", kind: "folder", note: "smart contract source code", items: [
-          { name: "first_contract.tolk", kind: "file", note: "main contract file" }
-        ]},
-        { name: "scripts", kind: "folder", note: "deployment and on-chain interaction scripts", items: [
-          { name: "deployFirstContract.ts", kind: "file", note: "script to deploy the contract" }
-        ]},
-        { name: "tests", kind: "folder", note: "testing specifications", items: [
-          { name: "FirstContract.spec.ts", kind: "file", note: "contract test file" }
-        ]},
-        { name: "wrappers", kind: "folder", note: "TypeScript wrappers for contract interaction", items: [
-          { name: "FirstContract.ts", kind: "file", note: "wrapper class for the smart contract" },
-          { name: "FirstContract.compile.ts", kind: "file", note: "configuration for compiling contract" }
-        ]}
-      ]}
-    ]} />
+    <FileTree
+      items={[{
+        name: "Example",
+        kind: "folder",
+        items: [{
+          name: "contracts",
+          kind: "folder",
+          note: "smart contract source code",
+          items: [{
+            name: "first_contract.tolk",
+            kind: "file",
+            note: "main contract file"
+          }]
+        }, {
+          name: "scripts",
+          kind: "folder",
+          note: "deployment and on-chain interaction scripts",
+          items: [{
+            name: "deployFirstContract.ts",
+            kind: "file",
+            note: "script to deploy the contract"
+          }]
+        }, {
+          name: "tests",
+          kind: "folder",
+          note: "testing specifications",
+          items: [{
+            name: "FirstContract.spec.ts",
+            kind: "file",
+            note: "contract test file"
+          }]
+        }, {
+          name: "wrappers",
+          kind: "folder",
+          note: "TypeScript wrappers for contract interaction",
+          items: [{
+            name: "FirstContract.ts",
+            kind: "file",
+            note: "wrapper class for the smart contract"
+          }, {
+            name: "FirstContract.compile.ts",
+            kind: "file",
+            note: "configuration for compiling contract"
+          }]
+        }]
+      }]}
+    />
   </Step>
 
   <Step
