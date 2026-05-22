@@ -18,7 +18,12 @@ interface CardProps {
 function resolveIcon(icon?: string | ReactNode, iconType?: string) {
   if (icon === undefined || icon === null) return undefined
   if (typeof icon === "string") {
-    return <MintlifyIcon icon={icon} iconType={iconType} size={16} />
+    // Force `block`: the shim Icon defaults to `inline-block` for inline text
+    // usage, which makes the fumadocs card's `w-fit` icon wrapper inherit
+    // line-height and render as a tall rectangle instead of a square.
+    return (
+      <MintlifyIcon icon={icon} iconType={iconType} size={16} className="block" />
+    )
   }
   return icon
 }
