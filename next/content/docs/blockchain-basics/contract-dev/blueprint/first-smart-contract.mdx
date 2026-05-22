@@ -36,20 +36,23 @@ This tutorial covers building, deploying, and interacting with a smart contract 
 
     The generated project structure is:
 
-    <FenceTable
-
-    >
-      Example/
-      ├──contracts/                        # smart contract source code
-      │   └── first\_contract.tolk          # main contract file
-      ├── scripts/                         # deployment and on-chain interaction scripts
-      │   └── deployFirstContract.ts       # script to deploy the contract
-      ├── tests/                           # testing specifications
-      │   └── FirstContract.spec.ts        # contract test file
-      ├── wrappers/                        # TypeScript wrappers for contract interaction
-      │   ├── FirstContract.ts             # wrapper class for the smart contract
-      │   └── FirstContract.compile.ts     # configuration for compiling contract
-    </FenceTable>
+    <FileTree items={[
+      { name: "Example", kind: "folder", items: [
+        { name: "contracts", kind: "folder", note: "smart contract source code", items: [
+          { name: "first_contract.tolk", kind: "file", note: "main contract file" }
+        ]},
+        { name: "scripts", kind: "folder", note: "deployment and on-chain interaction scripts", items: [
+          { name: "deployFirstContract.ts", kind: "file", note: "script to deploy the contract" }
+        ]},
+        { name: "tests", kind: "folder", note: "testing specifications", items: [
+          { name: "FirstContract.spec.ts", kind: "file", note: "contract test file" }
+        ]},
+        { name: "wrappers", kind: "folder", note: "TypeScript wrappers for contract interaction", items: [
+          { name: "FirstContract.ts", kind: "file", note: "wrapper class for the smart contract" },
+          { name: "FirstContract.compile.ts", kind: "file", note: "configuration for compiling contract" }
+        ]}
+      ]}
+    ]} />
   </Step>
 
   <Step

@@ -70,10 +70,20 @@ npx blueprint create
 
 **Generated files:**
 
-- `contracts/MyContract.{tolk|fc|tact}` — contract source code
-- `wrappers/MyContract.ts` — TypeScript wrapper for contract interaction
-- `tests/MyContract.spec.ts` — Jest test suite with basic test cases
-- `scripts/deployMyContract.ts` — deployment script with network configuration
+<FileTree items={[
+  { name: "contracts", kind: "folder", items: [
+    { name: "MyContract.{tolk|fc|tact}", kind: "file", note: "contract source code" }
+  ]},
+  { name: "wrappers", kind: "folder", items: [
+    { name: "MyContract.ts", kind: "file", note: "TypeScript wrapper for contract interaction" }
+  ]},
+  { name: "tests", kind: "folder", items: [
+    { name: "MyContract.spec.ts", kind: "file", note: "Jest test suite with basic test cases" }
+  ]},
+  { name: "scripts", kind: "folder", items: [
+    { name: "deployMyContract.ts", kind: "file", note: "deployment script with network configuration" }
+  ]}
+]} />
 
 ### `build`
 
