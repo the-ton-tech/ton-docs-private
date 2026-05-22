@@ -56,7 +56,7 @@ function renderItem(item: FileTreeItem, index: number, defaultOpen: boolean): Re
 }
 
 export function FileTree({items = [], defaultOpen = true}: FileTreeProps) {
-  return <Files className="[&_svg]:shrink-0">{items.map((item, idx) => renderItem(item, idx, defaultOpen))}</Files>
+  return <Files className="[&_svg]:shrink-0 [&_.ms-2]:ms-[15px]">{items.map((item, idx) => renderItem(item, idx, defaultOpen))}</Files>
 }
 
 /**
@@ -64,7 +64,7 @@ export function FileTree({items = [], defaultOpen = true}: FileTreeProps) {
  * compiled by the MDX pipeline (links, lists, bold, etc. work natively).
  */
 export function Tree({children}: {children?: ReactNode}) {
-  return <Files className="[&_svg]:shrink-0">{children}</Files>
+  return <Files className="[&_svg]:shrink-0 [&_.ms-2]:ms-[15px]">{children}</Files>
 }
 
 Tree.Folder = function TreeFolder({children, ...props}: ComponentProps<typeof Folder>) {
