@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react"
-import {Loader2, RefreshCw, Send, Sparkles, X} from "lucide-react"
+import {Send, Sparkles, Square, X} from "lucide-react"
 import {cn} from "../../lib/cn"
 import {buttonVariants} from "../ui/button"
 import {useChat, type UseChatHelpers} from "@ai-sdk/react"
@@ -50,77 +50,49 @@ const Context = createContext<{
 
 export function AISearchPanelHeader({className, ...props}: ComponentProps<"div">) {
   const {setOpen} = useAISearchContext()
+  const {messages, setMessages} = useChatContext()
 
   return (
-    <div
-      className={cn(
-        "sticky top-0 flex items-start gap-2 rounded-xl border bg-fd-card text-fd-card-foreground",
-        className,
-      )}
-      {...props}
-    >
-      <div className="px-3 py-2 flex-1">
-        <p className="mb-1 text-sm font-semibold">Ask AI</p>
-        <p className="text-xs text-fd-muted-foreground">
-          AI can be inaccurate, please verify the answers.
-        </p>
-      </div>
+    <div className={cn("border-b px-[13px] pb-3", className)} {...props}>
+      <div className="flex items-center gap-2">
+        <p className="flex-1 text-sm font-semibold">Ask AI</p>
 
-      <button
-        aria-label="Close"
-        tabIndex={-1}
-        className={cn(
-          buttonVariants({
-            size: "icon-sm",
-            color: "ghost",
-            className: "m-1.5 text-fd-muted-foreground",
-          }),
+        {messages.length > 0 && (
+          <button
+            type="button"
+            className={cn(
+              buttonVariants({
+                color: "ghost",
+                size: "sm",
+                className: "text-fd-muted-foreground",
+              }),
+            )}
+            onClick={() => setMessages([])}
+          >
+            Clear chat
+          </button>
         )}
-        onClick={() => setOpen(false)}
-      >
-        <X />
-      </button>
-    </div>
-  )
-}
 
-export function AISearchInputActions() {
-  const {messages, status, setMessages, regenerate} = useChatContext()
-  const isLoading = status === "streaming"
-
-  if (messages.length === 0) return null
-
-  return (
-    <>
-      {!isLoading && messages.at(-1)?.role === "assistant" && (
         <button
-          type="button"
+          aria-label="Close"
+          tabIndex={-1}
           className={cn(
             buttonVariants({
-              color: "secondary",
-              size: "sm",
-              className: "gap-1.5",
+              size: "icon-sm",
+              color: "ghost",
+              className: "text-fd-muted-foreground",
             }),
           )}
-          onClick={() => regenerate()}
+          onClick={() => setOpen(false)}
         >
-          <RefreshCw className="size-4" />
-          Retry
+          <X />
         </button>
-      )}
-      <button
-        type="button"
-        className={cn(
-          buttonVariants({
-            color: "secondary",
-            size: "sm",
-          }),
-        )}
-        onClick={() => setMessages([])}
-      >
-        Clear Chat
-      </button>
-    </>
+      </div>
+
+      <p className="mt-0.5 text-xs text-fd-muted-foreground">
+        AI can be inaccurate, please verify the answers.
+      </p>
+    </div>
   )
 }
 
@@ -158,7 +130,7 @@ export function AISearchInput(props: ComponentProps<"form">) {
   }, [isLoading])
 
   return (
-    <form {...props} className={cn("flex items-end pe-2", props.className)} onSubmit={onStart}>
+    <form {...props} className={cn("flex items-start", props.className)} onSubmit={onStart}>
       <Input
         value={input}
         placeholder={isLoading ? "AI is answering..." : "Ask a question"}
@@ -179,25 +151,26 @@ export function AISearchInput(props: ComponentProps<"form">) {
         <button
           key="bn"
           type="button"
+          aria-label="Stop"
           className={cn(
             buttonVariants({
               color: "secondary",
-              className: "transition-all mb-2 gap-2",
+              className: "transition-all m-3",
             }),
           )}
           onClick={stop}
         >
-          <Loader2 className="size-4 animate-spin text-fd-muted-foreground" />
-          Abort Answer
+          <Square className="size-4 fill-current" />
         </button>
       ) : (
         <button
           key="bn"
           type="submit"
+          aria-label="Send"
           className={cn(
             buttonVariants({
               color: "primary",
-              className: "transition-all mb-2",
+              className: "transition-all m-3",
             }),
           )}
           disabled={input.length === 0}
@@ -387,9 +360,6 @@ export function AISearchPanel() {
             <AISearchPanelList className="flex-1" />
             <div className="rounded-xl border bg-fd-card text-fd-card-foreground has-focus-visible:border-fd-ring has-focus-visible:ring-1 has-focus-visible:ring-fd-ring">
               <AISearchInput />
-              <div className="flex items-center gap-1.5 px-3 pt-1 pb-2 empty:hidden">
-                <AISearchInputActions />
-              </div>
             </div>
           </div>
         </div>
