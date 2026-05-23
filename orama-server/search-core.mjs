@@ -157,6 +157,23 @@ export function slugify(text) {
   return text.toLowerCase().replace(GITHUB_SLUGGER_REGEX, "").replace(/ /g, "-")
 }
 
+// Fumadocs' remark-heading parses an explicit-id suffix `## Title [#slug]` and
+// uses the captured slug verbatim as the heading id (no further slugifying).
+// 5,876 headings in the rendered llms.mdx corpus use this form, so deriving
+// an anchor by `slugify(rawHeadingText)` produces broken keys like
+// `installation-installation` that no real anchor in the DOM matches. This
+// helper mirrors the fumadocs rule: if the trailing `[#…]` exists, return the
+// captured slug as-is; otherwise strip any other trailing `[…]` content
+// (footnote refs etc.) and slugify the cleaned text.
+const EXPLICIT_ID = /\s*\[#(?<slug>[^\]]+)\]\s*$/
+export function anchorFromHeadingText(text) {
+  if (typeof text !== "string") return ""
+  const m = EXPLICIT_ID.exec(text)
+  if (m && m.groups && m.groups.slug) return m.groups.slug
+  const cleaned = text.replace(/\s*\[[^\]]*\]\s*$/, "")
+  return slugify(cleaned)
+}
+
 // R5 safety net: cover the handful of TON-specific Cyrillic terms users
 // commonly type, mapping each to the English token actually indexed.
 const TRANSLITERATION_MAP = {
@@ -202,8 +219,13 @@ function applyTransliteration(query) {
   return {query: out.join(""), changed}
 }
 
-// RRF (Reciprocal Rank Fusion) over two `groups` Maps with K=60.
-function rrfMergeGroups(a, b, K = 60) {
+// RRF (Reciprocal Rank Fusion) over two `groups` Maps. K=15 (was 60) — the
+// stock RRF constant is tuned for fusing dozens of independent rankers, but
+// here we fuse exactly two passes whose top results are nearly always the
+// right answer; a smaller K sharpens the contribution of the top-ranked
+// items so the fused order tracks the better of the two passes instead of
+// flattening into a near-uniform average.
+function rrfMergeGroups(a, b, K = 15) {
   const aKeys = [...a.keys()]
   const bKeys = [...b.keys()]
   const scores = new Map()
@@ -279,16 +301,18 @@ function querySymbolLike(t) {
 // Stricter than `querySymbolLike`: runs on the ORIGINAL (case-preserving)
 // token and gates the conditional `codeSymbolWeight` re-rank. Real code
 // identifiers are snake_case (`_`), `::`-scoped (`op::transfer`), longer
-// camelCase (≥ 8 chars), or dotted method access (`SendMode.PAY_GAS`).
+// camelCase (≥ 6 chars), or dotted method access (`SendMode.PAY_GAS`).
 // Short brand-case tokens (TON, NFT, iOS, FunC, dTON) must NOT trigger,
 // which is why this is separate from the lowercased-token predicate above.
+// camelCase floor lowered from 8 → 6 to catch the common TON identifiers
+// `sendTon`, `loadRef`, `myAddr` that the previous threshold missed.
 export function looksLikeCodeSymbol(t) {
   if (t.length < 2 || t.length > 40) return false
   if (/^\d+$/.test(t)) return false
   if (t.includes("_")) return true
   if (t.includes("::")) return true
   if (t.includes(".") && /[a-zA-Z]/.test(t)) return true
-  if (/[a-z][A-Z]/.test(t) && t.length >= 8) return true
+  if (/[a-z][A-Z]/.test(t) && t.length >= 6) return true
   return false
 }
 
@@ -496,6 +520,17 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
       if (curated) {
         for (const t of tokens) if (curated.includes(t)) s += tuning.structHitWeight
       }
+      // `#Description` is editor-curated like `#Keywords` but written as
+      // prose, so it's a softer signal — award half the Keywords weight.
+      // No symbol-token gate (descriptions are natural language).
+      const descBag = hits
+        .filter(h => h.url.endsWith("#Description"))
+        .map(h => (h.content ?? "").toLowerCase())
+        .join(" ")
+      if (descBag) {
+        const descW = tuning.structHitWeight / 2
+        for (const t of tokens) if (descBag.includes(t)) s += descW
+      }
     }
     if (tuning.headingMatchWeight > 0 && tokens.length > 0) {
       const headings = hits.filter(h => h.type === "heading" || h.type === "head")
@@ -546,6 +581,16 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
         s += tuning.proximityWeight * tightness
       }
     }
+    // R4: down-rank pages whose frontmatter declares `tag: deprecated`.
+    // Fumadocs' buildDocuments propagates `index.tag` onto every row as a
+    // `tags: string[]` field (see node_modules/fumadocs-core/.../build-doc).
+    // Read whichever is present: `tags` (array, fumadocs runtime form) or
+    // `tag` (scalar, when callers attach it directly). Multiplier (not
+    // subtraction) preserves relative ordering inside the deprecated set so
+    // the most relevant deprecated page still wins among its peers — it
+    // just sinks below comparably-relevant non-deprecated alternatives.
+    const pageTags = Array.isArray(page.tags) ? page.tags : page.tag ? [page.tag] : []
+    if (pageTags.includes("deprecated")) s *= 0.5
     return s
   }
 
@@ -602,7 +647,9 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
       const type = doc.type === "head" ? "heading" : doc.type
       let anchor = null
       if (type === "heading") {
-        anchor = slugify(doc.content ?? "") || null
+        // Use the explicit-id-aware derivation so anchors round-trip with
+        // the DOM ids produced by fumadocs' remark-heading on `## T [#id]`.
+        anchor = anchorFromHeadingText(doc.content ?? "") || null
         currentAnchor = anchor
       } else if (type === "text") {
         anchor = currentAnchor

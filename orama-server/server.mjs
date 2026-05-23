@@ -12,7 +12,7 @@ import {createServer} from "node:http"
 import {readFile, readdir, stat} from "node:fs/promises"
 import {dirname, join, relative, sep} from "node:path"
 import {load} from "@orama/orama"
-import {createClientDB, runRankedSearch, slugify} from "./search-core.mjs"
+import {createClientDB, runRankedSearch, slugify, anchorFromHeadingText} from "./search-core.mjs"
 
 const INDEX_PATH = process.env.ORAMA_INDEX_PATH ?? "/opt/orama-search/index.json"
 const PORT = Number(process.env.PORT ?? 7700)
@@ -77,7 +77,12 @@ function buildSections(markdown) {
     if (m) {
       flush()
       const heading = line
-      const slug = slugify(m[1])
+      // The MDX corpus uses fumadocs' explicit-id form `## Title [#explicit-id]`
+      // (5,876 occurrences). Slugifying the raw text including the `[#…]`
+      // suffix yields keys like `installation-installation` that no anchor
+      // ever lands on; `anchorFromHeadingText` strips/uses the explicit id
+      // so the keys round-trip with what the docs site renders.
+      const slug = anchorFromHeadingText(m[1])
       current = {slug, heading, body: []}
     } else if (current) {
       current.body.push(line)
