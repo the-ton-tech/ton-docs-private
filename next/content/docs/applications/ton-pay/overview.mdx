@@ -14,20 +14,29 @@ TON Pay SDK is a developer toolkit for integrating payment functionality on the 
 </Aside>
 
 <Columns cols={2}>
-  <Card
-    title="For business"
-    icon="credit-card"
-  >
-    Accept TON and jettons as fiat-equivalent funds in the TON wallet, without intermediaries.
-  </Card>
+  <div data-card className="block rounded-xl border bg-fd-card p-4 text-fd-card-foreground transition-colors @max-lg:col-span-full">
+    <div className="not-prose mb-3 flex items-center gap-3">
+      <div className="w-fit shrink-0 shadow-md rounded-lg border bg-fd-muted p-1.5 text-fd-muted-foreground [&_svg]:size-4">
+        <Icon icon="credit-card" size={16} className="block" />
+      </div>
+      <h3 className="not-prose text-base font-medium m-0">For business</h3>
+    </div>
+    <div className="text-sm text-fd-muted-foreground prose-no-margin empty:hidden">
+      Accept TON and jettons as fiat-equivalent funds in the TON wallet, without intermediaries.
+    </div>
+  </div>
 
-  <Card
-    title="For developers"
-    icon="code"
-  >
-    Integrate payments into web applications, bots, and services using the
-    SDK interface.
-  </Card>
+  <div data-card className="block rounded-xl border bg-fd-card p-4 text-fd-card-foreground transition-colors @max-lg:col-span-full">
+    <div className="not-prose mb-3 flex items-center gap-3">
+      <div className="w-fit shrink-0 shadow-md rounded-lg border bg-fd-muted p-1.5 text-fd-muted-foreground [&_svg]:size-4">
+        <Icon icon="code" size={16} className="block" />
+      </div>
+      <h3 className="not-prose text-base font-medium m-0">For developers</h3>
+    </div>
+    <div className="text-sm text-fd-muted-foreground prose-no-margin empty:hidden">
+      Integrate payments into web applications, bots, and services using the SDK interface.
+    </div>
+  </div>
 </Columns>
 
 ## Supported wallets
