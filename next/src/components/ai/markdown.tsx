@@ -299,6 +299,22 @@ function extractSources(text: string): Source[] {
   return Array.from(seen.values())
 }
 
+/**
+ * Strip the model's own trailing "Sources" list from an assistant answer so
+ * it isn't rendered twice — once as Markdown bullets and again as the pill
+ * row produced by `SourcesBlock`. The model emits the section in several
+ * shapes despite the system prompt asking for `## Sources`:
+ *   - `## Sources` / `### Sources`           (H2/H3 heading)
+ *   - `**Sources:**` / `**Sources**`         (bold label, inline or own line)
+ *   - `Sources:`                              (plain label)
+ * We match any of those at the start of a line near the end of the message
+ * and drop everything from that label to EOF.
+ */
+export function stripTrailingSources(text: string): string {
+  const re = /\n[ \t]*(?:#{1,6}[ \t]*Sources\b[^\n]*|\*{1,2}\s*Sources\s*:?\s*\*{1,2}[^\n]*|Sources\s*:)[\s\S]*$/i
+  return text.replace(re, "").trimEnd()
+}
+
 /** Compact list of inline citations rendered below an assistant answer. */
 export function SourcesBlock({text}: {text: string}) {
   // Memoize: the parent `Message` re-renders on every chat status tick during
@@ -320,10 +336,10 @@ export function SourcesBlock({text}: {text: string}) {
             ? {href: internalHref ?? source.url}
             : {href: source.url, target: "_blank", rel: "noreferrer noopener"}
           return (
-            <li key={source.url}>
+            <li key={source.url} className="flex min-w-0 max-w-full">
               <a
                 {...linkProps}
-                className="inline-flex max-w-full items-center gap-1 rounded-full border bg-fd-secondary px-2 py-0.5 text-xs text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-accent"
+                className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border bg-fd-secondary px-2 py-0.5 text-xs text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-accent"
               >
                 <span className="text-fd-primary">[{i + 1}]</span>
                 <span className="truncate">

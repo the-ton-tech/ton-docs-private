@@ -26,7 +26,7 @@ import {
 import {cn} from "../../lib/cn"
 import {buttonVariants} from "../ui/button"
 import type {UseChatHelpers} from "@ai-sdk/react"
-import {Markdown, SourcesBlock} from "./markdown"
+import {Markdown, SourcesBlock, stripTrailingSources} from "./markdown"
 import {Presence} from "@radix-ui/react-presence"
 import {usePathname} from "next/navigation"
 import {
@@ -171,19 +171,6 @@ function AISearchPanelHeader({className, ...props}: ComponentProps<"div">) {
 
         {messages.length > 0 && (
           <>
-            <button
-              type="button"
-              onClick={onCopyTranscript}
-              className={cn(
-                buttonVariants({
-                  color: "ghost",
-                  size: "sm",
-                  className: "text-fd-muted-foreground",
-                }),
-              )}
-            >
-              {copied ? "Copied" : "Copy as Markdown"}
-            </button>
             <button
               type="button"
               className={cn(
@@ -340,8 +327,8 @@ function ContextChip() {
 
   useEffect(() => {
     const id = setTimeout(() => {
-      const title =
-        typeof document !== "undefined" ? document.title.split("|")[0]?.trim() : ""
+      const raw = typeof document !== "undefined" ? document.title : ""
+      const title = raw.replace(/\s*[—|-]\s*TON Docs\s*$/i, "").trim()
       setLabel(title && title.length > 0 ? title : pathname || "this page")
     }, 0)
     return () => clearTimeout(id)
@@ -560,6 +547,35 @@ function ToolActivity({part}: {part: ToolUIPartLike}) {
   if (part.state === "output-error") {
     return <ToolStatusRow icon={Icon} label={errorLabel} />
   }
+
+  if (isFetch) {
+    const output = part.output as {url?: string; content?: string; error?: string} | undefined
+    if (!output || output.error) {
+      return <ToolStatusRow icon={Icon} label={unavailableLabel} />
+    }
+    if (!output.content) {
+      return <ToolStatusRow icon={Icon} label={emptyLabel} />
+    }
+    const fetched = output.url
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-fd-muted-foreground">
+        <Icon className="size-3.5 shrink-0" />
+        {fetched ? (
+          <a
+            href={fetched}
+            target="_blank"
+            rel="noopener"
+            className="truncate underline-offset-2 hover:underline hover:text-fd-foreground"
+          >
+            {doneLabel} · {fetched}
+          </a>
+        ) : (
+          <span>{doneLabel}</span>
+        )}
+      </div>
+    )
+  }
+
   const output = part.output as
     | {results?: {title?: string; url?: string}[]; error?: string}
     | undefined
@@ -613,14 +629,24 @@ function MessageParts({
   message: ChatUIMessage
   streaming: boolean
 }) {
+  const isAssistant = message.role === "assistant"
   return (
     <>
       {(message.parts ?? []).map((part, i) => {
         if (part.type === "text") {
           if (part.text.trim().length === 0) return null
+          // The pill row below (SourcesBlock) already lists every cited URL.
+          // Strip the model's own trailing "Sources" section from the body
+          // for assistant messages so we don't show it twice. Don't strip
+          // while streaming — the regex anchors at EOF, and a partial
+          // "Sources" label mid-stream would wrongly drop the rest of the
+          // sentence; the final snapshot does the cleanup.
+          const body =
+            isAssistant && !streaming ? stripTrailingSources(part.text) : part.text
+          if (body.trim().length === 0) return null
           return (
             <div key={i} className="prose text-sm">
-              <Markdown text={part.text} streaming={streaming} />
+              <Markdown text={body} streaming={streaming} />
             </div>
           )
         }
