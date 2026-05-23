@@ -3,14 +3,16 @@
 // Loads the static index JSON once at startup, then serves ranked search
 // results over HTTP. Also serves full per-page Markdown (the `/page`
 // endpoint) from a local content directory, so the AI backend can read whole
-// pages without an external request. nginx terminates TLS and reverse-proxies
-// to us on 127.0.0.1, so we bind locally only.
+// pages without an external request. `/page` accepts an optional `anchor`
+// query param; when set, only that heading's section is returned (falls
+// back to the full page if the anchor is unknown). nginx terminates TLS and
+// reverse-proxies to us on 127.0.0.1, so we bind locally only.
 
 import {createServer} from "node:http"
 import {readFile, readdir, stat} from "node:fs/promises"
 import {dirname, join, relative, sep} from "node:path"
 import {load} from "@orama/orama"
-import {createClientDB, runRankedSearch} from "./search-core.mjs"
+import {createClientDB, runRankedSearch, slugify} from "./search-core.mjs"
 
 const INDEX_PATH = process.env.ORAMA_INDEX_PATH ?? "/opt/orama-search/index.json"
 const PORT = Number(process.env.PORT ?? 7700)
@@ -36,6 +38,54 @@ console.log(`[orama] index loaded in ${Date.now() - t0} ms`)
 // `/page` then just returns 404 and the caller falls back to search snippets.
 
 const pageContent = new Map()
+// pageSections[pageKey] → Map<anchorSlug, {heading, body}>. Sections are cut
+// at every Markdown heading (# …) regardless of level, so each heading owns
+// the lines up to the next heading.
+const pageSections = new Map()
+
+function buildSections(markdown) {
+  const sections = new Map()
+  // GitHub-slugger-style de-dup: first occurrence keeps the base slug, every
+  // repeat appends `-1`, `-2`, ... so two `## Examples` on one page do not
+  // overwrite each other (and match the ids the docs site renders).
+  const seen = new Map()
+  const lines = markdown.split("\n")
+  let current = null
+  // Track fenced code blocks so a `# foo` line inside ``` ... ``` or ~~~ ... ~~~
+  // is NOT mis-parsed as a Markdown heading. The fence delimiter lines stay
+  // in the current section's body verbatim.
+  let inFence = false
+  const flush = () => {
+    if (!current) return
+    // Symbol-only headings slug to "" under the github-slugger rule; they are
+    // unreachable via a URL anchor, so we skip pushing them rather than
+    // collapsing every such heading onto the same empty key.
+    if (current.slug === "") return
+    let key = current.slug
+    const prior = seen.get(current.slug) ?? 0
+    if (prior > 0) key = `${current.slug}-${prior}`
+    seen.set(current.slug, prior + 1)
+    sections.set(key, {heading: current.heading, body: current.body.join("\n")})
+  }
+  for (const line of lines) {
+    if (/^(```|~~~)/.test(line)) {
+      inFence = !inFence
+      if (current) current.body.push(line)
+      continue
+    }
+    const m = !inFence && /^#{1,6}\s+(.+?)\s*$/.exec(line)
+    if (m) {
+      flush()
+      const heading = line
+      const slug = slugify(m[1])
+      current = {slug, heading, body: []}
+    } else if (current) {
+      current.body.push(line)
+    }
+  }
+  flush()
+  return sections
+}
 
 async function loadPageContent() {
   let entries
@@ -50,7 +100,9 @@ async function loadPageContent() {
     const full = join(entry.parentPath ?? entry.path ?? LLMS_CONTENT_DIR, entry.name)
     const key = "/" + relative(LLMS_CONTENT_DIR, full).slice(0, -3).split(sep).join("/")
     try {
-      pageContent.set(key, await readFile(full, "utf8"))
+      const md = await readFile(full, "utf8")
+      pageContent.set(key, md)
+      pageSections.set(key, buildSections(md))
     } catch {
       // Skip an unreadable file rather than failing the whole load.
     }
@@ -71,6 +123,10 @@ function normalizePagePath(raw) {
       return null
     }
   }
+  // Strip any URL fragment before normalizing — callers commonly pass
+  // section-anchored URLs and we must not let "#section" leak into the key.
+  const hashAt = p.indexOf("#")
+  if (hashAt >= 0) p = p.slice(0, hashAt)
   if (!p.startsWith("/")) p = `/${p}`
   p = p.replace(/\/+$/, "").replace(/\.mdx?$/i, "")
   return p || null
@@ -122,13 +178,32 @@ const server = createServer(async (req, res) => {
     }
 
     // Full Markdown of one page. Lookups hit the in-memory map only — an
-    // unknown key simply 404s, so there is no path-traversal surface.
+    // unknown key simply 404s, so there is no path-traversal surface. When
+    // `anchor` is provided, slice to that heading's section; unknown anchor
+    // falls back to the full page so the ai-backend's retry path is unneeded
+    // for that case.
     if (url.pathname === "/page" && req.method === "GET") {
       const key = normalizePagePath(url.searchParams.get("url") ?? "")
       const content = key ? pageContent.get(key) : undefined
       if (content === undefined) {
         json(res, 404, {error: "page not found"})
         return
+      }
+      const anchorRaw = url.searchParams.get("anchor")
+      // An empty slug (e.g. symbol-only `anchor=???`) cannot address any
+      // real section and would collide on the same empty key; treat it as
+      // "no anchor" and fall through to the full-page response.
+      const anchorSlug = anchorRaw ? slugify(anchorRaw) : ""
+      if (anchorSlug) {
+        const section = pageSections.get(key)?.get(anchorSlug)
+        if (section) {
+          json(res, 200, {
+            url: key,
+            anchor: anchorRaw,
+            content: `${section.heading}\n${section.body}`,
+          })
+          return
+        }
       }
       json(res, 200, {url: key, content})
       return
