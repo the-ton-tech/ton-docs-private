@@ -52,12 +52,10 @@ jobs:
       - name: Prettier check
         working-directory: next
         run: npm run fmt:check
-        continue-on-error: true
 
       - name: ESLint
         working-directory: next
         run: npm run lint
-        continue-on-error: true
 
       - name: Validate navigation
         working-directory: next
@@ -66,6 +64,10 @@ jobs:
       - name: Validate internal links
         working-directory: next
         run: npm run lint:links:internal
+      
+      - name: Validate external links
+        working-directory: next
+        run: npm run lint:links:external
 
       - name: Validate links
         working-directory: next
