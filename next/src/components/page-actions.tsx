@@ -143,6 +143,19 @@ export function ViewOptions({
         <ChevronDown className="size-3.5 text-fd-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent className="flex flex-col">
+        <button
+          type="button"
+          onClick={() => {
+            const title = typeof document !== "undefined" ? document.title : "this page"
+            window.dispatchEvent(
+              new CustomEvent("ai-open", {detail: {prefill: `Tell me about ${title}`}}),
+            )
+          }}
+          className={cn(optionVariants())}
+        >
+          <Sparkles />
+          Ask AI about this page
+        </button>
         {items.map(item => (
           <a
             key={item.href}

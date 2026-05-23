@@ -50,6 +50,9 @@ export default function Layout({children}: {children: ReactNode}) {
         >
           <Sparkles className="size-4" />
           Ask AI
+          <kbd className="ms-1 hidden lg:inline rounded border bg-fd-background px-1.5 py-0.5 text-[10px] font-mono text-fd-muted-foreground">
+            ⌘/
+          </kbd>
         </AISearchTrigger>
       </AISearch>
     </DocsLayout>

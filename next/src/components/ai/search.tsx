@@ -28,8 +28,9 @@ import {cn} from "../../lib/cn"
 import {buttonVariants} from "../ui/button"
 import {useChat, type UseChatHelpers} from "@ai-sdk/react"
 import {DefaultChatTransport, type UIMessage} from "ai"
-import {Markdown} from "./markdown"
+import {Markdown, SourcesBlock} from "./markdown"
 import {Presence} from "@radix-ui/react-presence"
+import {usePathname} from "next/navigation"
 
 /**
  * URL of the external chat backend. The docs site is a static export
@@ -62,16 +63,35 @@ const STARTER_QUESTIONS = [
 ]
 
 /**
- * Page-contextual starter questions. Matched against the first non-empty
- * segment of `location.pathname`. Falls back to `STARTER_QUESTIONS` when no
- * segment matches.
+ * Page-contextual starter questions, keyed by the first non-empty segment of
+ * `location.pathname`. Keys must match the real top-level dirs under
+ * `content/docs/` (currently: applications, blockchain-basics, contribute,
+ * ecosystem, overview). Falls back to `STARTER_QUESTIONS`.
  */
 const STARTER_CATALOG: Record<string, string[]> = {
-  develop: [
-    "How do I deploy a smart contract on TON?",
-    "What's the difference between FunC, Tact, and Tolk?",
-    "How do I send a message between contracts?",
-    "How do I test a smart contract locally?",
+  "blockchain-basics": [
+    "How does the TON blockchain work at a high level?",
+    "What are workchains and shards?",
+    "What is the TON Virtual Machine?",
+    "How does the jetton standard work?",
+  ],
+  applications: [
+    "How does TON Connect work?",
+    "How do I integrate TON Connect in a web app?",
+    "What SDKs are available for TON?",
+    "How do I accept payments in my app?",
+  ],
+  ecosystem: [
+    "How do I build a Telegram Mini App on TON?",
+    "How do I connect a wallet inside a TMA?",
+    "What is the TMA SDK?",
+    "How do TMAs handle payments?",
+  ],
+  overview: [
+    "How do I get started building on TON?",
+    "What tools do I need to develop on TON?",
+    "What wallets are available in the TON ecosystem?",
+    "Where can I find learning resources for TON?",
   ],
   contribute: [
     "How can I contribute to the TON documentation?",
@@ -79,28 +99,79 @@ const STARTER_CATALOG: Record<string, string[]> = {
     "How do I run the docs site locally?",
     "How do I propose a new page or section?",
   ],
-  payments: [
-    "How do I send TON between wallets?",
-    "What is a jetton and how do transfers work?",
-    "How do I accept payments in my app?",
-    "How are transaction fees calculated?",
-  ],
-  "ton-connect": [
-    "How does TON Connect work?",
-    "How do I integrate TON Connect in a web app?",
-    "How do I send a transaction via TON Connect?",
-    "How do I verify a TON Connect signature?",
-  ],
-  guidelines: [
-    "What are the security best practices for smart contracts?",
-    "How should I structure a TON dApp?",
-    "What naming conventions do TON projects follow?",
-    "How do I audit a contract before deployment?",
-  ],
 }
+
+/**
+ * Nested-path aliases: when a top-level segment is too coarse, a deeper
+ * segment can re-target a more specific question set. Checked before the
+ * top-level catalog lookup. Keys are matched as a path prefix.
+ */
+const STARTER_ALIASES: {prefix: string; questions: string[]}[] = [
+  {
+    prefix: "/blockchain-basics/tvm",
+    questions: [
+      "What is the TON Virtual Machine?",
+      "How do gas and fees work in TVM?",
+      "What are continuations in TVM?",
+      "Where can I find the TVM instruction reference?",
+    ],
+  },
+  {
+    prefix: "/blockchain-basics/tolk",
+    questions: [
+      "What is Tolk and how is it different from FunC?",
+      "How do I write a basic Tolk contract?",
+      "How do I import standard libraries in Tolk?",
+      "How do I test a Tolk contract locally?",
+    ],
+  },
+  {
+    prefix: "/blockchain-basics/contract-dev",
+    questions: [
+      "How do I deploy a smart contract on TON?",
+      "How do I send a message between contracts?",
+      "What's the difference between FunC, Tact, and Tolk?",
+      "How do I test a smart contract locally?",
+    ],
+  },
+  {
+    prefix: "/blockchain-basics/standard",
+    questions: [
+      "What are the TON standards (TEPs)?",
+      "How does the jetton standard work?",
+      "What does the NFT standard cover?",
+      "How do I propose a new TEP?",
+    ],
+  },
+  {
+    prefix: "/blockchain-basics/payments",
+    questions: [
+      "How do I send TON between wallets?",
+      "What is a jetton and how do transfers work?",
+      "How do I accept payments in my app?",
+      "How are transaction fees calculated?",
+    ],
+  },
+  {
+    prefix: "/applications/ton-connect",
+    questions: [
+      "How does TON Connect work?",
+      "How do I integrate TON Connect in a web app?",
+      "How do I send a transaction via TON Connect?",
+      "How do I verify a TON Connect signature?",
+    ],
+  },
+]
 
 /** Pick the right starter set for the current page URL. */
 function pickStarterQuestions(pathname: string): string[] {
+  // Deeper aliases first — a `/blockchain-basics/tvm/...` page should get
+  // TVM questions, not the generic blockchain-basics set.
+  for (const alias of STARTER_ALIASES) {
+    if (pathname === alias.prefix || pathname.startsWith(`${alias.prefix}/`)) {
+      return alias.questions
+    }
+  }
   const segment = pathname.split("/").find(part => part.length > 0)
   if (segment && STARTER_CATALOG[segment]) return STARTER_CATALOG[segment]
   return STARTER_QUESTIONS
@@ -112,20 +183,30 @@ const Context = createContext<{
   chat: UseChatHelpers<ChatUIMessage>
   input: string
   setInput: (value: string) => void
+  contextDetached: boolean
+  setContextDetached: (value: boolean) => void
+  restoredAt: number | null
+  clearRestored: () => void
 } | null>(null)
 
-/** Send a user message, attaching the current page so the backend has context. */
+/** Send a user message, optionally attaching the current page as context. */
 function sendUserMessage(
   sendMessage: UseChatHelpers<ChatUIMessage>["sendMessage"],
   text: string,
+  attachContext: boolean,
 ): void {
-  void sendMessage({
-    role: "user",
-    parts: [
-      {type: "data-client", data: {location: location.href}},
-      {type: "text", text},
-    ],
-  })
+  const parts: ChatUIMessage["parts"] = []
+  if (attachContext) {
+    let href: string | null = null
+    try {
+      href = new URL(location.href).toString()
+    } catch {
+      href = null
+    }
+    if (href) parts.push({type: "data-client", data: {location: href}})
+  }
+  parts.push({type: "text", text})
+  void sendMessage({role: "user", parts})
 }
 
 /** Concatenate the text parts of a message. */
@@ -145,29 +226,62 @@ function hasRenderableContent(message: ChatUIMessage): boolean {
   )
 }
 
+type ErrorKind = "terminal" | "rate_limited" | "network" | "unknown"
+
+/** Bucket an error so we can pick the right UI affordance. */
+function categorizeError(error: Error): ErrorKind {
+  const message = (error.message ?? "").toLowerCase()
+  // Check explicit server-side error codes BEFORE the `navigator.onLine`
+  // probe. A daily-limit response received during a transient offline blip
+  // must not be reclassified as "network" — that would trigger an auto-retry
+  // on reconnect and hammer the cap.
+  if (
+    message.includes("daily_limit") ||
+    message.includes("ip_daily_limit") ||
+    message.includes("payload_too_large")
+  ) {
+    return "terminal"
+  }
+  if (message.includes("rate_limited") || message.includes("429")) return "rate_limited"
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return "network"
+  if (message.includes("failed to fetch") || message.includes("network")) return "network"
+  return "unknown"
+}
+
 /**
  * Turn a backend error into a message a user can act on. The backend replies
  * with opaque codes (`daily_limit`, `rate_limited`, …); map the ones we know
  * and fall back to a generic message.
  */
 function friendlyError(error: Error): string {
+  const kind = categorizeError(error)
   const message = (error.message ?? "").toLowerCase()
+  if (kind === "network") {
+    return "You're offline — we'll retry when you reconnect."
+  }
   if (message.includes("ip_daily_limit")) {
     return "You've reached your daily question limit. Please try again tomorrow."
   }
   if (message.includes("daily_limit")) {
     return "The assistant has reached today's free usage limit. It resets at 00:00 UTC — please try again later."
   }
-  if (message.includes("rate_limited")) {
-    return "You're sending messages too quickly. Please wait a moment and try again."
-  }
   if (message.includes("payload_too_large")) {
     return "That message is too long. Please shorten it and try again."
   }
-  if (message.includes("429")) {
-    return "The assistant is busy or has hit its usage limit. Please try again in a little while."
+  if (kind === "rate_limited") {
+    if (message.includes("429")) {
+      return "The assistant is busy or has hit its usage limit. Please try again in a little while."
+    }
+    return "You're sending messages too quickly. Please wait a moment and try again."
   }
   return "Something went wrong while contacting the assistant. Please try again."
+}
+
+/** Build the same "Ask in <provider>" prompt that page-actions.tsx uses. */
+function askElsewherePrompt(): string {
+  const title = typeof document !== "undefined" ? document.title : "this page"
+  const href = typeof window !== "undefined" ? window.location.href : ""
+  return `Read ${href}, I want to ask questions about it. (Topic: ${title})`
 }
 
 // --- Conversation persistence ----------------------------------------------
@@ -177,23 +291,46 @@ function friendlyError(error: Error): string {
 
 const StorageKeyMessages = "__ai_search_messages"
 const MaxPersistedMessages = 30
+const PersistTTLms = 7 * 24 * 60 * 60 * 1000
 
-function loadPersistedMessages(): ChatUIMessage[] {
+function loadPersisted(): {messages: ChatUIMessage[]; savedAt: number} | null {
   try {
     const raw = localStorage.getItem(StorageKeyMessages)
-    if (!raw) return []
+    if (!raw) return null
     const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (m): m is ChatUIMessage =>
-        !!m &&
-        typeof m === "object" &&
-        typeof (m as {role?: unknown}).role === "string" &&
-        Array.isArray((m as {parts?: unknown}).parts),
-    )
+    // Migrate legacy plain-array shape — treat savedAt as "now" so it doesn't
+    // immediately expire on the first load after the migration.
+    if (Array.isArray(parsed)) {
+      const messages = parsed.filter(isChatUIMessage)
+      return messages.length === 0 ? null : {messages, savedAt: Date.now()}
+    }
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      Array.isArray((parsed as {messages?: unknown}).messages) &&
+      typeof (parsed as {savedAt?: unknown}).savedAt === "number"
+    ) {
+      const wrapper = parsed as {messages: unknown[]; savedAt: number}
+      if (Date.now() - wrapper.savedAt > PersistTTLms) {
+        localStorage.removeItem(StorageKeyMessages)
+        return null
+      }
+      const messages = wrapper.messages.filter(isChatUIMessage)
+      return messages.length === 0 ? null : {messages, savedAt: wrapper.savedAt}
+    }
+    return null
   } catch {
-    return []
+    return null
   }
+}
+
+function isChatUIMessage(m: unknown): m is ChatUIMessage {
+  return (
+    !!m &&
+    typeof m === "object" &&
+    typeof (m as {role?: unknown}).role === "string" &&
+    Array.isArray((m as {parts?: unknown}).parts)
+  )
 }
 
 function persistMessages(messages: ChatUIMessage[]): void {
@@ -204,11 +341,27 @@ function persistMessages(messages: ChatUIMessage[]): void {
     }
     localStorage.setItem(
       StorageKeyMessages,
-      JSON.stringify(messages.slice(-MaxPersistedMessages)),
+      JSON.stringify({
+        savedAt: Date.now(),
+        messages: messages.slice(-MaxPersistedMessages),
+      }),
     )
   } catch {
     // Best-effort: ignore quota errors or unavailable localStorage.
   }
+}
+
+/** Human-readable "5 minutes ago" / "yesterday" style label. */
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts
+  const sec = Math.max(1, Math.round(diff / 1000))
+  if (sec < 60) return "just now"
+  const min = Math.round(sec / 60)
+  if (min < 60) return `${min} minute${min === 1 ? "" : "s"} ago`
+  const hr = Math.round(min / 60)
+  if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`
+  const day = Math.round(hr / 24)
+  return `${day} day${day === 1 ? "" : "s"} ago`
 }
 
 export function AISearchPanelHeader({className, ...props}: ComponentProps<"div">) {
@@ -262,14 +415,14 @@ export function AISearchPanelHeader({className, ...props}: ComponentProps<"div">
 const StorageKeyInput = "__ai_search_input"
 export function AISearchInput(props: ComponentProps<"form">) {
   const {status, sendMessage, stop} = useChatContext()
-  const {input, setInput} = useAISearchContext()
+  const {input, setInput, contextDetached} = useAISearchContext()
   const isLoading = status === "streaming" || status === "submitted"
   const onStart = (e?: SyntheticEvent) => {
     e?.preventDefault()
     const message = input.trim()
     if (message.length === 0) return
 
-    sendUserMessage(sendMessage, message)
+    sendUserMessage(sendMessage, message, !contextDetached)
     setInput("")
     localStorage.removeItem(StorageKeyInput)
   }
@@ -284,13 +437,19 @@ export function AISearchInput(props: ComponentProps<"form">) {
         value={input}
         placeholder={isLoading ? "AI is answering..." : "Ask a question"}
         autoFocus
-        className="p-3"
-        disabled={status === "streaming" || status === "submitted"}
+        className="p-3 max-h-40 overflow-y-auto"
         onChange={e => {
           setInput(e.target.value)
         }}
         onKeyDown={event => {
           if (!event.shiftKey && event.key === "Enter") {
+            // Allow typing while streaming, but ignore Enter — pressing
+            // submit while a previous answer is in flight would queue a
+            // request the backend can't handle until the stream finishes.
+            if (isLoading) {
+              event.preventDefault()
+              return
+            }
             onStart(event)
           }
         }}
@@ -306,7 +465,7 @@ export function AISearchInput(props: ComponentProps<"form">) {
               className: "transition-all m-3",
             }),
           )}
-          onClick={stop}
+          onClick={() => stop()}
         >
           <Square className="size-4 fill-current" />
         </button>
@@ -327,6 +486,63 @@ export function AISearchInput(props: ComponentProps<"form">) {
         </button>
       )}
     </form>
+  )
+}
+
+/**
+ * Chip above the input showing which page the assistant will see. Click `×`
+ * to detach the page context for the next turn(s); re-attach happens on
+ * navigation or via the inline "Re-attach" button.
+ */
+function ContextChip() {
+  const {contextDetached, setContextDetached} = useAISearchContext()
+  const pathname = usePathname()
+  const [label, setLabel] = useState<string>("")
+
+  // `popstate` doesn't fire on Next.js App Router client navigations, so we
+  // key off `usePathname` and re-read `document.title` whenever the path
+  // changes. The `setTimeout(..., 0)` defers the setState to the next tick
+  // to satisfy the cascading-renders lint and to let Next finish writing
+  // the new `<title>` after the route transition commits.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const title =
+        typeof document !== "undefined" ? document.title.split("|")[0]?.trim() : ""
+      setLabel(title && title.length > 0 ? title : pathname || "this page")
+    }, 0)
+    return () => clearTimeout(id)
+  }, [pathname])
+
+  if (contextDetached) {
+    return (
+      <div className="flex items-center px-1 pb-1">
+        <button
+          type="button"
+          onClick={() => setContextDetached(false)}
+          className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-xs text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-accent focus-visible:ring-1 focus-visible:ring-fd-ring"
+        >
+          <FileText className="size-3" />
+          <span>Re-attach context</span>
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center px-1 pb-1">
+      <span className="inline-flex max-w-full items-center gap-1 rounded-full border bg-fd-secondary px-2 py-0.5 text-xs text-fd-muted-foreground">
+        <FileText className="size-3 shrink-0" />
+        <span className="truncate">Context: {label}</span>
+        <button
+          type="button"
+          aria-label="Detach page context"
+          className="ms-0.5 inline-flex items-center justify-center rounded-full p-0.5 hover:bg-fd-accent hover:text-fd-foreground focus-visible:ring-1 focus-visible:ring-fd-ring"
+          onClick={() => setContextDetached(true)}
+        >
+          <X className="size-3" />
+        </button>
+      </span>
+    </div>
   )
 }
 
@@ -473,7 +689,7 @@ function ToolStatusRow({
   busy?: boolean
 }) {
   return (
-    <div className="flex items-center gap-1.5 text-xs text-fd-muted-foreground" role="status">
+    <div className="flex items-center gap-1.5 text-xs text-fd-muted-foreground">
       <Icon className={cn("size-3.5 shrink-0", busy && "animate-pulse")} />
       <span>{label}</span>
     </div>
@@ -515,7 +731,7 @@ function ToolActivity({part}: {part: ToolUIPartLike}) {
   }
   return (
     <details className="text-xs text-fd-muted-foreground">
-      <summary className="flex cursor-pointer select-none items-center gap-1.5 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer select-none items-center gap-1.5 rounded focus-visible:ring-1 focus-visible:ring-fd-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
         <Icon className="size-3.5 shrink-0" />
         <span>
           {doneLabel} · {results.length} {results.length === 1 ? "page" : "pages"}
@@ -635,6 +851,16 @@ function Message({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
       </p>
       <div className="flex flex-col gap-1.5">
         <MessageParts message={message} />
+        {isStreamingThis && hasRenderableContent(message) && (
+          <ToolStatusRow
+            icon={Search}
+            label={stageLabel(status, message)}
+            busy
+          />
+        )}
+        {isAssistant && !isStreamingThis && text.trim().length > 0 && (
+          <SourcesBlock text={text} />
+        )}
       </div>
       {showActions && (
         <div className="mt-1.5 flex items-center gap-0.5">
@@ -703,6 +929,7 @@ function PendingMessage({label}: {label: string}) {
 }
 
 function EmptyState({chat}: {chat: UseChatHelpers<ChatUIMessage>}) {
+  const {contextDetached} = useAISearchContext()
   const questions = useMemo(() => {
     if (typeof window === "undefined") return STARTER_QUESTIONS
     return pickStarterQuestions(window.location.pathname)
@@ -719,7 +946,7 @@ function EmptyState({chat}: {chat: UseChatHelpers<ChatUIMessage>}) {
           <button
             key={question}
             type="button"
-            onClick={() => sendUserMessage(chat.sendMessage, question)}
+            onClick={() => sendUserMessage(chat.sendMessage, question, !contextDetached)}
             className="rounded-lg border px-3 py-2 text-start text-fd-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
           >
             {question}
@@ -731,19 +958,64 @@ function EmptyState({chat}: {chat: UseChatHelpers<ChatUIMessage>}) {
 }
 
 function ErrorCard({error, onRetry}: {error: Error; onRetry: () => void}) {
+  const kind = categorizeError(error)
+  const [cooldown, setCooldown] = useState(kind === "rate_limited" ? 10 : 0)
+
+  // Rate-limit countdown: re-enable the retry button after 10s. A fresh
+  // error must restart the count from 10 (otherwise `cooldown` could be
+  // stuck at 0 if the previous one already drained). The reset is deferred
+  // to a microtask so we don't setState synchronously inside the effect.
+  useEffect(() => {
+    if (kind !== "rate_limited") return
+    const reset = setTimeout(() => setCooldown(10), 0)
+    const id = window.setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) {
+          window.clearInterval(id)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => {
+      clearTimeout(reset)
+      window.clearInterval(id)
+    }
+  }, [kind, error])
+
+  // Network: retry once the browser reports we're back online.
+  useEffect(() => {
+    if (kind !== "network") return
+    const onOnline = () => onRetry()
+    window.addEventListener("online", onOnline, {once: true})
+    return () => window.removeEventListener("online", onOnline)
+  }, [kind, onRetry])
+
   return (
     <div
       role="alert"
       className="flex flex-col gap-2 rounded-xl border bg-fd-card p-3 text-fd-card-foreground"
     >
       <p className="text-sm">{friendlyError(error)}</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className={cn(buttonVariants({color: "secondary", size: "sm", className: "self-start"}))}
-      >
-        Try again
-      </button>
+      {kind === "terminal" ? (
+        <a
+          href={`https://chatgpt.com/?${new URLSearchParams({hints: "search", q: askElsewherePrompt()})}`}
+          target="_blank"
+          rel="noreferrer noopener"
+          className={cn(buttonVariants({color: "secondary", size: "sm", className: "self-start"}))}
+        >
+          Ask in ChatGPT
+        </a>
+      ) : (
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={kind === "rate_limited" && cooldown > 0}
+          className={cn(buttonVariants({color: "secondary", size: "sm", className: "self-start"}))}
+        >
+          {kind === "rate_limited" && cooldown > 0 ? `Try again in ${cooldown}s` : "Try again"}
+        </button>
+      )}
     </div>
   )
 }
@@ -760,6 +1032,8 @@ export function AISearch({children}: {children: ReactNode}) {
       return ""
     }
   })
+  const [contextDetached, setContextDetached] = useState(false)
+  const [restoredAt, setRestoredAt] = useState<number | null>(null)
   const chat = useChat<ChatUIMessage>({
     id: "search",
     transport: new DefaultChatTransport({
@@ -767,14 +1041,40 @@ export function AISearch({children}: {children: ReactNode}) {
     }),
   })
 
-  // Restore a persisted conversation once, after mount (client only).
+  // Restore a persisted conversation once, after mount (client only). We seed
+  // `lastCount.current` synchronously here so the reset effect's first run
+  // sees `count === lastCount.current` and does NOT immediately clear the
+  // restored banner on the same render cycle.
   const restored = useRef(false)
+  const lastCount = useRef(0)
   useEffect(() => {
     if (restored.current) return
     restored.current = true
-    const saved = loadPersistedMessages()
-    if (saved.length > 0) chat.setMessages(saved)
+    const saved = loadPersisted()
+    if (saved && saved.messages.length > 0) {
+      chat.setMessages(saved.messages)
+      lastCount.current = saved.messages.length
+      const id = setTimeout(() => setRestoredAt(saved.savedAt), 0)
+      return () => clearTimeout(id)
+    }
   }, [chat])
+
+  // Drop the restored banner the moment the user clears or sends a fresh msg.
+  useEffect(() => {
+    const count = chat.messages.length
+    if (restoredAt !== null && count !== lastCount.current) setRestoredAt(null)
+    lastCount.current = count
+  }, [chat.messages, restoredAt])
+
+  // Re-attach page context whenever the URL changes (e.g. SPA nav). App
+  // Router doesn't dispatch `popstate` for in-app navigations, so we depend
+  // on `usePathname` to drive the re-attach instead. Deferred via
+  // `setTimeout(..., 0)` to avoid a synchronous setState in an effect.
+  const pathname = usePathname()
+  useEffect(() => {
+    const id = setTimeout(() => setContextDetached(false), 0)
+    return () => clearTimeout(id)
+  }, [pathname])
 
   // Persist the conversation whenever it settles — never a mid-stream answer.
   useEffect(() => {
@@ -792,11 +1092,36 @@ export function AISearch({children}: {children: ReactNode}) {
     }
   }
 
+  // Open the chat (and optionally pre-fill) when an outside actor dispatches
+  // a `CustomEvent("ai-open")`. Page-actions.tsx uses this to launch the
+  // panel from the "Open" menu.
+  useEffect(() => {
+    function onOpen(e: Event) {
+      const detail = (e as CustomEvent<{prefill?: string}>).detail
+      setOpen(true)
+      if (detail?.prefill) setInputState(detail.prefill)
+    }
+    window.addEventListener("ai-open", onOpen as EventListener)
+    return () => window.removeEventListener("ai-open", onOpen as EventListener)
+  }, [])
+
+  const clearRestored = () => setRestoredAt(null)
+
   return (
     <Context
       value={useMemo(
-        () => ({chat, open, setOpen, input, setInput}),
-        [chat, open, input],
+        () => ({
+          chat,
+          open,
+          setOpen,
+          input,
+          setInput,
+          contextDetached,
+          setContextDetached,
+          restoredAt,
+          clearRestored,
+        }),
+        [chat, open, input, contextDetached, restoredAt],
       )}
     >
       {children}
@@ -891,6 +1216,14 @@ export function AISearchPanel() {
     }
   }, [open])
 
+  // Focus the input when the dialog opens.
+  useEffect(() => {
+    if (!open) return
+    // Defer until after the open animation mounts the textarea.
+    const id = setTimeout(() => document.getElementById("nd-ai-input")?.focus(), 0)
+    return () => clearTimeout(id)
+  }, [open])
+
   return (
     <>
       <style>
@@ -939,8 +1272,11 @@ export function AISearchPanel() {
           <div className="flex flex-col size-full gap-2 p-2 lg:p-3 lg:w-(--ai-chat-width)">
             <AISearchPanelHeader />
             <AISearchPanelList className="flex-1" />
-            <div className="rounded-xl border bg-fd-card text-fd-card-foreground has-focus-visible:border-fd-ring has-focus-visible:ring-1 has-focus-visible:ring-fd-ring">
-              <AISearchInput />
+            <div>
+              <ContextChip />
+              <div className="rounded-xl border bg-fd-card text-fd-card-foreground has-focus-visible:border-fd-ring has-focus-visible:ring-1 has-focus-visible:ring-fd-ring">
+                <AISearchInput />
+              </div>
             </div>
           </div>
         </div>
@@ -977,6 +1313,7 @@ function stageLabel(
 
 export function AISearchPanelList({className, style, ...props}: ComponentProps<"div">) {
   const chat = useChatContext()
+  const {restoredAt, clearRestored} = useAISearchContext()
   const messages = chat.messages.filter(msg => msg.role !== "system")
   const isLoading = chat.status === "submitted" || chat.status === "streaming"
   const last = messages[messages.length - 1]
@@ -1019,6 +1356,21 @@ export function AISearchPanelList({className, style, ...props}: ComponentProps<"
           <EmptyState chat={chat} />
         ) : (
           <div className="flex flex-col gap-4 px-[13px]">
+            {restoredAt !== null && messages.length > 0 && (
+              <div className="flex items-center justify-between gap-2 rounded-lg border bg-fd-secondary px-2 py-1 text-xs text-fd-muted-foreground">
+                <span>Continued from {formatRelativeTime(restoredAt)}</span>
+                <button
+                  type="button"
+                  className="underline-offset-2 hover:underline hover:text-fd-foreground"
+                  onClick={() => {
+                    chat.setMessages([])
+                    clearRestored()
+                  }}
+                >
+                  Start new
+                </button>
+              </div>
+            )}
             {chat.error && <ErrorCard error={chat.error} onRetry={() => chat.regenerate()} />}
             {visibleMessages.map((item, idx) => (
               <Message

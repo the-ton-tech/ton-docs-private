@@ -11,6 +11,7 @@ import {
   Suspense,
   use,
   useDeferredValue,
+  useMemo,
   useState,
 } from "react"
 import {Fragment, jsx, jsxs} from "react/jsx-runtime"
@@ -198,4 +199,78 @@ function Renderer({text}: {text: string}) {
   cache.set(text, result)
 
   return use(result)
+}
+
+interface Source {
+  url: string
+  title: string
+  hostPath: string
+}
+
+/** Extract unique markdown links from `text` so they can be listed as sources. */
+function extractSources(text: string): Source[] {
+  // Strip code regions before matching — links inside fenced or inline code
+  // are examples, not citations.
+  const stripped = text.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "")
+  // Match http(s) URLs greedily up to whitespace; many docs URLs legitimately
+  // contain `)` (e.g. Wikipedia-style paths), so we can't stop at `)`.
+  const re = /\[([^\]\n]+)\]\((https?:\/\/\S+)\)/g
+  // Dedup by a normalized key (strip trailing slash + hash fragment) but
+  // keep the first-seen original URL for the rendered link.
+  const seen = new Map<string, Source>()
+  let match: RegExpExecArray | null
+  while ((match = re.exec(stripped)) !== null) {
+    const title = match[1].trim()
+    let url = match[2].trim()
+    // Walk back over trailing sentence punctuation that the greedy `\S+`
+    // swept up: `[foo](https://x/y).` should yield `https://x/y`.
+    while (url.length > 0 && /[.,;:)]/.test(url[url.length - 1])) {
+      url = url.slice(0, -1)
+    }
+    if (url.length === 0) continue
+    let hostPath = url
+    let normalized = url
+    try {
+      const u = new URL(url, "https://docs.ton.org")
+      hostPath = `${u.hostname}${u.pathname}`.replace(/\/+$/, "")
+      // Normalize for dedup: drop trailing slash + fragment so `/x`, `/x/`,
+      // and `/x#sec` collapse to a single source.
+      normalized = `${u.protocol}//${u.hostname}${u.pathname.replace(/\/+$/, "")}${u.search}`
+    } catch {
+      // Leave hostPath = url for non-parseable hrefs.
+    }
+    if (seen.has(normalized)) continue
+    seen.set(normalized, {url, title: title || hostPath, hostPath})
+  }
+  return Array.from(seen.values())
+}
+
+/** Compact list of inline citations rendered below an assistant answer. */
+export function SourcesBlock({text}: {text: string}) {
+  // Memoize: the parent `Message` re-renders on every chat status tick during
+  // streaming, but `text` is stable once the answer settles.
+  const sources = useMemo(() => extractSources(text), [text])
+  if (sources.length === 0) return null
+  return (
+    <div className="mt-3 border-t pt-2">
+      <h3 className="mb-1 text-xs font-semibold text-fd-muted-foreground">Sources</h3>
+      <ul className="flex flex-wrap gap-1.5">
+        {sources.map((source, i) => (
+          <li key={source.url}>
+            <a
+              href={source.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex max-w-full items-center gap-1 rounded-full border bg-fd-secondary px-2 py-0.5 text-xs text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-accent"
+            >
+              <span className="text-fd-primary">[{i + 1}]</span>
+              <span className="truncate">
+                {source.title} — {source.hostPath}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
