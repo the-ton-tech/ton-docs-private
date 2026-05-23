@@ -191,7 +191,7 @@ function parseFlags(argv: string[]): RunFlags {
     fixInternal: has("--fix-internal"),
     enforcePermanent: has("--enforce-permanent"),
     repairRedirects: has("--repair-redirects"),
-    baseline: intArg("--baseline", Number.parseInt(process.env.LINKS_BASELINE ?? "345", 10)),
+    baseline: intArg("--baseline", Number.parseInt(process.env.LINKS_BASELINE ?? "0", 10)),
     verbose: has("--verbose"),
   }
 }
@@ -391,7 +391,10 @@ const SRC_RE = /\b(?:[a-zA-Z]+S|s)rc\s*=\s*["']([^"']+)["']/g
 function extractLinks(content: string): ExtractedLink[] {
   const out: ExtractedLink[] = []
   const lines = content.split("\n")
+  let inFence = false
   for (let i = 0; i < lines.length; i++) {
+    if (/^\s*```/.test(lines[i])) { inFence = !inFence; continue }
+    if (inFence) continue
     const line = lines[i]
     for (const [re, kind] of [
       [MD_LINK_RE, "markdown" as const],
