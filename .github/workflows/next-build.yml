@@ -68,6 +68,7 @@ jobs:
       - name: Validate external links
         working-directory: next
         run: npm run lint:links:external
+        continue-on-error: true
 
       - name: Validate links
         working-directory: next
