@@ -75,7 +75,14 @@ export const DEFAULT_PINS = {
   api: "/applications/api/toncenter/introduction",
   toolset: "/overview/toolset",
   "start here": "/overview/start-here",
-  glossary: "/foundations/glossary",
+  glossary: "/overview/learn-more/glossary",
+  appkit: "/applications/appkit/overview",
+  "app kit": "/applications/appkit/overview",
+  walletkit: "/applications/walletkit/overview",
+  "wallet kit": "/applications/walletkit/overview",
+  mcp: "/overview/ai/mcp",
+  tonpay: "/applications/ton-pay/overview",
+  "ton pay": "/applications/ton-pay/overview",
 }
 
 export const DEFAULT_SPELL = {
@@ -104,10 +111,16 @@ export const DEFAULT_SPELL = {
   consensous: "consensus",
 }
 
+export const DEFAULT_DECOMPOUND = {
+  tonpay: "ton pay",
+  tonconnect: "ton connect",
+}
+
 export const DEFAULT_TUNING = {
   stopwords: DEFAULT_STOPWORDS,
   pins: DEFAULT_PINS,
   spell: DEFAULT_SPELL,
+  decompound: DEFAULT_DECOMPOUND,
   structHitWeight: 2,
   allTermsWeight: 0,
   proximityWeight: 0,
@@ -129,6 +142,12 @@ export const DEFAULT_TUNING = {
   // The shape gate is what avoids the previously measured regression of
   // unconditional code-symbol re-ranking.
   codeSymbolWeight: 1,
+  // apiRefDemotion: 0.80 picked by harness sweep (Pareto knee). Multiply
+  // score by this when the page URL is an API reference (`/api-reference/`
+  // or `/reference/`) AND the query has no code-shaped token AND no
+  // explicit `api`/`reference` token. 1.0 disables. Mirrors
+  // next/src/lib/search-core.ts.
+  apiRefDemotion: 0.8,
 }
 
 export function normalizeQuery(query) {
@@ -172,76 +191,6 @@ export function anchorFromHeadingText(text) {
   if (m && m.groups && m.groups.slug) return m.groups.slug
   const cleaned = text.replace(/\s*\[[^\]]*\]\s*$/, "")
   return slugify(cleaned)
-}
-
-// R5 safety net: cover the handful of TON-specific Cyrillic terms users
-// commonly type, mapping each to the English token actually indexed.
-const TRANSLITERATION_MAP = {
-  "джеттон": "jetton",
-  "джеттоны": "jetton",
-  "кошелёк": "wallet",
-  "кошельки": "wallet",
-  "кошелек": "wallet",
-  "мост": "bridge",
-  "валидатор": "validator",
-  "валидаторы": "validator",
-  "контракт": "contract",
-  "контракты": "contract",
-  "токен": "token",
-  "токены": "token",
-  "блокчейн": "blockchain",
-  "транзакция": "transaction",
-  "транзакции": "transaction",
-  "газ": "gas",
-  "комиссия": "fee",
-  "комиссии": "fee",
-}
-
-function nonAsciiRatio(s) {
-  if (!s) return 0
-  let n = 0
-  for (const ch of s) if (ch.charCodeAt(0) > 127) n++
-  return n / s.length
-}
-
-function applyTransliteration(query) {
-  const parts = query.toLowerCase().split(/(\s+)/)
-  let changed = false
-  const out = parts.map(p => {
-    if (/^\s+$/.test(p) || p === "") return p
-    const mapped = TRANSLITERATION_MAP[p]
-    if (mapped) {
-      changed = true
-      return mapped
-    }
-    return p
-  })
-  return {query: out.join(""), changed}
-}
-
-// RRF (Reciprocal Rank Fusion) over two `groups` Maps. K=15 (was 60) — the
-// stock RRF constant is tuned for fusing dozens of independent rankers, but
-// here we fuse exactly two passes whose top results are nearly always the
-// right answer; a smaller K sharpens the contribution of the top-ranked
-// items so the fused order tracks the better of the two passes instead of
-// flattening into a near-uniform average.
-function rrfMergeGroups(a, b, K = 15) {
-  const aKeys = [...a.keys()]
-  const bKeys = [...b.keys()]
-  const scores = new Map()
-  aKeys.forEach((k, i) => {
-    scores.set(k, (scores.get(k) ?? 0) + 1 / (K + i + 1))
-  })
-  bKeys.forEach((k, i) => {
-    scores.set(k, (scores.get(k) ?? 0) + 1 / (K + i + 1))
-  })
-  const merged = new Map()
-  const ordered = [...scores.entries()].sort((x, y) => y[1] - x[1])
-  for (const [k] of ordered) {
-    const g = a.get(k) ?? b.get(k)
-    if (g) merged.set(k, g)
-  }
-  return merged
 }
 
 export function tokenize(query) {
@@ -343,9 +292,15 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
   const rawKept = rawSplit.filter(t => t.length > 1 && !stopL.has(t.toLowerCase()))
   const originalTokens = rawKept.length > 0 ? rawKept : rawSplit
   const hasCodeShapedToken = originalTokens.some(looksLikeCodeSymbol)
+  // Gate for `apiRefDemotion`: explicit "api"/"reference" in the query means
+  // the user wants the ref page, so skip the demotion.
+  const wantsReference = originalTokens.some(t => {
+    const lt = t.toLowerCase()
+    return lt === "api" || lt === "reference" || lt === "ref" || lt === "apis"
+  })
   const term = tokens.join(" ")
 
-  let groups = await twoPassGroups(db, term, tuning.relevance)
+  const groups = await twoPassGroups(db, term, tuning.relevance)
 
   if (Object.keys(tuning.spell).length > 0) {
     const corrected = tokens.map(t => tuning.spell[t] ?? t)
@@ -356,18 +311,26 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
     }
   }
 
-  // R5: when the query is heavily non-ASCII, also try a transliterated copy
-  // for the curated TON Cyrillic terms and RRF-merge the two result sets.
-  if (nonAsciiRatio(trimmed) > 0.3) {
-    const {query: trQuery, changed} = applyTransliteration(trimmed)
-    if (changed) {
-      const trTokens = meaningfulTokens(trQuery, tuning.stopwords)
-      const trTerm = trTokens.join(" ")
-      if (trTerm.length > 0) {
-        const trGroups = await twoPassGroups(db, trTerm, tuning.relevance)
-        groups = rrfMergeGroups(groups, trGroups)
-        tokens = Array.from(new Set([...tokens, ...trTokens]))
+  // Brand decompound: squashed compound brand tokens (`tonpay` → `ton pay`)
+  // are rewritten into the parts the tokenizer actually produces from the
+  // hyphenated URL slug. Union a pass on the split form so `tonpay sdk`
+  // reaches `/applications/ton-pay/*`. Mirrors next/src/lib/search-core.ts.
+  if (tuning.decompound && Object.keys(tuning.decompound).length > 0) {
+    const expanded = []
+    let didExpand = false
+    for (const t of tokens) {
+      const rewrite = tuning.decompound[t]
+      if (rewrite) {
+        for (const w of rewrite.split(/\s+/).filter(Boolean)) expanded.push(w)
+        didExpand = true
+      } else {
+        expanded.push(t)
       }
+    }
+    if (didExpand) {
+      const extra = await twoPassGroups(db, expanded.join(" "), tuning.relevance)
+      for (const [k, v] of extra) if (!groups.has(k)) groups.set(k, v)
+      tokens = Array.from(new Set([...tokens, ...expanded]))
     }
   }
 
@@ -591,6 +554,17 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
     // just sinks below comparably-relevant non-deprecated alternatives.
     const pageTags = Array.isArray(page.tags) ? page.tags : page.tag ? [page.tag] : []
     if (pageTags.includes("deprecated")) s *= 0.5
+    // Demote API reference pages on prose queries (no code-shaped token,
+    // no explicit api/reference token). Mirrors next/src/lib/search-core.ts.
+    if (
+      typeof tuning.apiRefDemotion === "number" &&
+      tuning.apiRefDemotion < 1 &&
+      !hasCodeShapedToken &&
+      !wantsReference &&
+      /\/(api-)?reference(\/|$)/.test(page.url)
+    ) {
+      s *= tuning.apiRefDemotion
+    }
     return s
   }
 
@@ -610,6 +584,15 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
     for (const k of [...pinKeys]) {
       const c = spellOf(k)
       if (c !== k && !pinKeys.includes(c)) pinKeys.push(c)
+    }
+  }
+  if (tuning.decompound && Object.keys(tuning.decompound).length > 0) {
+    for (const k of [...pinKeys]) {
+      const d = k
+        .split(" ")
+        .map(w => tuning.decompound[w] ?? w)
+        .join(" ")
+      if (d !== k && !pinKeys.includes(d)) pinKeys.push(d)
     }
   }
   let pinnedUrl

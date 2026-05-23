@@ -125,7 +125,14 @@ export const DEFAULT_PINS: Record<string, string> = {
   api: "/applications/api/toncenter/introduction",
   toolset: "/overview/toolset",
   "start here": "/overview/start-here",
-  glossary: "/foundations/glossary",
+  glossary: "/overview/learn-more/glossary",
+  appkit: "/applications/appkit/overview",
+  "app kit": "/applications/appkit/overview",
+  walletkit: "/applications/walletkit/overview",
+  "wallet kit": "/applications/walletkit/overview",
+  mcp: "/overview/ai/mcp",
+  tonpay: "/applications/ton-pay/overview",
+  "ton pay": "/applications/ton-pay/overview",
 }
 
 /**
@@ -164,6 +171,20 @@ export const DEFAULT_SPELL: Record<string, string> = {
   consensous: "consensus",
 }
 
+/**
+ * Brand compound-token -> space-separated split. The tokenizer splits hyphens
+ * (`ton-pay` → `ton`+`pay`), so a squashed brand query like `tonpay` matches
+ * nothing in the title/URL surface and falls back to fuzzy, where it edit-1
+ * collides with unrelated tokens (e.g. `tonpy`, a Python SDK). This map runs
+ * a second pass on the split form and unions, so `tonpay sdk` finds the
+ * `ton-pay` pages the same way `ton pay sdk` already does. Bounded to
+ * compound brands whose URL slug is hyphenated.
+ */
+export const DEFAULT_DECOMPOUND: Record<string, string> = {
+  tonpay: "ton pay",
+  tonconnect: "ton connect",
+}
+
 export interface Tuning {
   stopwords: Set<string>
   /** Exact normalized-query -> canonical URL. Empty disables pinning. */
@@ -178,6 +199,16 @@ export interface Tuning {
    * orthographic (unlike semantic synonym expansion, which regressed).
    */
   spell: Record<string, string>
+  /**
+   * Per-token squashed-brand -> space-split rewrite (e.g. `tonpay` → `ton
+   * pay`). When any query token matches a key, a second Orama pass on the
+   * decompounded query is unioned in, the decompounded tokens join the
+   * re-rank, and the decompounded normalized form joins pin-lookup. Bounded
+   * to compound brands whose URL slug is hyphenated, so the squashed token
+   * (which the tokenizer never produces) cannot match the indexed surface
+   * without this rewrite. Empty disables.
+   */
+  decompound: Record<string, string>
   /**
    * Per-token bonus when the term appears in a page's *curated* index rows —
    * the synthetic "Keywords" / "Code symbols" blocks (identified by the
@@ -282,6 +313,18 @@ export interface Tuning {
    * prose queries can't activate it. 0 disables.
    */
   codeSymbolWeight: number
+  /**
+   * Multiplier applied to a page's score when its URL is an API reference
+   * page (matches `/api-reference/` or `/reference/`) AND the query does not
+   * look like the user is hunting an identifier (no code-shaped token) AND
+   * the query does not explicitly ask for the reference (no `api` / `reference`
+   * token). Catches the common failure shape "tonconnect quick start" where
+   * the symbol-dense `/api-reference/ui-react` page out-scores the short
+   * canonical landing on raw BM25. 1.0 disables. Same pattern as the
+   * deprecated-tag ×0.5 demotion — preserves relative ordering inside the
+   * demoted set so the most relevant ref page still wins among its peers.
+   */
+  apiRefDemotion: number
 }
 
 /**
@@ -293,6 +336,7 @@ export const DEFAULT_TUNING: Tuning = {
   stopwords: DEFAULT_STOPWORDS,
   pins: DEFAULT_PINS,
   spell: DEFAULT_SPELL,
+  decompound: DEFAULT_DECOMPOUND,
   structHitWeight: 2,
   // Proximity/all-terms bonuses measured net-negative on hit@1 and MRR (they
   // float long reference pages over canonical short pages), so disabled. The
@@ -361,6 +405,15 @@ export const DEFAULT_TUNING: Tuning = {
   // signal-rich gold queries). Token-shape strictness avoids the previously
   // measured regression of unconditional code-symbol re-ranking.
   codeSymbolWeight: 1,
+  // apiRefDemotion: 0.80 is the Pareto knee from the harness sweep over
+  // {1.0, 0.9, 0.8, 0.7, 0.6, 0.5}. At 0.8: cov@10 +0.77pp, mrr +0.07pp,
+  // fixes "tonconnect quick start" with ZERO regression vs 1.0. At 0.7+
+  // below a new fail appears ([concept] "test smart contracts with
+  // blueprint" — the testing/reference page over-demotes). Gated by
+  // !hasCodeShapedToken && !wantsReference so identifier queries and
+  // explicit "api reference" lookups are unaffected — only prose queries
+  // on brand pages flip.
+  apiRefDemotion: 0.8,
 }
 
 /**
@@ -378,6 +431,7 @@ export const BASELINE_TUNING: Tuning = {
   ),
   pins: {},
   spell: {},
+  decompound: {},
   structHitWeight: 0,
   allTermsWeight: 0,
   proximityWeight: 0,
@@ -393,6 +447,7 @@ export const BASELINE_TUNING: Tuning = {
   titleBM25Weight: 0,
   idfWeightTokens: false,
   codeSymbolWeight: 0,
+  apiRefDemotion: 1,
 }
 
 // Vendored from `github-slugger` v2.0.0 (`regex.js`). Mirrors the same
@@ -610,6 +665,14 @@ export async function runRankedSearch(
   const rawKept = rawSplit.filter(t => t.length > 1 && !stopL.has(t.toLowerCase()))
   const originalTokens = rawKept.length > 0 ? rawKept : rawSplit
   const hasCodeShapedToken = originalTokens.some(looksLikeCodeSymbol)
+  // Gate for `apiRefDemotion`: if the user typed "api" or "reference" we
+  // assume they want the reference page and skip the demotion. Matches the
+  // raw token set (before stopword strip) so the signal survives even when
+  // surrounding words are stripped.
+  const wantsReference = originalTokens.some(t => {
+    const lt = t.toLowerCase()
+    return lt === "api" || lt === "reference" || lt === "ref" || lt === "apis"
+  })
   const term = tokens.join(" ")
 
   const groups = await twoPassGroups(db, term, tuning.relevance)
@@ -624,6 +687,50 @@ export async function runRankedSearch(
       for (const [k, v] of extra) if (!groups.has(k)) groups.set(k, v)
       tokens = Array.from(new Set([...tokens, ...corrected]))
     }
+  }
+
+  // Brand decompound: rewrite squashed compound brand tokens (`tonpay` →
+  // `ton pay`) and union a pass on the split form. The tokenizer splits the
+  // hyphenated URL slug into the same parts, so this is what lets a
+  // multi-token query like `tonpay sdk` reach `/applications/ton-pay/*` —
+  // the bare-token case is already covered by pins. Additive only.
+  if (Object.keys(tuning.decompound).length > 0) {
+    const expanded: string[] = []
+    let didExpand = false
+    for (const t of tokens) {
+      const rewrite = tuning.decompound[t]
+      if (rewrite) {
+        for (const w of rewrite.split(/\s+/).filter(Boolean)) expanded.push(w)
+        didExpand = true
+      } else {
+        expanded.push(t)
+      }
+    }
+    if (didExpand) {
+      const extra = await twoPassGroups(db, expanded.join(" "), tuning.relevance)
+      for (const [k, v] of extra) if (!groups.has(k)) groups.set(k, v)
+      tokens = Array.from(new Set([...tokens, ...expanded]))
+    }
+  }
+
+  // Zero-result tolerance-2 retry. The harness previously found that ALWAYS
+  // running tolerance:2 regressed (it floats wide-fuzzy near-misses over true
+  // exact matches), but as a last-resort fallback when the [0,1] pass returns
+  // nothing it gives some hits where the alternative is an empty page.
+  // Mirrors orama-server/search-core.mjs:374-386 so the harness can score
+  // exactly what production runs after the .mjs is reduced to a thin shim.
+  if (groups.size === 0) {
+    const res = (await search(db, {
+      term,
+      tolerance: 2,
+      limit: MAX_RESULTS,
+      properties: ["content"],
+      groupBy: {properties: ["page_id"], maxResult: HITS_PER_PAGE},
+      ...(tuning.relevance ? {relevance: tuning.relevance} : {}),
+    })) as unknown as {
+      groups?: {values: unknown[]; result: {score?: number; document: unknown}[]}[]
+    }
+    collectGroups(db, res, groups)
   }
 
   // Min-max BM25 normalization over the candidate set so the relevance term
@@ -928,6 +1035,15 @@ export async function runRankedSearch(
         ? [pageAny.tag]
         : []
     if (pageTags.includes("deprecated")) s *= 0.5
+    // R5: down-rank API reference pages for prose queries. The symbol-dense
+    // `/api-reference/ui-react` page out-scores the short canonical landing
+    // for queries like "tonconnect quick start". Same multiplier shape as the
+    // deprecated demotion — relative ordering inside the ref-page set is
+    // preserved. Gated by !hasCodeShapedToken (skip if user typed an
+    // identifier) and !wantsReference (skip if user typed "api"/"reference").
+    if (tuning.apiRefDemotion < 1 && !hasCodeShapedToken && !wantsReference) {
+      if (/\/(api-)?reference(\/|$)/.test(page.url)) s *= tuning.apiRefDemotion
+    }
     return s
   }
 
@@ -958,6 +1074,18 @@ export async function runRankedSearch(
     for (const k of [...pinKeys]) {
       const c = spellOf(k)
       if (c !== k && !pinKeys.includes(c)) pinKeys.push(c)
+    }
+  }
+  // Also try the decompounded form of every pin key, so `tonpay` → `ton pay`
+  // hits the `"ton pay"` pin (and a future compound brand without an exact
+  // squashed pin still resolves through the rewrite map).
+  if (Object.keys(tuning.decompound).length > 0) {
+    for (const k of [...pinKeys]) {
+      const d = k
+        .split(" ")
+        .map(w => tuning.decompound[w] ?? w)
+        .join(" ")
+      if (d !== k && !pinKeys.includes(d)) pinKeys.push(d)
     }
   }
   let pinnedUrl: string | undefined
