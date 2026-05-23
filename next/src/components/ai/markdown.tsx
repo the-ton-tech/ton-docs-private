@@ -42,7 +42,8 @@ export function rehypeWrapWords() {
           type: "element",
           tagName: "span",
           properties: {
-            class: "animate-fd-fade-in",
+            // `motion-reduce:` honors `prefers-reduced-motion: reduce`.
+            class: "animate-fd-fade-in motion-reduce:animate-none",
           },
           children: [{type: "text", value: word}],
         }
@@ -205,6 +206,18 @@ interface Source {
   url: string
   title: string
   hostPath: string
+  /** Parsed `#fragment` (without the `#`), if present. */
+  hash: string | null
+}
+
+/** Turn a slug-style hash like `my-section_2` into a human "My Section 2". */
+function humanizeHash(hash: string): string {
+  const cleaned = decodeURIComponent(hash.replace(/^#/, "")).replace(/[-_]+/g, " ").trim()
+  if (cleaned.length === 0) return ""
+  return cleaned
+    .split(/\s+/)
+    .map(w => (w.length === 0 ? "" : w[0].toUpperCase() + w.slice(1)))
+    .join(" ")
 }
 
 /** Extract unique markdown links from `text` so they can be listed as sources. */
@@ -215,8 +228,8 @@ function extractSources(text: string): Source[] {
   // Match http(s) URLs greedily up to whitespace; many docs URLs legitimately
   // contain `)` (e.g. Wikipedia-style paths), so we can't stop at `)`.
   const re = /\[([^\]\n]+)\]\((https?:\/\/\S+)\)/g
-  // Dedup by a normalized key (strip trailing slash + hash fragment) but
-  // keep the first-seen original URL for the rendered link.
+  // Dedup by a normalized key that INCLUDES the hash fragment, so two
+  // different sections of the same page remain distinct sources.
   const seen = new Map<string, Source>()
   let match: RegExpExecArray | null
   while ((match = re.exec(stripped)) !== null) {
@@ -230,17 +243,19 @@ function extractSources(text: string): Source[] {
     if (url.length === 0) continue
     let hostPath = url
     let normalized = url
+    let hash: string | null = null
     try {
       const u = new URL(url, "https://docs.ton.org")
       hostPath = `${u.hostname}${u.pathname}`.replace(/\/+$/, "")
-      // Normalize for dedup: drop trailing slash + fragment so `/x`, `/x/`,
-      // and `/x#sec` collapse to a single source.
-      normalized = `${u.protocol}//${u.hostname}${u.pathname.replace(/\/+$/, "")}${u.search}`
+      // Dedup key: trim trailing slashes from pathname, KEEP search + hash so
+      // `/x#a` and `/x#b` are distinct sources.
+      normalized = `${u.protocol}//${u.hostname}${u.pathname.replace(/\/+$/, "")}${u.search}${u.hash}`
+      hash = u.hash ? u.hash.slice(1) : null
     } catch {
       // Leave hostPath = url for non-parseable hrefs.
     }
     if (seen.has(normalized)) continue
-    seen.set(normalized, {url, title: title || hostPath, hostPath})
+    seen.set(normalized, {url, title: title || hostPath, hostPath, hash})
   }
   return Array.from(seen.values())
 }
@@ -255,21 +270,31 @@ export function SourcesBlock({text}: {text: string}) {
     <div className="mt-3 border-t pt-2">
       <h3 className="mb-1 text-xs font-semibold text-fd-muted-foreground">Sources</h3>
       <ul className="flex flex-wrap gap-1.5">
-        {sources.map((source, i) => (
-          <li key={source.url}>
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex max-w-full items-center gap-1 rounded-full border bg-fd-secondary px-2 py-0.5 text-xs text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-accent"
-            >
-              <span className="text-fd-primary">[{i + 1}]</span>
-              <span className="truncate">
-                {source.title} — {source.hostPath}
-              </span>
-            </a>
-          </li>
-        ))}
+        {sources.map((source, i) => {
+          const sectionLabel = source.hash ? humanizeHash(source.hash) : ""
+          // Reuse the existing internal/external detection so internal
+          // docs.ton.org links stay in the SPA (no `target="_blank"` —
+          // keeps the chat panel and conversation alive on click).
+          const internalHref = internalDocsPath(source.url)
+          const isInternal = internalHref !== null
+          const linkProps: ComponentProps<"a"> = isInternal
+            ? {href: internalHref ?? source.url}
+            : {href: source.url, target: "_blank", rel: "noreferrer noopener"}
+          return (
+            <li key={source.url}>
+              <a
+                {...linkProps}
+                className="inline-flex max-w-full items-center gap-1 rounded-full border bg-fd-secondary px-2 py-0.5 text-xs text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-accent"
+              >
+                <span className="text-fd-primary">[{i + 1}]</span>
+                <span className="truncate">
+                  {source.title} — {source.hostPath}
+                  {sectionLabel ? ` — ${sectionLabel}` : ""}
+                </span>
+              </a>
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
