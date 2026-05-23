@@ -31,7 +31,7 @@ import {
   interceptAndCache,
   replayCached,
 } from "./cache.js";
-import { hashIp, latencySnapshot, logChat, recordLatency } from "./telemetry.js";
+import { hashIp, latencySnapshot, logChat, logFeedback, recordLatency } from "./telemetry.js";
 
 const app = new Hono();
 
@@ -62,9 +62,11 @@ const INJECTION_MARKERS = [
   /\[INST\]/g,
   /<\|im_start\|>/g,
   /<\|im_end\|>/g,
+  /<\|endoftext\|>/gi,
   // chat.ts wraps tool output in <doc>…</doc> and escapes literal </doc>
   // inside tool content, but user-supplied text is never scrubbed. A user
-  // sending a literal </doc> could otherwise close the envelope early.
+  // sending a literal <doc …> or </doc> could otherwise spoof a doc envelope.
+  /<\s*doc\b[^>]*>/gi,
   /<\/\s*doc\s*>/gi,
 ];
 function scrubUserText(text: string): string {
@@ -108,11 +110,18 @@ app.use("/api/chat", async (c, next) => {
   }
 
   if (!allowPerIp(clientIp(c))) {
+    c.header("Retry-After", "60");
     return c.json({ error: "rate_limited" }, 429);
   }
 
   return next();
 });
+
+function secondsUntilNextUtcMidnight(now = new Date()): number {
+  const next = new Date(now);
+  next.setUTCHours(24, 0, 0, 0);
+  return Math.max(1, Math.ceil((next.getTime() - now.getTime()) / 1000));
+}
 
 // --- Health -----------------------------------------------------------------
 //
@@ -171,6 +180,13 @@ app.post("/api/chat", async (c) => {
     finishReason?: string;
     toolCalls?: number;
   } = {};
+  let turnInfo: {
+    searchQueries?: string[];
+    retrievedUrls?: string[];
+    fetchedUrls?: string[];
+    citedUrls?: string[];
+    noAnswer?: boolean;
+  } = {};
 
   const finish = (statusCode: number): void => {
     status = statusCode;
@@ -185,6 +201,7 @@ app.post("/api/chat", async (c) => {
       requestId,
       model: config.model,
       ...usageInfo,
+      ...turnInfo,
     });
   };
 
@@ -287,6 +304,7 @@ app.post("/api/chat", async (c) => {
   // increment) and also enforces the per-IP daily cap.
   const consumed = tryConsume(ip);
   if (consumed !== "ok") {
+    c.header("Retry-After", String(secondsUntilNextUtcMidnight()));
     finish(429);
     return c.json({ error: consumed }, 429);
   }
@@ -310,6 +328,15 @@ app.post("/api/chat", async (c) => {
             tokensOut: info.tokensOut,
             finishReason: info.finishReason,
             toolCalls: info.toolCalls,
+          };
+        },
+        onTelemetry: (snap) => {
+          turnInfo = {
+            searchQueries: snap.searchQueries,
+            retrievedUrls: snap.retrievedUrls,
+            fetchedUrls: snap.fetchedUrls,
+            citedUrls: snap.citedUrls,
+            noAnswer: snap.noAnswer,
           };
         },
       });
@@ -361,6 +388,44 @@ app.post("/api/chat", async (c) => {
   })();
 
   return handler;
+});
+
+// --- Feedback ---------------------------------------------------------------
+app.post("/api/feedback", async (c) => {
+  const ip = clientIp(c);
+  if (!allowPerIp(ip)) {
+    c.header("Retry-After", "60");
+    return c.json({ error: "rate_limited" }, 429);
+  }
+
+  let body: { requestId?: unknown; verdict?: unknown; reason?: unknown };
+  try {
+    body = (await c.req.json()) as { requestId?: unknown; verdict?: unknown; reason?: unknown };
+  } catch {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+
+  if (body.verdict !== "up" && body.verdict !== "down") {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  if (body.reason !== undefined && (typeof body.reason !== "string" || body.reason.length > 500)) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  if (
+    body.requestId !== undefined &&
+    (typeof body.requestId !== "string" || body.requestId.length > 100)
+  ) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+
+  logFeedback({
+    ipHash: hashIp(ip),
+    requestId: body.requestId as string | undefined,
+    verdict: body.verdict,
+    reason: body.reason as string | undefined,
+  });
+
+  return c.json({ ok: true });
 });
 
 // --- Startup ----------------------------------------------------------------

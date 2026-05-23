@@ -16,12 +16,15 @@ import type { UIMessage } from "ai";
 import { config } from "./config.js";
 import { SYSTEM_PROMPT } from "./chat.js";
 
-interface CacheEntry {
+export interface CacheEntry {
   chunks: Uint8Array[];
   headers: Record<string, string>;
   status: number;
   expiresAt: number;
+  staleAt: number;
 }
+
+const HARD_TTL_MS = 24 * 60 * 60 * 1000;
 
 const SYSTEM_PROMPT_VERSION = createHash("sha256")
   .update(SYSTEM_PROMPT)
@@ -67,8 +70,9 @@ function normaliseMessages(messages: UIMessage[]): NormalisedMessage[] {
         const text = (part as { text?: unknown }).text;
         if (typeof text === "string") parts.push({ type: "text", text });
       } else if (part.type === "data-client") {
-        const data = (part as { data?: unknown }).data;
-        parts.push({ type: "data-client", data });
+        const data = (part as { data?: { location?: unknown } }).data;
+        const location = typeof data?.location === "string" ? data.location : null;
+        parts.push({ type: "data-client", data: { location } });
       }
     }
     return { role: message.role, parts };
@@ -101,6 +105,11 @@ export function cacheKey(messages: UIMessage[]): string | null {
     messages: normaliseMessages(messages),
   });
   return createHash("sha256").update(payload).digest("hex");
+}
+
+/** True when the entry has crossed its soft TTL but is still within the hard expiry. */
+export function isStale(entry: CacheEntry, now: number): boolean {
+  return entry.staleAt <= now && entry.expiresAt > now;
 }
 
 /** Look up a cached response. Returns `null` on miss or expiry. */
@@ -238,7 +247,8 @@ export function interceptAndCache(
         chunks,
         headers,
         status,
-        expiresAt: now + config.cacheTtlMs,
+        staleAt: now + config.cacheTtlMs,
+        expiresAt: now + HARD_TTL_MS,
       };
       store.set(key, entry);
       resolveInflight(entry);

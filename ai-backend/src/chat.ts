@@ -102,45 +102,182 @@ function dedupeByUrl(hits: SearchHit[]): SearchHit[] {
   return out;
 }
 
-// Reciprocal-rank fusion constant. K=60 is the canonical RRF dampener: it
-// keeps the head of each batch dominant while still letting consistently
-// mid-ranked URLs across multiple batches overtake one-shot top hits.
-const RRF_K = 60;
+// Reciprocal-rank fusion constant. Smaller K weights the top of each batch
+// more heavily; 15 favors the strongest per-query hit while still letting
+// URLs appearing across multiple batches climb past one-shot top hits.
+const RRF_K = 15;
+
+// Combined section cap per fused URL after dedup. Higher than per-batch
+// section counts so a URL appearing in 2-3 batches keeps the union of its
+// best sections rather than only the first batch's view.
+const FUSED_SECTIONS_PER_URL = 6;
 
 /**
  * Fuse multiple ranked batches with reciprocal-rank fusion, then take the
  * top `limit` URLs. Each URL's score is sum over batches of 1 / (K + rank).
+ * For each winning URL, sections from every batch that hit that URL are
+ * merged (best-ranked batch first), deduplicated by anchor or snippet, and
+ * capped at FUSED_SECTIONS_PER_URL. Compound queries that hit different
+ * sections of the same page therefore keep all relevant sections instead of
+ * losing the later-batch ones.
  */
 function rrfFuse(batches: SearchHit[][], limit: number): SearchHit[] {
   const scores = new Map<string, number>();
-  const repr = new Map<string, SearchHit>();
+  // For each URL, ordered list of (batchScore, hit) so we can prefer sections
+  // from the best-ranked batch when merging.
+  const perUrl = new Map<string, Array<{ batchScore: number; hit: SearchHit }>>();
   for (const batch of batches) {
     batch.forEach((hit, idx) => {
-      scores.set(hit.url, (scores.get(hit.url) ?? 0) + 1 / (RRF_K + idx + 1));
-      if (!repr.has(hit.url)) repr.set(hit.url, hit);
+      const contribution = 1 / (RRF_K + idx + 1);
+      scores.set(hit.url, (scores.get(hit.url) ?? 0) + contribution);
+      let list = perUrl.get(hit.url);
+      if (!list) {
+        list = [];
+        perUrl.set(hit.url, list);
+      }
+      list.push({ batchScore: contribution, hit });
     });
   }
-  return [...scores.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([url]) => repr.get(url)!)
-    .filter(Boolean);
+  const out: SearchHit[] = [];
+  const ranked = [...scores.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+  for (const [url] of ranked) {
+    const occurrences = perUrl.get(url) ?? [];
+    if (occurrences.length === 0) continue;
+    const primary = occurrences[0].hit;
+    const ordered = [...occurrences].sort((a, b) => b.batchScore - a.batchScore);
+    const seen = new Set<string>();
+    const merged: NonNullable<SearchHit["sections"]> = [];
+    for (const { hit } of ordered) {
+      const sections = Array.isArray(hit.sections) ? hit.sections : [];
+      for (const section of sections) {
+        const key = section.anchor ? `a:${section.anchor}` : `s:${section.snippet.slice(0, 80)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(section);
+        if (merged.length >= FUSED_SECTIONS_PER_URL) break;
+      }
+      if (merged.length >= FUSED_SECTIONS_PER_URL) break;
+    }
+    out.push({ ...primary, sections: merged.length > 0 ? merged : primary.sections });
+  }
+  return out;
+}
+
+// Per-turn cumulative retrieval byte budget across all search+fetch_page
+// calls. Search alone is capped at SEARCH_CALL_CAP; fetch_page bodies are
+// already capped at CONTENT_MAX (20 KB) in page.ts.
+const TURN_BYTE_BUDGET = 80 * 1024;
+const SEARCH_CALL_CAP = 60 * 1024;
+
+function envelopeBytes(hit: SearchHit): number {
+  // content is already the wrapped envelope after wrapHit; this approximates
+  // what the model sees per hit.
+  return (hit.content?.length ?? 0) + (hit.title?.length ?? 0) + (hit.url?.length ?? 0);
 }
 
 /**
  * Per-turn state. The `search` and `fetch_page` tools push URLs into
  * `validUrls`; the post-stream citation validator reads it to strip invented
- * links from the assistant's reply.
+ * links from the assistant's reply. The state also collects retrieval
+ * telemetry (queries, retrieved URLs, fetched URLs) and enforces a cumulative
+ * byte budget across all retrieval calls in the turn.
  */
 function makeTurnState() {
   const validUrls = new Set<string>();
+  const searchQueries: string[] = [];
+  const retrievedUrls: string[] = [];
+  const fetchedUrls: string[] = [];
+  const fetchCache = new Map<string, string>();
+  let totalContentBytes = 0;
   return {
     validUrls,
-    recordHits(hits: SearchHit[]) {
-      for (const hit of hits) validUrls.add(hit.url);
+    searchQueries,
+    retrievedUrls,
+    fetchedUrls,
+    recordSearchQueries(queries: string[]) {
+      for (const q of queries) {
+        if (typeof q === "string" && q.length > 0) searchQueries.push(q);
+      }
     },
-    recordUrl(url: string) {
+    recordHits(hits: SearchHit[]) {
+      for (const hit of hits) {
+        validUrls.add(hit.url);
+        retrievedUrls.push(hit.url);
+        if (Array.isArray(hit.sections)) {
+          for (const section of hit.sections) {
+            if (section.anchor) validUrls.add(`${hit.url}#${section.anchor}`);
+          }
+        }
+      }
+    },
+    recordUrl(url: string, anchor?: string) {
       validUrls.add(url);
+      if (anchor) validUrls.add(`${url}#${anchor}`);
+      fetchedUrls.push(anchor ? `${url}#${anchor}` : url);
+    },
+    /**
+     * Trim a search batch so it fits within both the per-call (60 KB) and the
+     * per-turn cumulative (80 KB) budgets. Drops lowest-ranked envelopes first
+     * and warns when truncation happens.
+     */
+    budgetSearchResults(hits: SearchHit[]): SearchHit[] {
+      const callBudget = Math.min(SEARCH_CALL_CAP, TURN_BYTE_BUDGET - totalContentBytes);
+      if (callBudget <= 0) {
+        console.warn(`[turn] retrieval budget exhausted; dropping all ${hits.length} search results`);
+        return [];
+      }
+      const kept: SearchHit[] = [];
+      let used = 0;
+      for (const hit of hits) {
+        const size = envelopeBytes(hit);
+        if (used + size > callBudget) break;
+        kept.push(hit);
+        used += size;
+      }
+      if (kept.length < hits.length) {
+        console.warn(
+          `[turn] truncated search results from ${hits.length} to ${kept.length} (budget=${callBudget}B, used=${used}B)`,
+        );
+      }
+      totalContentBytes += used;
+      return kept;
+    },
+    /**
+     * Truncate fetched page content so the cumulative turn budget is not
+     * exceeded. Returns null if no room is left at all.
+     */
+    budgetFetchedContent(content: string): string | null {
+      const remaining = TURN_BYTE_BUDGET - totalContentBytes;
+      if (remaining <= 0) {
+        console.warn(`[turn] retrieval budget exhausted; dropping fetched content`);
+        return null;
+      }
+      if (content.length <= remaining) {
+        totalContentBytes += content.length;
+        return content;
+      }
+      console.warn(`[turn] truncating fetched content ${content.length}B -> ${remaining}B`);
+      totalContentBytes += remaining;
+      return content.slice(0, remaining).trimEnd() + "\n\n…[truncated]";
+    },
+    cacheFetched(key: string, content: string) {
+      fetchCache.set(key, content);
+    },
+    getFetched(key: string): string | undefined {
+      return fetchCache.get(key);
+    },
+    snapshot(): {
+      searchQueries: string[];
+      retrievedUrls: string[];
+      fetchedUrls: string[];
+      citedUrls: string[];
+    } {
+      return {
+        searchQueries: [...searchQueries],
+        retrievedUrls: [...retrievedUrls],
+        fetchedUrls: [...fetchedUrls],
+        citedUrls: [...validUrls],
+      };
     },
   };
 }
@@ -177,24 +314,30 @@ function buildSearchTool(turn: TurnState) {
         .describe("Maximum number of pages to return per query."),
     }),
     execute: async ({ query, limit }) => {
-      try {
-        const queries = Array.isArray(query) ? query : [query];
-        const batches = await Promise.all(queries.map((q) => searchDocs(q, limit)));
-        // RRF-fuse across query batches so URLs that consistently rank mid in
-        // multiple batches outrank one-off top hits; cap at 2x limit (<=20).
-        const fusedLimit = Math.min(limit * 2, 20);
-        const fused = rrfFuse(batches, fusedLimit);
-        const merged = fused.map(wrapHit);
-        turn.recordHits(merged);
-        return { results: merged };
-      } catch (err) {
-        console.warn(`[search] tool error: ${(err as Error).message}`);
+      const queries = Array.isArray(query) ? query : [query];
+      turn.recordSearchQueries(queries);
+      const settled = await Promise.allSettled(queries.map((q) => searchDocs(q, limit)));
+      const batches: SearchHit[][] = [];
+      for (const r of settled) {
+        if (r.status === "fulfilled") batches.push(r.value);
+        else console.warn(`[search] sub-query failed: ${(r.reason as Error)?.message}`);
+      }
+      if (batches.length === 0) {
         return {
           error:
             "The documentation search is temporarily unavailable. Tell the user the docs " +
             "search is down and to try again shortly; do not answer from memory.",
         };
       }
+      // RRF-fuse across query batches so URLs that consistently rank mid in
+      // multiple batches outrank one-off top hits; cap at 2x limit (<=20).
+      const fusedLimit = Math.min(limit * 2, 20);
+      const fused = rrfFuse(batches, fusedLimit);
+      const wrapped = fused.map(wrapHit);
+      // Apply per-turn byte budget: drop lowest-ranked entries until under cap.
+      const merged = turn.budgetSearchResults(wrapped);
+      turn.recordHits(merged);
+      return { results: merged };
     },
   });
 }
@@ -231,14 +374,26 @@ function buildFetchPageTool(turn: TurnState) {
         ),
     }),
     execute: async ({ url, anchor }) => {
+      const cacheKey = `${url}#${anchor ?? ""}`;
+      const cached = turn.getFetched(cacheKey);
+      if (cached !== undefined) {
+        turn.recordUrl(url, anchor);
+        const wrapped = `<doc url="${url}">\n${escapeDocEnvelope(cached)}\n</doc>`;
+        return { url, content: wrapped };
+      }
       const path = url.slice(config.docsBaseUrl.length);
       try {
         const content = await fetchPageContent(path, anchor);
         if (!content) {
           return { error: `No content available for ${url}.` };
         }
-        turn.recordUrl(url);
-        const wrapped = `<doc url="${url}">\n${escapeDocEnvelope(content)}\n</doc>`;
+        const budgeted = turn.budgetFetchedContent(content);
+        if (budgeted === null) {
+          return { error: `Retrieval budget exhausted; cannot fetch more pages this turn.` };
+        }
+        turn.cacheFetched(cacheKey, budgeted);
+        turn.recordUrl(url, anchor);
+        const wrapped = `<doc url="${url}">\n${escapeDocEnvelope(budgeted)}\n</doc>`;
         return { url, content: wrapped };
       } catch (err) {
         console.warn(`[fetch_page] tool error: ${(err as Error).message}`);
@@ -342,6 +497,7 @@ const MARKDOWN_LINK = /\[([^\]\n]+)\]\((\S+?)\)/g;
  */
 function citationValidatorStream(
   validUrls: Set<string>,
+  onAssistantText?: (text: string) => void,
 ): TransformStream<UIMessageChunk, UIMessageChunk> {
   interface BufState {
     buf: string;
@@ -432,6 +588,7 @@ function citationValidatorStream(
       if (chunk.type === "text-delta") {
         const id = chunk.id;
         const state = getState(id);
+        if (onAssistantText && typeof chunk.delta === "string") onAssistantText(chunk.delta);
         const buffered = state.buf + chunk.delta;
         const safe = findSafeBoundary(buffered);
         const flushable = rewriteRespectingFences(state, buffered.slice(0, safe));
@@ -481,6 +638,14 @@ export interface ChatRunResult {
   toUIMessageStreamResponse(options?: UIMessageStreamOptions<UIMessage>): Response;
 }
 
+export interface TurnTelemetry {
+  searchQueries: string[];
+  retrievedUrls: string[];
+  fetchedUrls: string[];
+  citedUrls: string[];
+  noAnswer: boolean;
+}
+
 export interface RunChatOpts {
   onFinish?: (info: {
     tokensIn?: number;
@@ -488,7 +653,10 @@ export interface RunChatOpts {
     finishReason?: string;
     toolCalls?: number;
   }) => void;
+  onTelemetry?: (snapshot: TurnTelemetry) => void;
 }
+
+const NO_ANSWER_MARKERS = ["don't appear to cover this", "I only answer from the TON docs"];
 
 /**
  * Run a chat turn. Returns a wrapper whose `toUIMessageStreamResponse(opts)`
@@ -562,6 +730,7 @@ export async function runChat(
     },
     // Deterministic output: this is grounded extraction, not creative writing.
     temperature: 0,
+    maxOutputTokens: 1024,
     stopWhen: stepCountIs(6),
     toolChoice: "auto",
     // Cost guard on pilot tier: one retry is enough to ride out a transient
@@ -584,9 +753,38 @@ export async function runChat(
 
   return {
     toUIMessageStreamResponse(options) {
+      let assistantText = "";
+      let telemetryEmitted = false;
+      const emitTelemetry = () => {
+        if (telemetryEmitted) return;
+        telemetryEmitted = true;
+        if (!opts?.onTelemetry) return;
+        const snap = turn.snapshot();
+        const noAnswer = NO_ANSWER_MARKERS.some((m) => assistantText.includes(m));
+        opts.onTelemetry({
+          searchQueries: snap.searchQueries,
+          retrievedUrls: snap.retrievedUrls,
+          fetchedUrls: snap.fetchedUrls,
+          citedUrls: snap.citedUrls,
+          noAnswer,
+        });
+      };
+      const validator = citationValidatorStream(turn.validUrls, (delta) => {
+        assistantText += delta;
+      });
+      // Snapshot telemetry once the validator stream finishes draining.
+      const telemetryTap = new TransformStream<UIMessageChunk, UIMessageChunk>({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+        },
+        flush() {
+          emitTelemetry();
+        },
+      });
       const stream = result
         .toUIMessageStream<UIMessage>(options)
-        .pipeThrough(citationValidatorStream(turn.validUrls));
+        .pipeThrough(validator)
+        .pipeThrough(telemetryTap);
       return createUIMessageStreamResponse({ stream });
     },
   };

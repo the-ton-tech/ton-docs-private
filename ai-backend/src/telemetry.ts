@@ -27,6 +27,11 @@ export interface ChatTelemetry {
   finishReason?: string;
   toolCalls?: number;
   model?: string;
+  searchQueries?: string[];
+  retrievedUrls?: string[];
+  fetchedUrls?: string[];
+  citedUrls?: string[];
+  noAnswer?: boolean;
 }
 
 /** Emit one JSON log line for a completed /api/chat request. */
@@ -35,6 +40,24 @@ export function logChat(event: ChatTelemetry): void {
     JSON.stringify({
       ts: new Date().toISOString(),
       kind: "chat",
+      ...event,
+    }),
+  );
+}
+
+export interface FeedbackTelemetry {
+  ipHash: string;
+  requestId?: string;
+  verdict: "up" | "down";
+  reason?: string;
+}
+
+/** Emit one JSON log line for a /api/feedback submission. */
+export function logFeedback(event: FeedbackTelemetry): void {
+  console.log(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      kind: "feedback",
       ...event,
     }),
   );
