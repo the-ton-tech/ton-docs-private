@@ -21,6 +21,8 @@ export interface SearchHit {
   breadcrumbs: string;
   /** Matched section snippets joined with separators, or a fallback snippet. */
   content: string;
+  /** Per-section structured view of the same matched content. */
+  sections?: Array<{ heading: string | null; anchor?: string | null; snippet: string }>;
 }
 
 /**
@@ -33,6 +35,7 @@ interface OramaResult {
   content: string;
   url: string;
   breadcrumbs?: string[];
+  anchor?: string;
 }
 
 // Upper bound on a single hit's joined section content. The whole page is
@@ -87,6 +90,7 @@ export async function searchDocs(query: string, limit = 6): Promise<SearchHit[]>
   // page's matched content blocks. Regroup into pages, stopping at `limit`.
   interface Section {
     heading: string | null;
+    anchor: string | null;
     parts: string[];
   }
   interface Grouped {
@@ -112,12 +116,18 @@ export async function searchDocs(query: string, limit = 6): Promise<SearchHit[]>
       groups.push(current);
     } else if (current) {
       if (entry.type === "heading") {
-        currentSection = { heading: entry.content?.trim() || null, parts: [] };
+        currentSection = {
+          heading: entry.content?.trim() || null,
+          anchor: entry.anchor ?? null,
+          parts: [],
+        };
         current.sections.push(currentSection);
       } else if (entry.type === "text" && entry.content) {
         if (!currentSection) {
-          currentSection = { heading: null, parts: [] };
+          currentSection = { heading: null, anchor: entry.anchor ?? null, parts: [] };
           current.sections.push(currentSection);
+        } else if (currentSection.anchor === null && entry.anchor) {
+          currentSection.anchor = entry.anchor;
         }
         currentSection.parts.push(entry.content);
       }
@@ -126,6 +136,22 @@ export async function searchDocs(query: string, limit = 6): Promise<SearchHit[]>
 
   return groups.map((group): SearchHit => {
     const sectionContent = renderSections(group.sections);
+    // Cap total sections[].snippet length per hit at HIT_CONTENT_MAX so the
+    // structured payload never exceeds the budget the single `content` field
+    // used to enforce (8 × 800 = 6.4 KB would otherwise blow the context).
+    const sections: Array<{ heading: string | null; anchor: string | null; snippet: string }> = [];
+    let used = 0;
+    for (const section of group.sections) {
+      const raw = section.parts.join("\n").trim();
+      if (!raw && !section.heading) continue;
+      const remaining = HIT_CONTENT_MAX - used;
+      if (remaining <= 0) break;
+      const max = Math.min(SECTION_SNIPPET_MAX, remaining);
+      const snippet = truncateSnippet(raw, max);
+      if (!snippet && !section.heading) continue;
+      sections.push({ heading: section.heading, anchor: section.anchor, snippet });
+      used += snippet.length;
+    }
     return {
       title: group.title,
       // Build the absolute, canonical URL once here so the model never has
@@ -133,8 +159,32 @@ export async function searchDocs(query: string, limit = 6): Promise<SearchHit[]>
       url: `${config.docsBaseUrl}${group.path}`,
       breadcrumbs: group.breadcrumbs,
       content: sectionContent || snippetFallback(group.sections),
+      sections: sections.length > 0 ? sections : undefined,
     };
   });
+}
+
+// Per-section soft cap (also bounded by the per-hit total via HIT_CONTENT_MAX).
+const SECTION_SNIPPET_MAX = 800;
+
+/**
+ * Truncate a snippet to at most `max` chars, preferring a newline boundary
+ * in the [max-200, max] window so we don't slice mid-code-fence. If the
+ * resulting snippet contains an odd number of triple-backtick fences (i.e.
+ * we cut inside an open fence), append a closing fence so downstream
+ * Markdown rendering doesn't bleed into surrounding content.
+ */
+function truncateSnippet(input: string, max: number): string {
+  if (input.length <= max) return input;
+  const windowStart = Math.max(0, max - 200);
+  const slice = input.slice(0, max);
+  const lastNewline = slice.lastIndexOf("\n");
+  const cut =
+    lastNewline >= windowStart ? input.slice(0, lastNewline).trimEnd() : slice.trimEnd();
+  // Count ``` fences; if odd, we sliced inside an open code block.
+  const fenceMatches = cut.match(/```/g);
+  const needsCloser = fenceMatches !== null && fenceMatches.length % 2 === 1;
+  return needsCloser ? cut + "\n```" : cut;
 }
 
 /**

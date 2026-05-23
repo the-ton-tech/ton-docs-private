@@ -16,30 +16,65 @@ const FETCH_TIMEOUT_MS = 4000;
 // (long glossaries, specs) exceed this; the tail is then truncated.
 const CONTENT_MAX = 20000;
 
-/**
- * Fetch one page's full Markdown by its doc path (e.g.
- * "/blockchain-basics/tvm/overview"). Resolves to null when the page has no
- * stored content or the request fails — the caller then falls back to the
- * search snippet, so a content outage degrades gracefully.
- */
-export async function fetchPageContent(path: string): Promise<string | null> {
-  const endpoint = `${config.oramaSearchUrl}/page?url=${encodeURIComponent(path)}`;
+// Discriminated result so the caller can distinguish a 404 (worth retrying
+// without an anchor — the model may have hallucinated the fragment) from an
+// empty body or a network error (both terminal).
+type PageResult =
+  | { kind: "ok"; content: string }
+  | { kind: "not_found" }
+  | { kind: "empty" }
+  | { kind: "error" };
 
+async function requestPage(path: string, anchor?: string): Promise<PageResult> {
+  let endpoint = `${config.oramaSearchUrl}/page?url=${encodeURIComponent(path)}`;
+  if (anchor) endpoint += `&anchor=${encodeURIComponent(anchor)}`;
+
+  let res: Response;
   try {
-    const res = await fetch(endpoint, {
+    res = await fetch(endpoint, {
       headers: { "User-Agent": "ton-docs-ai/1.0" },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
-    if (!res.ok) return null;
-    const body = (await res.json()) as { content?: unknown };
-    if (typeof body.content !== "string") return null;
+  } catch {
+    return { kind: "error" };
+  }
+  if (res.status === 404) return { kind: "not_found" };
+  if (!res.ok) return { kind: "error" };
 
-    const content = body.content.trim();
-    if (content.length === 0) return null;
-    return content.length > CONTENT_MAX
+  let body: { content?: unknown };
+  try {
+    body = (await res.json()) as { content?: unknown };
+  } catch {
+    return { kind: "error" };
+  }
+  if (typeof body.content !== "string") return { kind: "empty" };
+
+  const content = body.content.trim();
+  if (content.length === 0) return { kind: "empty" };
+  const truncated =
+    content.length > CONTENT_MAX
       ? content.slice(0, CONTENT_MAX).trimEnd() + "\n\n…[page truncated]"
       : content;
-  } catch {
-    return null;
+  return { kind: "ok", content: truncated };
+}
+
+/**
+ * Fetch one page's full Markdown by its doc path (e.g.
+ * "/blockchain-basics/tvm/overview"). When `anchor` is provided, the Orama
+ * service slices the response to that section. Resolves to null when the
+ * page has no stored content or the request fails — the caller then falls
+ * back to the search snippet, so a content outage degrades gracefully.
+ *
+ * Only a true 404 on the anchored request triggers a retry without the
+ * anchor (the model may have hallucinated the fragment). An empty body or
+ * a network error returns null directly — retrying wouldn't change anything.
+ */
+export async function fetchPageContent(path: string, anchor?: string): Promise<string | null> {
+  const first = await requestPage(path, anchor);
+  if (first.kind === "ok") return first.content;
+  if (first.kind === "not_found" && anchor) {
+    const retry = await requestPage(path);
+    return retry.kind === "ok" ? retry.content : null;
   }
+  return null;
 }
