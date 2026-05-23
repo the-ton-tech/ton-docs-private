@@ -20,13 +20,46 @@ const CHUNK_OVERLAP_CHARS = 200
 const CHUNK_BOUNDARY_RADIUS = 200
 
 /**
+ * If a chunk would end inside an open Markdown fence, extend `cut` past the
+ * next closing fence line so neither this chunk nor the next one carries
+ * orphaned fence content (which pollutes BM25 with code tokens attributed
+ * to prose, or vice versa). Returns `cut` unchanged when the slice has
+ * balanced fences.
+ */
+function balanceFences(text: string, start: number, cut: number): number {
+  let inFence = false
+  let i = start
+  while (i < cut) {
+    const nl = text.indexOf("\n", i)
+    const lineEnd = nl < 0 ? cut : Math.min(nl, cut)
+    if (/^(```|~~~)/.test(text.slice(i, lineEnd))) inFence = !inFence
+    if (nl < 0 || nl >= cut) break
+    i = nl + 1
+  }
+  if (!inFence) return cut
+  let j = cut
+  while (j < text.length) {
+    const nl = text.indexOf("\n", j)
+    const lineEnd = nl < 0 ? text.length : nl
+    if (/^(```|~~~)/.test(text.slice(j, lineEnd))) {
+      return nl < 0 ? text.length : nl + 1
+    }
+    if (nl < 0) return text.length
+    j = nl + 1
+  }
+  return cut
+}
+
+/**
  * Split a long content block into ~CHUNK_TARGET_CHARS windows with
  * CHUNK_OVERLAP_CHARS overlap so the tail of an oversized section is no
  * longer dropped. Prefers a paragraph (`\n\n`) breakpoint within
  * ±CHUNK_BOUNDARY_RADIUS of the target window edge; falls back to a
  * sentence boundary (`. `) in the same radius; absolute fallback is a
- * hard char split at the target edge. Returns the input as a single
- * window when it already fits under MAX_BLOCK_CHARS.
+ * hard char split at the target edge. After picking a boundary, any cut
+ * that would land inside an open Markdown fence is extended past the
+ * closing fence so per-window BM25 stays clean. Returns the input as a
+ * single window when it already fits under MAX_BLOCK_CHARS.
  *
  * Why overlap: a multi-word phrase or co-occurrence pattern that straddles
  * a chunk boundary would otherwise be unindexable; the overlap restores
@@ -74,6 +107,7 @@ function chunkBlockContent(text: string): string[] {
     }
     // Hard fallback: target edge exactly.
     if (cut < 0) cut = targetEnd
+    cut = balanceFences(text, start, cut)
     chunks.push(text.slice(start, cut))
     const nextStart = cut - CHUNK_OVERLAP_CHARS
     // Guard forward progress: overlap must not stall on the same start index.

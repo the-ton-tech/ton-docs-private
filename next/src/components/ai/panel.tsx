@@ -2,6 +2,7 @@
 import {
   type ComponentProps,
   type SyntheticEvent,
+  memo,
   useEffect,
   useMemo,
   useRef,
@@ -408,17 +409,29 @@ function List({
     if (!containerRef.current) return
     const container = containerRef.current
 
-    function callback() {
-      if (!container) return
-      if (pinnedRef.current) {
-        container.scrollTo({top: container.scrollHeight, behavior: "instant"})
-        setShowJump(false)
-      } else {
-        setShowJump(true)
-      }
+    // Streaming code blocks (Shiki) resize multiple times as they hydrate, so
+    // the observer fires in tight bursts. Coalesce to one rAF tick and skip
+    // the imperative scrollTo while the user has scrolled in the last 250ms —
+    // otherwise the autoscroll yanks the viewport mid-read.
+    let rafId = 0
+    let lastUserScrollAt = 0
+    const callback = () => {
+      if (rafId) return
+      rafId = requestAnimationFrame(() => {
+        rafId = 0
+        if (!container) return
+        if (Date.now() - lastUserScrollAt < 250) return
+        if (pinnedRef.current) {
+          container.scrollTo({top: container.scrollHeight, behavior: "instant"})
+          setShowJump(false)
+        } else {
+          setShowJump(true)
+        }
+      })
     }
 
     function onScroll() {
+      lastUserScrollAt = Date.now()
       if (!container) return
       const atBottom = isAtBottom(container)
       pinnedRef.current = atBottom
@@ -433,6 +446,7 @@ function List({
     container.addEventListener("scroll", onScroll, {passive: true})
 
     return () => {
+      if (rafId) cancelAnimationFrame(rafId)
       observer.disconnect()
       container.removeEventListener("scroll", onScroll)
     }
@@ -592,7 +606,13 @@ function ToolActivity({part}: {part: ToolUIPartLike}) {
   )
 }
 
-function MessageParts({message}: {message: ChatUIMessage}) {
+function MessageParts({
+  message,
+  streaming,
+}: {
+  message: ChatUIMessage
+  streaming: boolean
+}) {
   return (
     <>
       {(message.parts ?? []).map((part, i) => {
@@ -600,7 +620,7 @@ function MessageParts({message}: {message: ChatUIMessage}) {
           if (part.text.trim().length === 0) return null
           return (
             <div key={i} className="prose text-sm">
-              <Markdown text={part.text} />
+              <Markdown text={part.text} streaming={streaming} />
             </div>
           )
         }
@@ -647,7 +667,7 @@ function FeedbackButtons({
   messageId: string
   disabled: boolean
 }) {
-  const {feedbackByMessage, recordFeedback, lastRequestId} = useAISearchContext()
+  const {feedbackByMessage, recordFeedback, requestIdByMessage} = useAISearchContext()
   const verdict = feedbackByMessage[messageId]
   const [thanks, setThanks] = useState(false)
 
@@ -662,7 +682,11 @@ function FeedbackButtons({
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           verdict: v,
-          requestId: lastRequestId.current ?? undefined,
+          // Per-message request id; falls back to undefined for messages
+          // submitted before the binding effect ran (e.g. restored from
+          // localStorage). Never use a shared "latest" id, which mis-attributes
+          // older verdicts to the most recent request.
+          requestId: requestIdByMessage[messageId] ?? undefined,
         }),
         keepalive: true,
       })
@@ -720,7 +744,7 @@ function FeedbackButtons({
   )
 }
 
-function Message({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
+function MessageImpl({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
   const {regenerate, status, messages, setMessages} = useChatContext()
   const {setInput, stoppedMessageIds} = useAISearchContext()
   const isAssistant = message.role === "assistant"
@@ -758,7 +782,7 @@ function Message({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
         {roleName[message.role] ?? "unknown"}
       </p>
       <div className="flex flex-col gap-1.5">
-        <MessageParts message={message} />
+        <MessageParts message={message} streaming={isStreamingThis} />
         {isStreamingThis && hasRenderableContent(message) && (
           <ToolStatusRow icon={Search} label={stageLabel(status, message)} busy />
         )}
@@ -814,6 +838,17 @@ function Message({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
     </div>
   )
 }
+
+// Custom comparator: `useChat` rebuilds `chat.messages` on every chunk, but
+// past messages keep object identity — so a strict `===` on `message` skips
+// re-rendering finished messages entirely while letting the streaming tail
+// (whose `parts` array is patched in place under a stable id) still re-render
+// via the parent's reference update. `isLast` is included so the
+// regenerate/edit affordances appear/disappear correctly when the tail moves.
+const Message = memo(
+  MessageImpl,
+  (prev, next) => prev.message === next.message && prev.isLast === next.isLast,
+)
 
 function LoadingDots({label}: {label?: string}) {
   return (
@@ -925,18 +960,24 @@ function ErrorCard({error, onRetry}: {error: Error; onRetry: () => void}) {
   )
 }
 
-function getFocusableElements(root: HTMLElement): HTMLElement[] {
-  const selector = [
-    "a[href]",
-    "button:not([disabled])",
-    "textarea:not([disabled])",
-    "input:not([disabled])",
-    "select:not([disabled])",
-    "[tabindex]:not([tabindex='-1'])",
-  ].join(",")
-  return Array.from(root.querySelectorAll<HTMLElement>(selector)).filter(
-    el => !el.hasAttribute("aria-hidden") && el.offsetParent !== null,
+const FOCUSABLE_SELECTOR =
+  "a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"
+
+// Picks the first/last interactive element inside `root`, skipping the focus
+// sentinels themselves (data-focus-sentinel) and elements that are not laid
+// out. Only runs when a sentinel actually receives focus — i.e. when the user
+// has Tabbed past the dialog boundary — so we no longer walk the DOM on every
+// Tab keystroke (the previous implementation did, and the transcript subtree
+// can be hundreds of nodes while streaming).
+function focusEdgeInside(root: HTMLElement | null, edge: "first" | "last"): void {
+  if (!root) return
+  const all = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+  const candidates = all.filter(
+    el => el.dataset.focusSentinel === undefined && el.offsetParent !== null,
   )
+  if (candidates.length === 0) return
+  const target = edge === "first" ? candidates[0] : candidates[candidates.length - 1]
+  target.focus()
 }
 
 export default function AISearchPanel() {
@@ -945,38 +986,13 @@ export default function AISearchPanel() {
   const restoreFocusRef = useRef<HTMLElement | null>(null)
   const reducedMotion = useReducedMotion()
 
+  // Capture the element to restore focus to on open, restore on close.
+  // The Tab-trap itself is implemented via two sentinel <div>s inside the
+  // dialog (see render below) — no document keydown listener required.
   useEffect(() => {
     if (!open) return
     restoreFocusRef.current = document.activeElement as HTMLElement | null
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== "Tab") return
-      const root = dialogRef.current
-      if (!root) return
-      const focusables = getFocusableElements(root)
-      if (focusables.length === 0) {
-        e.preventDefault()
-        return
-      }
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
-      const active = document.activeElement as HTMLElement | null
-      if (e.shiftKey) {
-        if (active === first || !root.contains(active)) {
-          e.preventDefault()
-          last.focus()
-        }
-      } else {
-        if (active === last) {
-          e.preventDefault()
-          first.focus()
-        }
-      }
-    }
-
-    document.addEventListener("keydown", onKeyDown)
     return () => {
-      document.removeEventListener("keydown", onKeyDown)
       const target = restoreFocusRef.current
       if (target && typeof target.focus === "function") {
         setTimeout(() => target.focus(), 0)
@@ -1029,7 +1045,14 @@ export default function AISearchPanel() {
           ref={dialogRef}
           role="dialog"
           aria-label="Ask AI"
-          aria-modal="true"
+          aria-modal={open ? "true" : undefined}
+          aria-hidden={open ? undefined : true}
+          // `inert` makes the closed dialog non-interactive AND removes it from
+          // the AT tree even while Presence is keeping it mounted for the exit
+          // animation. Spread via cast: the React 18 type wants a boolean, the
+          // React 19 type wants an empty string — neither matches our intent
+          // exactly (omit when open, present when closed).
+          {...((open ? {} : {inert: true}) as Record<string, unknown>)}
           className={cn(
             "overflow-hidden z-30 bg-fd-background text-fd-foreground [--ai-chat-width:400px] 2xl:[--ai-chat-width:460px]",
             "max-lg:fixed max-lg:inset-3 max-lg:border max-lg:rounded-2xl max-lg:shadow-xl",
@@ -1041,6 +1064,16 @@ export default function AISearchPanel() {
               : "animate-fd-dialog-out lg:animate-[ask-ai-close_200ms]",
           )}
         >
+          {/* Leading focus sentinel: a Shift+Tab off the first interactive
+              element lands here and bounces focus to the last interactive
+              element inside the dialog. Trailing sentinel does the reverse. */}
+          <div
+            tabIndex={0}
+            data-focus-sentinel="start"
+            aria-hidden="true"
+            style={{position: "absolute", width: 1, height: 1, opacity: 0}}
+            onFocus={() => focusEdgeInside(dialogRef.current, "last")}
+          />
           <div className="flex flex-col size-full gap-2 p-2 lg:p-3 lg:w-(--ai-chat-width)">
             <AISearchPanelHeader />
             <AISearchPanelList className="flex-1" />
@@ -1051,6 +1084,13 @@ export default function AISearchPanel() {
               </div>
             </div>
           </div>
+          <div
+            tabIndex={0}
+            data-focus-sentinel="end"
+            aria-hidden="true"
+            style={{position: "absolute", width: 1, height: 1, opacity: 0}}
+            onFocus={() => focusEdgeInside(dialogRef.current, "first")}
+          />
         </div>
       </Presence>
     </>

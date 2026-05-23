@@ -652,8 +652,9 @@ export interface RunChatOpts {
     tokensOut?: number;
     finishReason?: string;
     toolCalls?: number;
+    truncated?: boolean;
   }) => void;
-  onTelemetry?: (snapshot: TurnTelemetry) => void;
+  onTelemetry?: (snapshot: TurnTelemetry & { ttftMs?: number }) => void;
 }
 
 const NO_ANSWER_MARKERS = ["don't appear to cover this", "I only answer from the TON docs"];
@@ -746,14 +747,23 @@ export async function runChat(
             toolCalls: Array.isArray(steps)
               ? steps.reduce((n, s) => n + (Array.isArray(s.toolCalls) ? s.toolCalls.length : 0), 0)
               : 0,
+            // `length` is the AI SDK's finishReason for output-token cap. Surface
+            // it as a discrete flag so operators can graph truncation rate.
+            truncated: finishReason === "length",
           });
         }
       : undefined,
   });
 
+  // Measure time-to-first-text from when streamText was constructed. This
+  // separates "slow handshake / slow model" from "slow tool loop" in the
+  // existing wall-clock duration metric, which we previously could not.
+  const streamStartedAt = Date.now();
+
   return {
     toUIMessageStreamResponse(options) {
       let assistantText = "";
+      let ttftMs: number | undefined;
       let telemetryEmitted = false;
       const emitTelemetry = () => {
         if (telemetryEmitted) return;
@@ -767,9 +777,13 @@ export async function runChat(
           fetchedUrls: snap.fetchedUrls,
           citedUrls: snap.citedUrls,
           noAnswer,
+          ttftMs,
         });
       };
       const validator = citationValidatorStream(turn.validUrls, (delta) => {
+        if (ttftMs === undefined && delta.length > 0) {
+          ttftMs = Date.now() - streamStartedAt;
+        }
         assistantText += delta;
       });
       // Snapshot telemetry once the validator stream finishes draining.

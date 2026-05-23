@@ -994,6 +994,11 @@ export async function runRankedSearch(
     // `anchorFromHeadingText` mirrors the explicit-id-aware derivation
     // there so both rankers produce identical anchor strings.
     let currentAnchor: string | null = null
+    // Same-page near-dup guard: chunkBlockContent emits overlapping windows
+    // (200-char overlap), so two `text` hits on one page can share the same
+    // opening sentence. We dedupe by the first 80 chars — enough to collapse
+    // the overlap region without merging genuinely distinct passages.
+    const seenTextPrefix = new Set<string>()
     for (const doc of hits) {
       const type = doc.type === "head" ? "heading" : doc.type
       let anchor: string | null = null
@@ -1002,6 +1007,11 @@ export async function runRankedSearch(
         currentAnchor = anchor
       } else if (type === "text") {
         anchor = currentAnchor
+        const prefix = (doc.content ?? "").trim().slice(0, 80)
+        if (prefix.length > 0) {
+          if (seenTextPrefix.has(prefix)) continue
+          seenTextPrefix.add(prefix)
+        }
       }
       raw.push({
         id: String(doc.id),

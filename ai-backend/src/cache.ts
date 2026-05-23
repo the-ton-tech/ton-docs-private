@@ -137,8 +137,15 @@ export function getOrAwait(key: string): Promise<CacheEntry | null> | null {
   return inflight.get(key) ?? null;
 }
 
-/** Build a Response that replays a cached stream entry. */
-export function replayCached(entry: CacheEntry): Response {
+/**
+ * Build a Response that replays a cached stream entry. `cacheStatus` is
+ * surfaced as the `x-cache` header so operators can distinguish hot hits
+ * from stale-while-revalidate responses.
+ */
+export function replayCached(
+  entry: CacheEntry,
+  cacheStatus: "HIT" | "STALE" = "HIT",
+): Response {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       for (const chunk of entry.chunks) controller.enqueue(chunk);
@@ -147,7 +154,7 @@ export function replayCached(entry: CacheEntry): Response {
   });
   return new Response(stream, {
     status: entry.status,
-    headers: { ...entry.headers, "x-cache": "HIT" },
+    headers: { ...entry.headers, "x-cache": cacheStatus },
   });
 }
 

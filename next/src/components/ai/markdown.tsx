@@ -78,8 +78,13 @@ const compactHeading = (Tag: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") =>
     )
   }
 
-function createProcessor(): Processor {
-  const processor = remark().use(remarkGfm).use(remarkRehype).use(rehypeWrapWords)
+function createProcessor({wrapWords = true}: {wrapWords?: boolean} = {}): Processor {
+  // While streaming we render hundreds of intermediate snapshots per answer;
+  // `rehypeWrapWords` emits one <span> per word, so a 2000-word answer adds
+  // ~2000 nodes per snapshot of pure fade-in chrome. Skip it on the streaming
+  // path and only run the fade pass once, on the final snapshot.
+  const base = remark().use(remarkGfm).use(remarkRehype)
+  const processor = wrapWords ? base.use(rehypeWrapWords) : base
 
   return {
     async process(content) {
@@ -181,24 +186,58 @@ function Anchor({href, ...props}: ComponentProps<"a">) {
   return <DefaultAnchor href={internal ?? href} {...props} />
 }
 
-const processor = createProcessor()
+const finalProcessor = createProcessor()
+const streamingProcessor = createProcessor({wrapWords: false})
 
-export function Markdown({text}: {text: string}) {
+export function Markdown({text, streaming = false}: {text: string; streaming?: boolean}) {
   const deferredText = useDeferredValue(text)
 
   return (
-    <Suspense fallback={<p className="invisible">{text}</p>}>
-      <Renderer text={deferredText} />
+    // Fallback was previously the entire raw markdown wrapped in `invisible`,
+    // which reserved layout space sized to the raw string length (CLS when the
+    // rendered JSX is shorter), polluted screen readers, and made copy-paste
+    // capture markup. A non-breaking space + aria-hidden is enough to keep
+    // Suspense happy without surfacing any content.
+    <Suspense fallback={<p className="invisible" aria-hidden="true">{"\u00A0"}</p>}>
+      <Renderer text={deferredText} streaming={streaming} />
     </Suspense>
   )
 }
 
+// Bounded LRU. Previously a module-level Map with no eviction: a 1500-token
+// answer produced ~1500 distinct keys (one per prefix snapshot) and held them
+// for the session's lifetime. Cap is generous enough to keep recent snapshots
+// for back-scrolling without unbounded growth across a long session. Keys
+// distinguish streaming vs final renders because the two processors produce
+// different node trees.
+const CACHE_MAX = 64
 const cache = new Map<string, Promise<ReactNode>>()
 
-function Renderer({text}: {text: string}) {
-  const result = cache.get(text) ?? processor.process(text)
-  cache.set(text, result)
+function cacheGet(key: string): Promise<ReactNode> | undefined {
+  const hit = cache.get(key)
+  if (!hit) return undefined
+  cache.delete(key)
+  cache.set(key, hit)
+  return hit
+}
 
+function cachePut(key: string, value: Promise<ReactNode>): void {
+  while (cache.size >= CACHE_MAX) {
+    const oldest = cache.keys().next().value
+    if (oldest === undefined) break
+    cache.delete(oldest)
+  }
+  cache.set(key, value)
+}
+
+function Renderer({text, streaming}: {text: string; streaming: boolean}) {
+  const proc = streaming ? streamingProcessor : finalProcessor
+  const key = `${streaming ? "s" : "f"}:${text}`
+  let result = cacheGet(key)
+  if (!result) {
+    result = proc.process(text)
+    cachePut(key, result)
+  }
   return use(result)
 }
 

@@ -29,6 +29,7 @@ import {
   getCached,
   getOrAwait,
   interceptAndCache,
+  isStale,
   replayCached,
 } from "./cache.js";
 import { hashIp, latencySnapshot, logChat, logFeedback, recordLatency } from "./telemetry.js";
@@ -70,7 +71,11 @@ const INJECTION_MARKERS = [
   /<\/\s*doc\s*>/gi,
 ];
 function scrubUserText(text: string): string {
-  let out = text;
+  // NFKC collapses fullwidth / compatibility-decomposed lookalikes
+  // (e.g. `＜doc＞` → `<doc>`) so the literal-pattern regex below catches them.
+  // Then strip zero-width and RTL-override chars that smuggle markers past
+  // ASCII tokenization without surfacing visually.
+  let out = text.normalize("NFKC").replace(/[\u200B-\u200D\uFEFF\u202A-\u202E]/g, "");
   for (const re of INJECTION_MARKERS) out = out.replace(re, "");
   return out;
 }
@@ -179,6 +184,7 @@ app.post("/api/chat", async (c) => {
     tokensOut?: number;
     finishReason?: string;
     toolCalls?: number;
+    truncated?: boolean;
   } = {};
   let turnInfo: {
     searchQueries?: string[];
@@ -186,6 +192,7 @@ app.post("/api/chat", async (c) => {
     fetchedUrls?: string[];
     citedUrls?: string[];
     noAnswer?: boolean;
+    ttftMs?: number;
   } = {};
 
   const finish = (statusCode: number): void => {
@@ -249,8 +256,15 @@ app.post("/api/chat", async (c) => {
     const hit = getCached(key);
     if (hit) {
       cacheHit = true;
+      const stale = isStale(hit, Date.now());
+      if (stale && !getOrAwait(key)) {
+        // Stale-while-revalidate: serve the cached body now, refresh in the
+        // background. Gated by tryConsume inside scheduleRevalidate so a
+        // stale storm cannot drain the daily cap.
+        void scheduleRevalidate(key, messages, ip);
+      }
       finish(hit.status);
-      return replayCached(hit);
+      return replayCached(hit, stale ? "STALE" : "HIT");
     }
     // Single-flight: if an identical request is already streaming, await its
     // buffered entry instead of starting (and paying for) a fresh stream.
@@ -328,6 +342,7 @@ app.post("/api/chat", async (c) => {
             tokensOut: info.tokensOut,
             finishReason: info.finishReason,
             toolCalls: info.toolCalls,
+            truncated: info.truncated,
           };
         },
         onTelemetry: (snap) => {
@@ -337,6 +352,7 @@ app.post("/api/chat", async (c) => {
             fetchedUrls: snap.fetchedUrls,
             citedUrls: snap.citedUrls,
             noAnswer: snap.noAnswer,
+            ttftMs: snap.ttftMs,
           };
         },
       });
@@ -389,6 +405,53 @@ app.post("/api/chat", async (c) => {
 
   return handler;
 });
+
+/**
+ * Background refresh for a stale cache entry. Consumes a daily slot up front
+ * (so we never bypass the cap) and drains both branches of the tee'd stream
+ * so the cache fills. Errors are swallowed — the foreground request already
+ * shipped a usable stale body, so a failed refresh just leaves the entry
+ * stale until the next request retries.
+ */
+async function scheduleRevalidate(
+  key: string,
+  messages: UIMessage[],
+  ip: string,
+): Promise<void> {
+  if (tryConsume(ip) !== "ok") return;
+  let refunded = false;
+  try {
+    const result = await runChat(messages, new AbortController().signal);
+    const response = result.toUIMessageStreamResponse({
+      onError: () => {
+        if (!refunded) {
+          refund(ip);
+          refunded = true;
+        }
+        return "An error occurred while generating the response.";
+      },
+    });
+    const intercepted = interceptAndCache(response, key);
+    // Drain the client branch so the tee's queue can drop chunks instead of
+    // backpressuring the cache branch.
+    const reader = intercepted.response.body?.getReader();
+    if (reader) {
+      try {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done } = await reader.read();
+          if (done) break;
+        }
+      } catch {
+        /* ignore drain errors — the cache branch handles its own failure */
+      }
+    }
+    await intercepted.settled;
+  } catch (err) {
+    console.error("[chat] background revalidate failed:", err);
+    if (!refunded) refund(ip);
+  }
+}
 
 // --- Feedback ---------------------------------------------------------------
 app.post("/api/feedback", async (c) => {

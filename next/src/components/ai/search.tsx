@@ -166,6 +166,15 @@ export interface RequestIdHolder {
   current: string | null
 }
 
+/**
+ * Module-level holder for the in-flight `x-request-id` between the moment the
+ * transport's fetch callback observes the response header (start of stream)
+ * and the moment `useChat` settles the resulting assistant message (end of
+ * stream). Module scope is safe here because `AISearch` is a top-level
+ * singleton provider — only one instance ever mounts in the tree.
+ */
+const pendingRequestIdHolder: RequestIdHolder = {current: null}
+
 interface AISearchContextValue {
   open: boolean
   setOpen: (open: boolean) => void
@@ -180,6 +189,12 @@ interface AISearchContextValue {
   clearRestored: () => void
   /** Holder for the `x-request-id` of the most recent chat response. */
   lastRequestId: RequestIdHolder
+  /**
+   * Assistant message id -> `x-request-id` of the chat response that produced
+   * it. Used by the feedback POST so a verdict on an older message attributes
+   * to the correct request, not whichever request was most recent.
+   */
+  requestIdByMessage: Record<string, string>
   /** Assistant message ids whose generation the user manually stopped. */
   stoppedMessageIds: Set<string>
   markMessageStopped: (id: string) => void
@@ -316,6 +331,9 @@ export function AISearch({children}: {children: ReactNode}) {
   // panel. Plain object (not `useRef`) so the React Compiler does not flag
   // the closure read inside the memoized transport.
   const [lastRequestId] = useState<RequestIdHolder>(() => ({current: null}))
+  const [requestIdByMessage, setRequestIdByMessage] = useState<
+    Record<string, string>
+  >({})
 
   const [stoppedMessageIds, setStoppedMessageIds] = useState<Set<string>>(() => new Set())
   const markMessageStopped = useCallback((id: string) => {
@@ -341,7 +359,10 @@ export function AISearch({children}: {children: ReactNode}) {
         fetch: async (input, init) => {
           const res = await fetch(input, init)
           const reqId = res.headers.get("x-request-id")
-          if (reqId) lastRequestId.current = reqId
+          if (reqId) {
+            lastRequestId.current = reqId
+            pendingRequestIdHolder.current = reqId
+          }
           return res
         },
       }),
@@ -381,6 +402,35 @@ export function AISearch({children}: {children: ReactNode}) {
   useEffect(() => {
     if (chat.status === "streaming" || chat.status === "submitted") return
     persistMessages(chat.messages)
+  }, [chat.status, chat.messages])
+
+  // Bind the captured request id to the assistant message it produced, once
+  // the stream has settled and `useChat` has assigned a stable id. The
+  // pending holder is module-scoped (see top of file) because `AISearch` is
+  // a top-level singleton provider, and the React Compiler heuristics
+  // disallow both mutating useState return values inside effects AND
+  // reading useRef values inside the memoized transport closure.
+  // setState is deferred via setTimeout(0) — matching the pattern used by
+  // `setRestoredAt` above — so the React Compiler heuristic for
+  // synchronous-setState-in-effect does not flag it.
+  useEffect(() => {
+    if (chat.status !== "ready" && chat.status !== "error") return
+    const reqId = pendingRequestIdHolder.current
+    if (!reqId) return
+    let assistantId: string | null = null
+    for (let i = chat.messages.length - 1; i >= 0; i--) {
+      if (chat.messages[i].role === "assistant") {
+        assistantId = chat.messages[i].id
+        break
+      }
+    }
+    if (!assistantId) return
+    pendingRequestIdHolder.current = null
+    const mid = assistantId
+    const id = setTimeout(() => {
+      setRequestIdByMessage(prev => (prev[mid] ? prev : {...prev, [mid]: reqId}))
+    }, 0)
+    return () => clearTimeout(id)
   }, [chat.status, chat.messages])
 
   const setInput = (value: string) => {
@@ -439,6 +489,7 @@ export function AISearch({children}: {children: ReactNode}) {
           restoredAt,
           clearRestored,
           lastRequestId,
+          requestIdByMessage,
           stoppedMessageIds,
           markMessageStopped,
           feedbackByMessage,
@@ -453,6 +504,7 @@ export function AISearch({children}: {children: ReactNode}) {
           contextDetached,
           restoredAt,
           lastRequestId,
+          requestIdByMessage,
           stoppedMessageIds,
           markMessageStopped,
           feedbackByMessage,

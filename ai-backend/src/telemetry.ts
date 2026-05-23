@@ -24,6 +24,8 @@ export interface ChatTelemetry {
   tokensIn?: number;
   tokensOut?: number;
   upstreamMs?: number;
+  ttftMs?: number;
+  truncated?: boolean;
   finishReason?: string;
   toolCalls?: number;
   model?: string;

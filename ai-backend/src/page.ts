@@ -16,6 +16,40 @@ const FETCH_TIMEOUT_MS = 4000;
 // (long glossaries, specs) exceed this; the tail is then truncated.
 const CONTENT_MAX = 20000;
 
+// Cross-request LRU for /page bodies. Without this, a popular page is
+// re-fetched from Orama every time the model touches it (one `fetch_page`
+// per turn × every concurrent user). Bounded + TTL'd so a long-running
+// process can't accumulate stale content if the docs are redeployed.
+const PAGE_CACHE_MAX = 200;
+const PAGE_CACHE_TTL_MS = 5 * 60 * 1000;
+interface PageCacheEntry {
+  value: string;
+  expiresAt: number;
+}
+const pageCache = new Map<string, PageCacheEntry>();
+
+function pageCacheGet(key: string): string | null {
+  const hit = pageCache.get(key);
+  if (!hit) return null;
+  if (hit.expiresAt <= Date.now()) {
+    pageCache.delete(key);
+    return null;
+  }
+  // Touch: re-insert to move to MRU end (Map iteration is insertion order).
+  pageCache.delete(key);
+  pageCache.set(key, hit);
+  return hit.value;
+}
+
+function pageCacheSet(key: string, value: string): void {
+  while (pageCache.size >= PAGE_CACHE_MAX) {
+    const oldest = pageCache.keys().next().value;
+    if (oldest === undefined) break;
+    pageCache.delete(oldest);
+  }
+  pageCache.set(key, { value, expiresAt: Date.now() + PAGE_CACHE_TTL_MS });
+}
+
 // Discriminated result so the caller can distinguish a 404 (worth retrying
 // without an anchor — the model may have hallucinated the fragment) from an
 // empty body or a network error (both terminal).
@@ -70,11 +104,24 @@ async function requestPage(path: string, anchor?: string): Promise<PageResult> {
  * a network error returns null directly — retrying wouldn't change anything.
  */
 export async function fetchPageContent(path: string, anchor?: string): Promise<string | null> {
+  const key = `${path}#${anchor ?? ""}`;
+  const cached = pageCacheGet(key);
+  if (cached) return cached;
   const first = await requestPage(path, anchor);
-  if (first.kind === "ok") return first.content;
+  if (first.kind === "ok") {
+    pageCacheSet(key, first.content);
+    return first.content;
+  }
   if (first.kind === "not_found" && anchor) {
+    const retryKey = `${path}#`;
+    const retryCached = pageCacheGet(retryKey);
+    if (retryCached) return retryCached;
     const retry = await requestPage(path);
-    return retry.kind === "ok" ? retry.content : null;
+    if (retry.kind === "ok") {
+      pageCacheSet(retryKey, retry.content);
+      return retry.content;
+    }
+    return null;
   }
   return null;
 }
