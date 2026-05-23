@@ -11,12 +11,15 @@ import {
   Suspense,
   use,
   useDeferredValue,
+  useState,
 } from "react"
 import {Fragment, jsx, jsxs} from "react/jsx-runtime"
 import {DynamicCodeBlock} from "fumadocs-ui/components/dynamic-codeblock"
 import defaultMdxComponents from "fumadocs-ui/mdx"
 import {visit} from "unist-util-visit"
 import type {ElementContent, Root, RootContent} from "hast"
+import {Check, Copy} from "lucide-react"
+import {cn} from "../../lib/cn"
 
 export interface Processor {
   process: (content: string) => Promise<ReactNode>
@@ -103,6 +106,28 @@ function createProcessor(): Processor {
   }
 }
 
+function CodeCopyButton({text}: {text: string}) {
+  const [copied, setCopied] = useState(false)
+
+  return (
+    <button
+      type="button"
+      aria-label={copied ? "Code copied" : "Copy code"}
+      onClick={() => {
+        void navigator.clipboard?.writeText(text)?.then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        })
+      }}
+      className={cn(
+        "absolute top-2 end-2 z-10 inline-flex items-center justify-center rounded-md border bg-fd-card/80 p-1.5 text-fd-muted-foreground opacity-0 backdrop-blur transition-opacity hover:text-fd-foreground group-hover:opacity-100 focus-visible:opacity-100",
+      )}
+    >
+      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+    </button>
+  )
+}
+
 function Pre(props: ComponentProps<"pre">) {
   const code = Children.only(props.children) as ReactElement
   const codeProps = code.props as ComponentProps<"code">
@@ -117,7 +142,14 @@ function Pre(props: ComponentProps<"pre">) {
 
   if (lang === "mdx") lang = "md"
 
-  return <DynamicCodeBlock lang={lang} code={content.trimEnd()} />
+  const trimmed = content.trimEnd()
+
+  return (
+    <div className="group relative">
+      <CodeCopyButton text={trimmed} />
+      <DynamicCodeBlock lang={lang} code={trimmed} />
+    </div>
+  )
 }
 
 // Citations come back as absolute docs URLs (https://docs.ton.org/...).

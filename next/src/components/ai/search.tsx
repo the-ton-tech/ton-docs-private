@@ -11,7 +11,19 @@ import {
   useRef,
   useState,
 } from "react"
-import {Check, Copy, RotateCcw, Search, Send, Sparkles, Square, X} from "lucide-react"
+import {
+  ArrowDown,
+  Check,
+  Copy,
+  FileText,
+  Pencil,
+  RotateCcw,
+  Search,
+  Send,
+  Sparkles,
+  Square,
+  X,
+} from "lucide-react"
 import {cn} from "../../lib/cn"
 import {buttonVariants} from "../ui/button"
 import {useChat, type UseChatHelpers} from "@ai-sdk/react"
@@ -49,10 +61,57 @@ const STARTER_QUESTIONS = [
   "How do I send messages between contracts?",
 ]
 
+/**
+ * Page-contextual starter questions. Matched against the first non-empty
+ * segment of `location.pathname`. Falls back to `STARTER_QUESTIONS` when no
+ * segment matches.
+ */
+const STARTER_CATALOG: Record<string, string[]> = {
+  develop: [
+    "How do I deploy a smart contract on TON?",
+    "What's the difference between FunC, Tact, and Tolk?",
+    "How do I send a message between contracts?",
+    "How do I test a smart contract locally?",
+  ],
+  contribute: [
+    "How can I contribute to the TON documentation?",
+    "What is the style guide for docs?",
+    "How do I run the docs site locally?",
+    "How do I propose a new page or section?",
+  ],
+  payments: [
+    "How do I send TON between wallets?",
+    "What is a jetton and how do transfers work?",
+    "How do I accept payments in my app?",
+    "How are transaction fees calculated?",
+  ],
+  "ton-connect": [
+    "How does TON Connect work?",
+    "How do I integrate TON Connect in a web app?",
+    "How do I send a transaction via TON Connect?",
+    "How do I verify a TON Connect signature?",
+  ],
+  guidelines: [
+    "What are the security best practices for smart contracts?",
+    "How should I structure a TON dApp?",
+    "What naming conventions do TON projects follow?",
+    "How do I audit a contract before deployment?",
+  ],
+}
+
+/** Pick the right starter set for the current page URL. */
+function pickStarterQuestions(pathname: string): string[] {
+  const segment = pathname.split("/").find(part => part.length > 0)
+  if (segment && STARTER_CATALOG[segment]) return STARTER_CATALOG[segment]
+  return STARTER_QUESTIONS
+}
+
 const Context = createContext<{
   open: boolean
   setOpen: (open: boolean) => void
   chat: UseChatHelpers<ChatUIMessage>
+  input: string
+  setInput: (value: string) => void
 } | null>(null)
 
 /** Send a user message, attaching the current page so the backend has context. */
@@ -203,7 +262,7 @@ export function AISearchPanelHeader({className, ...props}: ComponentProps<"div">
 const StorageKeyInput = "__ai_search_input"
 export function AISearchInput(props: ComponentProps<"form">) {
   const {status, sendMessage, stop} = useChatContext()
-  const [input, setInput] = useState(() => localStorage.getItem(StorageKeyInput) ?? "")
+  const {input, setInput} = useAISearchContext()
   const isLoading = status === "streaming" || status === "submitted"
   const onStart = (e?: SyntheticEvent) => {
     e?.preventDefault()
@@ -229,7 +288,6 @@ export function AISearchInput(props: ComponentProps<"form">) {
         disabled={status === "streaming" || status === "submitted"}
         onChange={e => {
           setInput(e.target.value)
-          localStorage.setItem(StorageKeyInput, e.target.value)
         }}
         onKeyDown={event => {
           if (!event.shiftKey && event.key === "Enter") {
@@ -272,42 +330,102 @@ export function AISearchInput(props: ComponentProps<"form">) {
   )
 }
 
-function List(props: Omit<ComponentProps<"div">, "dir">) {
+const PinThresholdPx = 40
+
+function List({
+  resetPinSignal,
+  ...props
+}: Omit<ComponentProps<"div">, "dir"> & {resetPinSignal?: unknown}) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const pinnedRef = useRef(true)
+  const [showJump, setShowJump] = useState(false)
+
+  function isAtBottom(container: HTMLElement): boolean {
+    const distance = container.scrollHeight - container.scrollTop - container.clientHeight
+    return distance <= PinThresholdPx
+  }
+
+  // Reset pinned state when the conversation gets a fresh user message —
+  // we want the new answer to follow the bottom regardless of prior scroll.
+  useEffect(() => {
+    pinnedRef.current = true
+    const container = containerRef.current
+    if (container) {
+      container.scrollTo({top: container.scrollHeight, behavior: "instant"})
+    }
+    // Defer the hide to a microtask so we don't synchronously update state
+    // from within the effect body (avoids cascading-renders lint rule).
+    const id = setTimeout(() => setShowJump(false), 0)
+    return () => clearTimeout(id)
+  }, [resetPinSignal])
 
   useEffect(() => {
     if (!containerRef.current) return
-    function callback() {
-      const container = containerRef.current
-      if (!container) return
+    const container = containerRef.current
 
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior: "instant",
-      })
+    function callback() {
+      if (!container) return
+      if (pinnedRef.current) {
+        container.scrollTo({top: container.scrollHeight, behavior: "instant"})
+        setShowJump(false)
+      } else {
+        setShowJump(true)
+      }
+    }
+
+    function onScroll() {
+      if (!container) return
+      const atBottom = isAtBottom(container)
+      pinnedRef.current = atBottom
+      if (atBottom) setShowJump(false)
     }
 
     const observer = new ResizeObserver(callback)
     callback()
 
-    const element = containerRef.current?.firstElementChild
-
-    if (element) {
-      observer.observe(element)
-    }
+    const element = container.firstElementChild
+    if (element) observer.observe(element)
+    container.addEventListener("scroll", onScroll, {passive: true})
 
     return () => {
       observer.disconnect()
+      container.removeEventListener("scroll", onScroll)
     }
   }, [])
 
+  function jumpToLatest() {
+    const container = containerRef.current
+    if (!container) return
+    pinnedRef.current = true
+    container.scrollTo({top: container.scrollHeight, behavior: "smooth"})
+    setShowJump(false)
+  }
+
   return (
-    <div
-      ref={containerRef}
-      {...props}
-      className={cn("fd-scroll-container overflow-y-auto min-w-0 flex flex-col", props.className)}
-    >
-      {props.children}
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div
+        ref={containerRef}
+        {...props}
+        className={cn(
+          "fd-scroll-container overflow-y-auto min-w-0 flex flex-col",
+          props.className,
+        )}
+      >
+        {props.children}
+      </div>
+      {showJump && (
+        <button
+          type="button"
+          onClick={jumpToLatest}
+          aria-label="Jump to latest message"
+          className={cn(
+            "absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border bg-fd-card px-3 py-1 text-xs text-fd-muted-foreground shadow-sm transition-colors hover:text-fd-foreground",
+          )}
+        >
+          <ArrowDown className="size-3" />
+          <span>Jump to latest</span>
+        </button>
+      )}
     </div>
   )
 }
@@ -363,42 +481,69 @@ function ToolStatusRow({
 }
 
 /**
- * Render a `search` tool call so the user can see the assistant grounding its
- * answer in the docs instead of staring at a blank wait.
+ * Render a `search` (or `fetch_page`) tool call so the user can see the
+ * assistant grounding its answer in the docs instead of staring at a blank wait.
  */
 function ToolActivity({part}: {part: ToolUIPartLike}) {
-  if (part.type !== "tool-search") return null
+  const isSearch = part.type === "tool-search"
+  const isFetch = part.type === "tool-fetch_page"
+  if (!isSearch && !isFetch) return null
+
+  const Icon = isFetch ? FileText : Search
+  const busyLabel = isFetch ? "Fetching page…" : "Searching the documentation…"
+  const errorLabel = isFetch ? "Page fetch failed" : "Documentation search failed"
+  const unavailableLabel = isFetch
+    ? "Page fetch unavailable"
+    : "Documentation search unavailable"
+  const emptyLabel = isFetch ? "No page returned" : "No matching documentation found"
+  const doneLabel = isFetch ? "Fetched page" : "Searched the documentation"
 
   const busy = part.state === "input-streaming" || part.state === "input-available"
-  if (busy) return <ToolStatusRow icon={Search} label="Searching the documentation…" busy />
+  if (busy) return <ToolStatusRow icon={Icon} label={busyLabel} busy />
   if (part.state === "output-error") {
-    return <ToolStatusRow icon={Search} label="Documentation search failed" />
+    return <ToolStatusRow icon={Icon} label={errorLabel} />
   }
   const output = part.output as
     | {results?: {title?: string; url?: string}[]; error?: string}
     | undefined
   if (!output || output.error || !output.results) {
-    return <ToolStatusRow icon={Search} label="Documentation search unavailable" />
+    return <ToolStatusRow icon={Icon} label={unavailableLabel} />
   }
   const results = output.results
   if (results.length === 0) {
-    return <ToolStatusRow icon={Search} label="No matching documentation found" />
+    return <ToolStatusRow icon={Icon} label={emptyLabel} />
   }
   return (
     <details className="text-xs text-fd-muted-foreground">
       <summary className="flex cursor-pointer select-none items-center gap-1.5 [&::-webkit-details-marker]:hidden">
-        <Search className="size-3.5 shrink-0" />
+        <Icon className="size-3.5 shrink-0" />
         <span>
-          Searched the documentation · {results.length}{" "}
-          {results.length === 1 ? "page" : "pages"}
+          {doneLabel} · {results.length} {results.length === 1 ? "page" : "pages"}
         </span>
       </summary>
       <ul className="mt-1 ms-5 flex flex-col gap-0.5">
-        {results.map((result, i) => (
-          <li key={i} className="truncate">
-            {result.title ?? result.url ?? "Untitled page"}
-          </li>
-        ))}
+        {results.map((result, i) => {
+          const label = result.title ?? result.url ?? "Untitled page"
+          if (result.url) {
+            return (
+              <li key={i} className="truncate">
+                <a
+                  href={result.url}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-fd-muted-foreground underline-offset-2 hover:underline hover:text-fd-foreground"
+                >
+                  {label}
+                </a>
+              </li>
+            )
+          }
+          return (
+            <li key={i} className="truncate">
+              {label}
+            </li>
+          )
+        })}
       </ul>
     </details>
   )
@@ -452,14 +597,34 @@ function CopyButton({text}: {text: string}) {
 }
 
 function Message({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
-  const {regenerate, status} = useChatContext()
+  const {regenerate, status, messages, setMessages} = useChatContext()
+  const {setInput} = useAISearchContext()
   const isAssistant = message.role === "assistant"
+  const isUser = message.role === "user"
   const text = collectText(message)
   const showActions = isAssistant && text.trim().length > 0
   const canRegenerate = isAssistant && isLast && status === "ready"
+  const canEdit = isUser && status === "ready"
+  const streaming = status === "streaming" || status === "submitted"
+  const isStreamingThis = isAssistant && isLast && streaming
+
+  function onEdit() {
+    if (!canEdit) return
+    setInput(text)
+    const idx = messages.findIndex(m => m.id === message.id)
+    if (idx >= 0) setMessages(messages.slice(0, idx))
+    // Defer focus until after render so the input exists.
+    setTimeout(() => {
+      const el = document.getElementById("nd-ai-input") as HTMLTextAreaElement | null
+      if (el) {
+        el.focus()
+        el.setSelectionRange(text.length, text.length)
+      }
+    }, 0)
+  }
 
   return (
-    <div onClick={e => e.stopPropagation()}>
+    <div onClick={e => e.stopPropagation()} aria-busy={isStreamingThis || undefined}>
       <p
         className={cn(
           "mb-1 text-sm font-medium text-fd-muted-foreground",
@@ -492,30 +657,57 @@ function Message({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
           )}
         </div>
       )}
+      {canEdit && text.trim().length > 0 && (
+        <div className="mt-1.5 flex items-center gap-0.5">
+          <button
+            type="button"
+            aria-label="Edit and resend message"
+            onClick={onEdit}
+            className={cn(
+              buttonVariants({
+                color: "ghost",
+                size: "icon-sm",
+                className: "text-fd-muted-foreground",
+              }),
+            )}
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-function LoadingDots() {
+function LoadingDots({label}: {label?: string}) {
   return (
-    <span className="flex gap-1 py-1" role="status" aria-label="Generating response">
+    <span className="flex gap-1 py-1" aria-hidden={label ? "true" : undefined}>
       <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground [animation-delay:-0.3s]" />
       <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground [animation-delay:-0.15s]" />
       <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground" />
+      {label && <span className="sr-only">{label}</span>}
     </span>
   )
 }
 
-function PendingMessage() {
+function PendingMessage({label}: {label: string}) {
   return (
-    <div>
+    <div role="status" aria-live="polite">
       <p className="mb-1 text-sm font-medium text-fd-primary">{roleName.assistant}</p>
-      <LoadingDots />
+      <div className="flex items-center gap-2">
+        <LoadingDots />
+        <span className="text-xs text-fd-muted-foreground">{label}</span>
+      </div>
     </div>
   )
 }
 
 function EmptyState({chat}: {chat: UseChatHelpers<ChatUIMessage>}) {
+  const questions = useMemo(() => {
+    if (typeof window === "undefined") return STARTER_QUESTIONS
+    return pickStarterQuestions(window.location.pathname)
+  }, [])
+
   return (
     <div className="text-sm text-fd-muted-foreground/80 size-full flex flex-col items-center justify-center text-center gap-3 px-[13px]">
       <Sparkles className="size-6 text-fd-muted-foreground/60" />
@@ -523,7 +715,7 @@ function EmptyState({chat}: {chat: UseChatHelpers<ChatUIMessage>}) {
         Ask anything about TON. Answers are grounded in the documentation.
       </p>
       <div className="flex w-full flex-col gap-1.5" onClick={e => e.stopPropagation()}>
-        {STARTER_QUESTIONS.map(question => (
+        {questions.map(question => (
           <button
             key={question}
             type="button"
@@ -558,6 +750,16 @@ function ErrorCard({error, onRetry}: {error: Error; onRetry: () => void}) {
 
 export function AISearch({children}: {children: ReactNode}) {
   const [open, setOpen] = useState(false)
+  // Lazy initializer so localStorage is only touched on the client. `AISearch`
+  // is always rendered inside a `"use client"` tree.
+  const [input, setInputState] = useState<string>(() => {
+    if (typeof window === "undefined") return ""
+    try {
+      return localStorage.getItem(StorageKeyInput) ?? ""
+    } catch {
+      return ""
+    }
+  })
   const chat = useChat<ChatUIMessage>({
     id: "search",
     transport: new DefaultChatTransport({
@@ -580,7 +782,26 @@ export function AISearch({children}: {children: ReactNode}) {
     persistMessages(chat.messages)
   }, [chat.status, chat.messages])
 
-  return <Context value={useMemo(() => ({chat, open, setOpen}), [chat, open])}>{children}</Context>
+  const setInput = (value: string) => {
+    setInputState(value)
+    try {
+      if (value.length === 0) localStorage.removeItem(StorageKeyInput)
+      else localStorage.setItem(StorageKeyInput, value)
+    } catch {
+      // Ignore unavailable localStorage.
+    }
+  }
+
+  return (
+    <Context
+      value={useMemo(
+        () => ({chat, open, setOpen, input, setInput}),
+        [chat, open, input],
+      )}
+    >
+      {children}
+    </Context>
+  )
 }
 
 export function AISearchTrigger({
@@ -608,9 +829,67 @@ export function AISearchTrigger({
   )
 }
 
+function getFocusableElements(root: HTMLElement): HTMLElement[] {
+  const selector = [
+    "a[href]",
+    "button:not([disabled])",
+    "textarea:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "[tabindex]:not([tabindex='-1'])",
+  ].join(",")
+  return Array.from(root.querySelectorAll<HTMLElement>(selector)).filter(
+    el => !el.hasAttribute("aria-hidden") && el.offsetParent !== null,
+  )
+}
+
 export function AISearchPanel() {
   const {open, setOpen} = useAISearchContext()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const restoreFocusRef = useRef<HTMLElement | null>(null)
   useHotKey()
+
+  // Save the previously focused element when the dialog opens, restore it on
+  // close. Also implement a minimal Tab / Shift+Tab focus trap.
+  useEffect(() => {
+    if (!open) return
+    restoreFocusRef.current = document.activeElement as HTMLElement | null
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab") return
+      const root = dialogRef.current
+      if (!root) return
+      const focusables = getFocusableElements(root)
+      if (focusables.length === 0) {
+        e.preventDefault()
+        return
+      }
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement as HTMLElement | null
+      if (e.shiftKey) {
+        if (active === first || !root.contains(active)) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      const target = restoreFocusRef.current
+      if (target && typeof target.focus === "function") {
+        // Defer to allow the closing animation / removal to finish.
+        setTimeout(() => target.focus(), 0)
+      }
+    }
+  }, [open])
 
   return (
     <>
@@ -644,8 +923,10 @@ export function AISearchPanel() {
       </Presence>
       <Presence present={open}>
         <div
+          ref={dialogRef}
           role="dialog"
           aria-label="Ask AI"
+          aria-modal="true"
           className={cn(
             "overflow-hidden z-30 bg-fd-background text-fd-foreground [--ai-chat-width:400px] 2xl:[--ai-chat-width:460px]",
             "max-lg:fixed max-lg:inset-3 max-lg:border max-lg:rounded-2xl max-lg:shadow-xl",
@@ -668,6 +949,32 @@ export function AISearchPanel() {
   )
 }
 
+/** Latest tool-call type on the last assistant message, if any. */
+function latestToolType(message: ChatUIMessage | undefined): string | null {
+  if (!message || message.role !== "assistant") return null
+  const parts = message.parts ?? []
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i]
+    if (part.type.startsWith("tool-")) {
+      const state = (part as unknown as ToolUIPartLike).state
+      if (state === "input-streaming" || state === "input-available") return part.type
+    }
+  }
+  return null
+}
+
+function stageLabel(
+  status: UseChatHelpers<ChatUIMessage>["status"],
+  last: ChatUIMessage | undefined,
+): string {
+  const tool = latestToolType(last)
+  if (tool === "tool-search") return "Searching the documentation…"
+  if (tool === "tool-fetch_page") return "Fetching page…"
+  if (status === "submitted") return "Thinking…"
+  if (status === "streaming") return "Writing…"
+  return "Thinking…"
+}
+
 export function AISearchPanelList({className, style, ...props}: ComponentProps<"div">) {
   const chat = useChatContext()
   const messages = chat.messages.filter(msg => msg.role !== "system")
@@ -681,33 +988,50 @@ export function AISearchPanelList({className, style, ...props}: ComponentProps<"
     msg => msg.role !== "assistant" || hasRenderableContent(msg),
   )
 
+  // A pin-reset signal: bumps each time a new user message is added so the
+  // list re-pins to the bottom regardless of prior scroll position.
+  const userMessageCount = messages.filter(m => m.role === "user").length
+
+  // High-level announcement for screen readers. Only state changes are spoken,
+  // not the streaming token-by-token markup.
+  const announcement = !isLoading && last?.role === "assistant" && hasRenderableContent(last)
+    ? "Answer received"
+    : isLoading
+    ? stageLabel(chat.status, last)
+    : ""
+
   return (
-    <List
-      aria-live="polite"
-      className={cn("py-4 overscroll-contain", className)}
-      style={{
-        maskImage:
-          "linear-gradient(to bottom, transparent, white 1rem, white calc(100% - 1rem), transparent 100%)",
-        ...style,
-      }}
-      {...props}
-    >
-      {messages.length === 0 ? (
-        <EmptyState chat={chat} />
-      ) : (
-        <div className="flex flex-col gap-4 px-[13px]">
-          {chat.error && <ErrorCard error={chat.error} onRetry={() => chat.regenerate()} />}
-          {visibleMessages.map((item, idx) => (
-            <Message
-              key={item.id}
-              message={item}
-              isLast={idx === visibleMessages.length - 1}
-            />
-          ))}
-          {pending && <PendingMessage />}
-        </div>
-      )}
-    </List>
+    <>
+      <p role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
+      <List
+        resetPinSignal={userMessageCount}
+        className={cn("py-4 overscroll-contain", className)}
+        style={{
+          maskImage:
+            "linear-gradient(to bottom, transparent, white 1rem, white calc(100% - 1rem), transparent 100%)",
+          ...style,
+        }}
+        {...props}
+      >
+        {messages.length === 0 ? (
+          <EmptyState chat={chat} />
+        ) : (
+          <div className="flex flex-col gap-4 px-[13px]">
+            {chat.error && <ErrorCard error={chat.error} onRetry={() => chat.regenerate()} />}
+            {visibleMessages.map((item, idx) => (
+              <Message
+                key={item.id}
+                message={item}
+                isLast={idx === visibleMessages.length - 1}
+              />
+            ))}
+            {pending && <PendingMessage label={stageLabel(chat.status, last)} />}
+          </div>
+        )}
+      </List>
+    </>
   )
 }
 

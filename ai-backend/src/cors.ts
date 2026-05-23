@@ -23,6 +23,8 @@ const VERCEL_PREVIEW_RE = /^https:\/\/([a-z0-9-]+-)?topteam\.vercel\.app$/;
  */
 export function resolveOrigin(origin: string | undefined | null): string | null {
   if (!origin) return null;
+  // The literal string "null" (sent by sandboxed iframes / file:// pages) is
+  // not in any allowlist below and therefore falls through to rejection.
   if (origin === DOCS_ORIGIN) return origin;
   if (VERCEL_PREVIEW_RE.test(origin)) return origin;
   if (config.allowedOrigins.includes(origin)) return origin;

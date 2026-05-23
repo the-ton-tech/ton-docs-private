@@ -6,12 +6,16 @@
  *     protecting the OpenRouter free-tier quota.
  *  3. Per-IP daily cap: stops one client from draining the global cap.
  *
- * All limiters live in process memory — fine for a single-instance VPS
- * deployment behind nginx.
+ * Daily counters are persisted to `config.statePath` so a restart cannot
+ * reset the rate-limit state (Restart=always in the systemd unit makes a
+ * crash-loop trivial otherwise). The per-IP /sec window is in-memory only.
  */
 
 import type { Context } from "hono";
 import { getConnInfo } from "@hono/node-server/conninfo";
+import { mkdirSync, readFileSync } from "node:fs";
+import { rename, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { config } from "./config.js";
 
 const PER_IP_WINDOW_MS = 1000;
@@ -92,12 +96,83 @@ let dailyKey = utcDayKey();
 let dailyUsed = 0;
 const ipDaily = new Map<string, number>();
 
+// --- Persistence ------------------------------------------------------------
+
+interface PersistedState {
+  dailyKey: string;
+  dailyUsed: number;
+  ipDaily: Record<string, number>;
+}
+
+function loadState(): void {
+  try {
+    const raw = readFileSync(config.statePath, "utf8");
+    const parsed = JSON.parse(raw) as Partial<PersistedState>;
+    if (
+      typeof parsed.dailyKey !== "string" ||
+      typeof parsed.dailyUsed !== "number" ||
+      typeof parsed.ipDaily !== "object" ||
+      parsed.ipDaily === null
+    ) {
+      return;
+    }
+    // Discard persisted counters from a previous UTC day.
+    if (parsed.dailyKey !== utcDayKey()) return;
+    dailyKey = parsed.dailyKey;
+    dailyUsed = Math.max(0, Math.floor(parsed.dailyUsed));
+    for (const [ip, count] of Object.entries(parsed.ipDaily)) {
+      if (typeof count === "number" && count > 0) {
+        ipDaily.set(ip, Math.floor(count));
+      }
+    }
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT") {
+      console.warn(`[ratelimit] Failed to load persisted state: ${(err as Error).message}`);
+    }
+  }
+}
+
+try {
+  mkdirSync(dirname(config.statePath), { recursive: true });
+} catch (err) {
+  console.warn(`[ratelimit] Failed to ensure state dir: ${(err as Error).message}`);
+}
+loadState();
+
+let persistInflight: Promise<void> = Promise.resolve();
+
+function snapshot(): string {
+  const ipObj: Record<string, number> = {};
+  for (const [ip, count] of ipDaily) ipObj[ip] = count;
+  return JSON.stringify({ dailyKey, dailyUsed, ipDaily: ipObj });
+}
+
+function persist(): void {
+  const payload = snapshot();
+  const target = config.statePath;
+  const tmp = `${target}.tmp`;
+  // Serialise writes so concurrent persist() calls cannot interleave
+  // writeFile/rename and corrupt the file.
+  persistInflight = persistInflight
+    .catch(() => undefined)
+    .then(async () => {
+      try {
+        await writeFile(tmp, payload, "utf8");
+        await rename(tmp, target);
+      } catch (err) {
+        console.warn(`[ratelimit] Failed to persist state: ${(err as Error).message}`);
+      }
+    });
+}
+
 function rollDayIfNeeded(): void {
   const today = utcDayKey();
   if (today !== dailyKey) {
     dailyKey = today;
     dailyUsed = 0;
     ipDaily.clear();
+    persist();
   }
 }
 
@@ -118,7 +193,25 @@ export function tryConsume(ip: string): ConsumeResult {
   if (ipUsed >= config.perIpDailyCap) return "ip_daily_limit";
   dailyUsed += 1;
   ipDaily.set(ip, ipUsed + 1);
+  persist();
   return "ok";
+}
+
+/**
+ * Return one previously-consumed slot to the global and per-IP daily counters,
+ * clamped at 0. Call when an upstream failure means the slot delivered no
+ * value to the user (OpenRouter 5xx/429/timeout). Safe to call after a day
+ * rollover — the rolled-over counters simply stay at 0.
+ */
+export function refund(ip: string): void {
+  rollDayIfNeeded();
+  if (dailyUsed > 0) dailyUsed -= 1;
+  const ipUsed = ipDaily.get(ip);
+  if (ipUsed !== undefined) {
+    if (ipUsed <= 1) ipDaily.delete(ip);
+    else ipDaily.set(ip, ipUsed - 1);
+  }
+  persist();
 }
 
 /** Current daily usage, for the health endpoint. */

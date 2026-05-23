@@ -9,6 +9,7 @@
 // Load .env for local runs (`npm run dev` / `npm start`). In production the
 // systemd unit supplies the environment; dotenv does not override existing vars.
 import "dotenv/config";
+import { timingSafeEqual } from "node:crypto";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -16,7 +17,15 @@ import type { UIMessage } from "ai";
 import { config } from "./config.js";
 import { resolveOrigin } from "./cors.js";
 import { runChat } from "./chat.js";
-import { allowPerIp, clientIp, dailyStats, tryConsume } from "./ratelimit.js";
+import {
+  allowPerIp,
+  clientIp,
+  dailyStats,
+  refund,
+  tryConsume,
+} from "./ratelimit.js";
+import { cacheKey, getCached, interceptAndCache, replayCached } from "./cache.js";
+import { hashIp, logChat } from "./telemetry.js";
 
 const app = new Hono();
 
@@ -54,17 +63,57 @@ app.use("/api/chat", async (c, next) => {
 });
 
 // --- Health -----------------------------------------------------------------
-app.get("/api/health", (c) => {
+//
+// Public response is intentionally minimal: leaking the live daily counter
+// lets an attacker time floods against the 00:00 UTC reset. Operators read
+// the live counter from /api/internal/stats with the STATS_TOKEN bearer.
+app.get("/api/health", (c) => c.json({ ok: true }));
+
+// --- Internal stats ---------------------------------------------------------
+//
+// 404 when STATS_TOKEN is unset, so the route does not exist for the public.
+// When set, requires `Authorization: Bearer <token>`; compared in constant
+// time to defeat timing-based token recovery.
+app.get("/api/internal/stats", (c) => {
+  const expected = config.statsToken;
+  if (!expected) return c.notFound();
+
+  const header = c.req.header("authorization") ?? "";
+  const presented = header.startsWith("Bearer ") ? header.slice(7) : "";
+
+  const expectedBuf = Buffer.from(expected, "utf8");
+  const presentedBuf = Buffer.from(presented, "utf8");
+  if (
+    expectedBuf.length !== presentedBuf.length ||
+    !timingSafeEqual(expectedBuf, presentedBuf)
+  ) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
   const daily = dailyStats();
-  return c.json({
-    ok: true,
-    dailyUsed: daily.used,
-    dailyCap: daily.cap,
-  });
+  return c.json({ ok: true, dailyUsed: daily.used, dailyCap: daily.cap });
 });
 
 // --- Chat -------------------------------------------------------------------
 app.post("/api/chat", async (c) => {
+  const startedAt = Date.now();
+  const ip = clientIp(c);
+  const ipHash = hashIp(ip);
+  let cacheHit = false;
+  let refunded = false;
+  let status = 200;
+
+  const finish = (statusCode: number): void => {
+    status = statusCode;
+    logChat({
+      ipHash,
+      status,
+      durationMs: Date.now() - startedAt,
+      cacheHit,
+      refunded,
+    });
+  };
+
   let messages: UIMessage[];
   try {
     const body = (await c.req.json()) as { messages?: UIMessage[] };
@@ -73,18 +122,32 @@ app.post("/api/chat", async (c) => {
       body.messages.length === 0 ||
       body.messages.length > MAX_MESSAGES
     ) {
+      finish(400);
       return c.json({ error: "invalid_request" }, 400);
     }
     messages = body.messages;
   } catch {
+    finish(400);
     return c.json({ error: "invalid_request" }, 400);
+  }
+
+  // Cache lookup happens BEFORE tryConsume — a hit must not burn a slot.
+  const key = cacheKey(messages);
+  if (key) {
+    const hit = getCached(key);
+    if (hit) {
+      cacheHit = true;
+      finish(hit.status);
+      return replayCached(hit);
+    }
   }
 
   // Consume one daily slot — but only now that the request is valid, so
   // malformed requests cannot burn quota. tryConsume is atomic (check +
   // increment) and also enforces the per-IP daily cap.
-  const consumed = tryConsume(clientIp(c));
+  const consumed = tryConsume(ip);
   if (consumed !== "ok") {
+    finish(429);
     return c.json({ error: consumed }, 429);
   }
 
@@ -92,15 +155,26 @@ app.post("/api/chat", async (c) => {
     const result = await runChat(messages, c.req.raw.signal);
     // Stream errors (OpenRouter 429/402/etc.) surface here, not as a throw —
     // log them and hand the client a generic message instead of crashing.
-    return result.toUIMessageStreamResponse({
-      onError: (error) => {
+    // The slot also gets refunded so a failed upstream call costs us nothing.
+    const response = result.toUIMessageStreamResponse({
+      onError: (error: unknown) => {
         console.error("[chat] Stream error:", error);
+        if (!refunded) {
+          refund(ip);
+          refunded = true;
+        }
         return "An error occurred while generating the response.";
       },
     });
+    const wrapped = key ? interceptAndCache(response, key) : response;
+    finish(wrapped.status);
+    return wrapped;
   } catch (err) {
     // Synchronous construction errors must not crash the process either.
     console.error("[chat] Error handling chat request:", err);
+    refund(ip);
+    refunded = true;
+    finish(502);
     return c.json({ error: "chat_failed" }, 502);
   }
 });

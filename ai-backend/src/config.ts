@@ -32,6 +32,8 @@ const allowedOrigins = readString("ALLOWED_ORIGINS", "")
   .map((o) => o.trim())
   .filter((o) => o.length > 0);
 
+const statsToken = process.env.STATS_TOKEN?.trim();
+
 export interface Config {
   openrouterKey: string;
   model: string;
@@ -41,6 +43,11 @@ export interface Config {
   docsBaseUrl: string;
   dailyRequestCap: number;
   perIpDailyCap: number;
+  statePath: string;
+  cacheMaxEntries: number;
+  cacheTtlMs: number;
+  /** Optional bearer for the internal stats route; route is 404 when unset. */
+  statsToken: string | undefined;
 }
 
 export const config: Config = {
@@ -55,4 +62,9 @@ export const config: Config = {
   docsBaseUrl: readString("DOCS_BASE_URL", "https://docs.ton.org").replace(/\/+$/, ""),
   dailyRequestCap: readInt("DAILY_REQUEST_CAP", 45),
   perIpDailyCap: readInt("PER_IP_DAILY_CAP", 10),
+  // Resolved against the systemd WorkingDirectory (/opt/ton-docs-ai in prod).
+  statePath: readString("STATE_PATH", "./state/ratelimit.json"),
+  cacheMaxEntries: readInt("CHAT_CACHE_MAX_ENTRIES", 100),
+  cacheTtlMs: readInt("CHAT_CACHE_TTL_MS", 15 * 60 * 1000),
+  statsToken: statsToken && statsToken.length > 0 ? statsToken : undefined,
 };

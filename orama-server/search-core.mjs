@@ -1,8 +1,20 @@
 // Server-side port of next/src/lib/search-core.ts.
 //
-// Algorithm is byte-identical with the client implementation so the offline
-// eval harness scores still describe what users see. Only the imports change:
-// no fumadocs-core/search (type-only on the client), no React.
+// Shared with the client implementation: the index schema/tokenizer config
+// (`createClientDB`), the full ranking pipeline (`runRankedSearch`), tuning
+// constants (`DEFAULT_STOPWORDS`, `DEFAULT_PINS`, `DEFAULT_SPELL`,
+// `DEFAULT_TUNING`), and helpers (`normalizeQuery`, `tokenize`,
+// `meaningfulTokens`, `looksLikeCodeSymbol`). Same query → same ranked
+// page order as the docs site, so the offline eval harness scores still
+// describe what users see and the AI backend's developer-heavy traffic
+// gets the same code-symbol-aware ranking.
+//
+// Intentional differences from the .ts source:
+//  - imports: no fumadocs-core/search (a client type-only dep) and no React;
+//  - no `BASELINE_TUNING` (harness-only, lives in next/scripts/search-eval);
+//  - no `IndexedDoc` / `Tuning` / `RawResult` types (plain JS, runtime shape
+//    is identical and is what the HTTP response exposes — see server.mjs).
+// If you tune `next/src/lib/search-core.ts`, mirror the lever here.
 
 import {create, getByID, search} from "@orama/orama"
 import {tokenizer as oramaTokenizer} from "@orama/orama/components"
@@ -110,6 +122,13 @@ export const DEFAULT_TUNING = {
   headingMatchWeight: 0.2,
   titleBM25Weight: 0,
   idfWeightTokens: false,
+  // codeSymbolWeight: conditional code-symbol bonus, fires only when the
+  // query contains a shape-real code identifier (underscore, ::-scope,
+  // dotted method, or camelCase ≥ 8 chars). Adds +0.0057 hit@1 on gold
+  // identifier intent with byte-identical curated/mined-train/mined-test.
+  // The shape gate is what avoids the previously measured regression of
+  // unconditional code-symbol re-ranking.
+  codeSymbolWeight: 1,
 }
 
 export function normalizeQuery(query) {
@@ -170,6 +189,22 @@ function querySymbolLike(t) {
   return t.includes("_") || t.includes("::") || /[a-z]\d|\d[a-z]/.test(t)
 }
 
+// Stricter than `querySymbolLike`: runs on the ORIGINAL (case-preserving)
+// token and gates the conditional `codeSymbolWeight` re-rank. Real code
+// identifiers are snake_case (`_`), `::`-scoped (`op::transfer`), longer
+// camelCase (≥ 8 chars), or dotted method access (`SendMode.PAY_GAS`).
+// Short brand-case tokens (TON, NFT, iOS, FunC, dTON) must NOT trigger,
+// which is why this is separate from the lowercased-token predicate above.
+export function looksLikeCodeSymbol(t) {
+  if (t.length < 2 || t.length > 40) return false
+  if (/^\d+$/.test(t)) return false
+  if (t.includes("_")) return true
+  if (t.includes("::")) return true
+  if (t.includes(".") && /[a-zA-Z]/.test(t)) return true
+  if (/[a-z][A-Z]/.test(t) && t.length >= 8) return true
+  return false
+}
+
 function proximitySpan(text, tokens) {
   if (tokens.length < 2) return Infinity
   let lo = Infinity
@@ -189,6 +224,14 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
 
   const normalized = normalizeQuery(trimmed)
   let tokens = meaningfulTokens(trimmed, tuning.stopwords)
+  // Mirror `meaningfulTokens` over the un-lowercased query so each token's
+  // original casing is available for code-symbol shape detection (which is
+  // case-sensitive — camelCase, ALLCAPS, snake_case all matter).
+  const stopL = new Set([...tuning.stopwords].map(w => w.toLowerCase()))
+  const rawSplit = trimmed.split(/\s+/).filter(Boolean)
+  const rawKept = rawSplit.filter(t => t.length > 1 && !stopL.has(t.toLowerCase()))
+  const originalTokens = rawKept.length > 0 ? rawKept : rawSplit
+  const hasCodeShapedToken = originalTokens.some(looksLikeCodeSymbol)
   const term = tokens.join(" ")
 
   const groups = await twoPassGroups(db, term, tuning.relevance)
@@ -356,6 +399,19 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
         }
         s += tuning.headingMatchWeight * perTokenMatches
         if (phraseHit) s += tuning.headingMatchWeight * tokens.length
+      }
+    }
+    if (tuning.codeSymbolWeight > 0 && hasCodeShapedToken) {
+      // Conditional code-symbol re-rank: fires ONLY when the query itself
+      // contains a code-identifier-shaped token, so prose queries cannot
+      // activate it (the regression mode of unconditional code-symbol
+      // re-ranking). Awards per token, against lowercased symbol bag.
+      const codeSyms = hits
+        .filter(h => h.url.endsWith("#Code symbols"))
+        .map(h => (h.content ?? "").toLowerCase())
+        .join(" ")
+      if (codeSyms) {
+        for (const t of tokens) if (codeSyms.includes(t)) s += tuning.codeSymbolWeight
       }
     }
     if (tuning.allTermsWeight > 0 || tuning.proximityWeight > 0) {
