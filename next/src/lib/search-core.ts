@@ -680,7 +680,10 @@ export async function runRankedSearch(
         const bc = (g.page.breadcrumbs ?? []).join(" ").toLowerCase()
         // Split URL on slashes / hyphens / underscores so the stemmer sees real
         // words, not a single slug-soup token.
-        const u = g.page.url.toLowerCase().replace(/[/\-_#]+/g, " ").trim()
+        const u = g.page.url
+          .toLowerCase()
+          .replace(/[/\-_#]+/g, " ")
+          .trim()
         const [tw, hw, uw] = await Promise.all([
           stemString(t),
           stemString(`${t} ${bc} ${u}`),
@@ -735,7 +738,7 @@ export async function runRankedSearch(
     // pure numerics) or doesn't normalize.
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i]
-      const stems = sm ? tokenStems[i] ?? [] : []
+      const stems = sm ? (tokenStems[i] ?? []) : []
       const stemHay = sm && stems.some(st => sm.haystackWords.has(st))
       const stemTitle = sm && stems.some(st => sm.titleWords.has(st))
       const stemUrl = sm && stems.some(st => sm.urlWords.has(st))

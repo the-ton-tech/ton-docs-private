@@ -84,14 +84,16 @@ export function Image({
   } else if (shouldNotZoom) {
     content = lightImg
   } else {
-    content = (
-      <ImageZoom src={src} alt={alt} width={widthPx ?? 608} height={heightPx ?? 342} />
-    )
+    content = <ImageZoom src={src} alt={alt} width={widthPx ?? 608} height={heightPx ?? 342} />
   }
 
   if (href) {
     content = (
-      <a href={href} target={target ?? "_self"} rel={target === "_blank" ? "noreferrer noopener" : undefined}>
+      <a
+        href={href}
+        target={target ?? "_self"}
+        rel={target === "_blank" ? "noreferrer noopener" : undefined}
+      >
         {content}
       </a>
     )

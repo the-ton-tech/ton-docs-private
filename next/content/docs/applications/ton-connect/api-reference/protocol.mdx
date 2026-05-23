@@ -980,7 +980,7 @@ type SignMessageFeature = {
 
 ### `EmbeddedRequestFeature`
 
-Wallet recognises and processes the `e` parameter from the connect URL —
+Wallet recognizes and processes the `e` parameter from the connect URL —
 see [`decodeEmbeddedRequestParam`](#decodeembeddedrequestparam) and the bridge spec's
 "Embedded requests" section. Wallets without this feature silently ignore
 the parameter.
@@ -1245,7 +1245,7 @@ enum SIGN_MESSAGE_ERROR_CODES {
 Base64 codec used across the protocol — small wrapper around `tweetnacl-util`
 that adds object/JSON support and an optional `urlSafe` mode for values
 embedded in URLs. `decode` returns a lazy view: call `.toString()`, `.toObject<T>()`, or
-`.toUint8Array()` to materialise the decoded bytes once.
+`.toUint8Array()` to materialize the decoded bytes once.
 
 #### `Base64.encode()`
 
@@ -1303,7 +1303,7 @@ Returns [`DecodedEmbeddedRequest`](#decodedembeddedrequest).
 **Throws:**
 
 - `TypeError` — when `reqParam` is not a valid Base64 string after
-URL-safe normalisation (i.e. `nacl.decodeBase64` rejects it).
+URL-safe normalization (i.e. `nacl.decodeBase64` rejects it).
 - `URIError` — when the decoded bytes do not form a valid UTF-8
 sequence (thrown by `decodeURIComponent` inside `nacl.encodeUTF8`).
 - `SyntaxError` — when the decoded text is not valid JSON.

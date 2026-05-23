@@ -11,7 +11,15 @@ interface FieldProps {
   children?: ReactNode
 }
 
-function FieldRow({name, type, required, default: defaultValue, deprecated, hidden, children}: FieldProps) {
+function FieldRow({
+  name,
+  type,
+  required,
+  default: defaultValue,
+  deprecated,
+  hidden,
+  children,
+}: FieldProps) {
   if (hidden) return null
 
   return (
@@ -20,9 +28,7 @@ function FieldRow({name, type, required, default: defaultValue, deprecated, hidd
         <code className="rounded-md bg-fd-muted px-1.5 py-0.5 text-fd-foreground font-mono text-[0.92em]">
           {name}
         </code>
-        {type && (
-          <span className="text-fd-muted-foreground font-mono text-xs">{type}</span>
-        )}
+        {type && <span className="text-fd-muted-foreground font-mono text-xs">{type}</span>}
         {required && (
           <span className="rounded-md bg-fd-primary/10 px-1.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wide text-fd-primary">
             required

@@ -1,13 +1,13 @@
-"use client";
+"use client"
 
-import * as React from "react";
+import * as React from "react"
 
 export const TvmInstructionTable = () => {
-  const { useCallback, useEffect, useMemo, useRef, useState } = React;
+  const {useCallback, useEffect, useMemo, useRef, useState} = React
 
-  const PERSIST_KEY = "tvm-instruction-table::filters";
+  const PERSIST_KEY = "tvm-instruction-table::filters"
 
-  const SPEC_URL = "/resources/tvm/cp0.txt";
+  const SPEC_URL = "/resources/tvm/cp0.txt"
 
   const CATEGORY_MAP = {
     stack_basic: "Stack basics",
@@ -55,7 +55,7 @@ export const TvmInstructionTable = () => {
     exceptions: "Exceptions & control",
     debug: "Debugging",
     tuple: "Tuples",
-  };
+  }
 
   const CATEGORY_GROUPS = [
     {
@@ -107,127 +107,118 @@ export const TvmInstructionTable = () => {
       key: "debug",
       label: "Debugging",
       patterns: [/^debug$/],
-    }
-  ];
+    },
+  ]
 
-  const CATEGORY_GROUP_KEYS = new Set(
-    CATEGORY_GROUPS.map((group) => group.key)
-  );
+  const CATEGORY_GROUP_KEYS = new Set(CATEGORY_GROUPS.map(group => group.key))
 
   function resolveCategoryGroup(categoryKey) {
-    const normalized = (categoryKey || "").toLowerCase();
+    const normalized = (categoryKey || "").toLowerCase()
     for (const group of CATEGORY_GROUPS) {
       if (
         Array.isArray(group.patterns) &&
         group.patterns.length > 0 &&
-        group.patterns.some((pattern) => pattern.test(normalized))
+        group.patterns.some(pattern => pattern.test(normalized))
       ) {
-        return group;
+        return group
       }
     }
-    return CATEGORY_GROUPS[CATEGORY_GROUPS.length - 1];
+    return CATEGORY_GROUPS[CATEGORY_GROUPS.length - 1]
   }
 
   function humanizeCategoryKey(key) {
-    if (!key) return "Uncategorized";
-    if (CATEGORY_MAP[key]) return CATEGORY_MAP[key];
+    if (!key) return "Uncategorized"
+    if (CATEGORY_MAP[key]) return CATEGORY_MAP[key]
     return key
       .split(/[_\s]+/)
       .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
   }
 
   function formatGasDisplay(gas) {
     if (Array.isArray(gas)) {
-      return gas.length > 0 ? gas.join(" / ") : "N/A";
+      return gas.length > 0 ? gas.join(" / ") : "N/A"
     }
     if (typeof gas === "number") {
-      return gas.toLocaleString();
+      return gas.toLocaleString()
     }
     if (typeof gas === "string") {
-      const value = gas.trim();
-      if (!value) return "N/A";
-      return value.replace(/\//g, " / ").replace(/\s+/g, " ");
+      const value = gas.trim()
+      if (!value) return "N/A"
+      return value.replace(/\//g, " / ").replace(/\s+/g, " ")
     }
-    return "N/A";
+    return "N/A"
   }
 
   function formatOperandSummary(operand) {
-    if (!operand) return "";
-    const name =
-      typeof operand.name === "string" && operand.name ? operand.name : "?";
-    const type = typeof operand.type === "string" ? operand.type : "";
+    if (!operand) return ""
+    const name = typeof operand.name === "string" && operand.name ? operand.name : "?"
+    const type = typeof operand.type === "string" ? operand.type : ""
     const size =
       typeof operand.size === "number"
         ? operand.size
         : typeof operand.bits === "number"
-        ? operand.bits
-        : undefined;
+          ? operand.bits
+          : undefined
     const hasRange =
       operand.min_value !== undefined &&
       operand.min_value !== null &&
       operand.max_value !== undefined &&
-      operand.max_value !== null;
-    const range = hasRange
-      ? ` [${operand.min_value}; ${operand.max_value}]`
-      : "";
-    const sizePart = size !== undefined ? `(${size})` : "";
-    return `${name}${type ? `:${type}` : ""}${sizePart}${range}`;
+      operand.max_value !== null
+    const range = hasRange ? ` [${operand.min_value}; ${operand.max_value}]` : ""
+    const sizePart = size !== undefined ? `(${size})` : ""
+    return `${name}${type ? `:${type}` : ""}${sizePart}${range}`
   }
 
   function formatInlineMarkdown(text) {
-    if (typeof text !== "string") return "";
-    const trimmed = text.trim();
-    if (!trimmed) return "";
-    const escaped = trimmed
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    if (typeof text !== "string") return ""
+    const trimmed = text.trim()
+    if (!trimmed) return ""
+    const escaped = trimmed.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     const withCode = escaped.replace(/`([^`]+)`/g, (_match, code) => {
-      return `<code>${code}</code>`;
-    });
+      return `<code>${code}</code>`
+    })
     const withLinks = withCode.replace(
       /\[([^\]]+)\]\((https?:[^)\s]+)\)/g,
-      (_match, label, url) =>
-        `<a href="${url}" target="_blank" rel="noreferrer">${label}</a>`
-    );
-    return withLinks.replace(/\n/g, "<br />");
+      (_match, label, url) => `<a href="${url}" target="_blank" rel="noreferrer">${label}</a>`,
+    )
+    return withLinks.replace(/\n/g, "<br />")
   }
 
   function compareOpcodes(a, b) {
-    const sanitize = (value) => (value || "").replace(/[^0-9a-f]/gi, "");
-    const ax = Number.parseInt(sanitize(a), 16);
-    const bx = Number.parseInt(sanitize(b), 16);
+    const sanitize = value => (value || "").replace(/[^0-9a-f]/gi, "")
+    const ax = Number.parseInt(sanitize(a), 16)
+    const bx = Number.parseInt(sanitize(b), 16)
     if (!Number.isNaN(ax) && !Number.isNaN(bx) && ax !== bx) {
-      return ax - bx;
+      return ax - bx
     }
-    return (a || "").localeCompare(b || "");
+    return (a || "").localeCompare(b || "")
   }
 
   // Search helpers for relevance-based filtering and sorting
   function createSearchTokens(query) {
-    if (typeof query !== "string") return [];
+    if (typeof query !== "string") return []
     return query
       .toLowerCase()
       .split(/\s+/)
-      .map((t) => t.trim())
-      .filter((t) => t.length >= 2); // drop 1-char tokens as too noisy
+      .map(t => t.trim())
+      .filter(t => t.length >= 2) // drop 1-char tokens as too noisy
   }
 
   function escapeRegExp(value) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   }
 
   function highlightMatches(text, tokens) {
-    if (typeof text !== "string") return text;
+    if (typeof text !== "string") return text
     const safeTokens = Array.isArray(tokens)
-      ? tokens.filter((token) => token && token.length > 0)
-      : [];
-    if (safeTokens.length === 0) return text;
-    const pattern = safeTokens.map(escapeRegExp).join("|");
-    const regex = new RegExp(`(${pattern})`, "gi");
-    const parts = text.split(regex);
+      ? tokens.filter(token => token && token.length > 0)
+      : []
+    if (safeTokens.length === 0) return text
+    const pattern = safeTokens.map(escapeRegExp).join("|")
+    const regex = new RegExp(`(${pattern})`, "gi")
+    const parts = text.split(regex)
     return parts.map((part, idx) =>
       idx % 2 === 1 ? (
         <span key={`highlight-${idx}`} className="tvm-highlight">
@@ -235,66 +226,66 @@ export const TvmInstructionTable = () => {
         </span>
       ) : (
         part
-      )
-    );
+      ),
+    )
   }
 
   function highlightHtmlContent(html, tokens) {
-    if (typeof html !== "string") return html || "";
+    if (typeof html !== "string") return html || ""
     const safeTokens = Array.isArray(tokens)
-      ? tokens.filter((token) => token && token.length > 0)
-      : [];
-    if (safeTokens.length === 0) return html;
-    const pattern = safeTokens.map(escapeRegExp).join("|");
-    if (!pattern) return html;
-    const regex = new RegExp(`(${pattern})`, "gi");
+      ? tokens.filter(token => token && token.length > 0)
+      : []
+    if (safeTokens.length === 0) return html
+    const pattern = safeTokens.map(escapeRegExp).join("|")
+    if (!pattern) return html
+    const regex = new RegExp(`(${pattern})`, "gi")
     return html
       .split(/(<[^>]+>)/g)
-      .map((segment) => {
-        if (segment.startsWith("<")) return segment;
-        return segment.replace(regex, '<span class="tvm-highlight">$1</span>');
+      .map(segment => {
+        if (segment.startsWith("<")) return segment
+        return segment.replace(regex, '<span class="tvm-highlight">$1</span>')
       })
-      .join("");
+      .join("")
   }
 
   function getItemSearchFields(item) {
     const aliasMnemonics = Array.isArray(item.aliases)
       ? item.aliases
-          .map((alias) => (typeof alias.mnemonic === "string" ? alias.mnemonic : ""))
+          .map(alias => (typeof alias.mnemonic === "string" ? alias.mnemonic : ""))
           .filter(Boolean)
-      : [];
+      : []
     return {
       mnemonic: String(item.mnemonic || "").toLowerCase(),
       opcode: String(item.opcode || "").toLowerCase(),
       fift: String(item.fift || "").toLowerCase(),
-      aliases: aliasMnemonics.map((s) => s.toLowerCase()),
-    };
+      aliases: aliasMnemonics.map(s => s.toLowerCase()),
+    }
   }
 
   function computeFieldMatchScore(field, token) {
-    if (!token) return null;
-    if (!field) return null;
-    if (field === token) return 0; // exact
-    if (field.startsWith(token)) return 3; // prefix
-    if (field.includes(token)) return 7; // substring
-    return null; // no match
+    if (!token) return null
+    if (!field) return null
+    if (field === token) return 0 // exact
+    if (field.startsWith(token)) return 3 // prefix
+    if (field.includes(token)) return 7 // substring
+    return null // no match
   }
 
   function computeBestAliasMatchScore(aliases, token) {
-    if (!Array.isArray(aliases) || aliases.length === 0) return null;
-    let best = null;
+    if (!Array.isArray(aliases) || aliases.length === 0) return null
+    let best = null
     for (const a of aliases) {
-      const s = computeFieldMatchScore(a, token);
-      if (s === 0) return 1; // alias exact slightly worse than mnemonic exact
-      if (s !== null) best = best === null ? s + 1 : Math.min(best, s + 1);
+      const s = computeFieldMatchScore(a, token)
+      if (s === 0) return 1 // alias exact slightly worse than mnemonic exact
+      if (s !== null) best = best === null ? s + 1 : Math.min(best, s + 1)
     }
-    return best;
+    return best
   }
 
   function itemRelevanceScore(item, tokens) {
-    if (!Array.isArray(tokens) || tokens.length === 0) return 1000; // neutral when no query
-    const { mnemonic, opcode, fift, aliases } = getItemSearchFields(item);
-    let total = 0;
+    if (!Array.isArray(tokens) || tokens.length === 0) return 1000 // neutral when no query
+    const {mnemonic, opcode, fift, aliases} = getItemSearchFields(item)
+    let total = 0
     for (const token of tokens) {
       // try fields in priority order
       const scores = [
@@ -306,355 +297,343 @@ export const TvmInstructionTable = () => {
         computeFieldMatchScore(fift, token) !== null
           ? computeFieldMatchScore(fift, token) + 5 // fift is weakest signal
           : null,
-      ].filter((s) => s !== null);
-      if (scores.length === 0) return Infinity; // token didn't match any field
-      total += Math.min(...scores);
+      ].filter(s => s !== null)
+      if (scores.length === 0) return Infinity // token didn't match any field
+      total += Math.min(...scores)
     }
-    return total;
+    return total
   }
 
   // Build anchor ids compatible with static MDX (slug of "<opcode> <mnemonic>"")
   function buildAnchorId(instruction) {
-    const opcodeText = String(instruction.opcode || "").trim().toLowerCase();
-    const titleText = `${instruction.mnemonic}`.trim().toLowerCase();
-    const raw = `${opcodeText} ${titleText}`.trim();
+    const opcodeText = String(instruction.opcode || "")
+      .trim()
+      .toLowerCase()
+    const titleText = `${instruction.mnemonic}`.trim().toLowerCase()
+    const raw = `${opcodeText} ${titleText}`.trim()
     const slug = raw
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    return encodeURIComponent(slug);
+      .replace(/^-+|-+$/g, "")
+    return encodeURIComponent(slug)
   }
 
   function copyAnchorUrl(anchorId) {
     try {
-      const { location, navigator } = window;
-      const base = location ? `${location.origin}${location.pathname}` : "";
-      const url = `${base}#${anchorId}`;
+      const {location, navigator} = window
+      const base = location ? `${location.origin}${location.pathname}` : ""
+      const url = `${base}#${anchorId}`
       if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
-        return navigator.clipboard.writeText(url);
+        return navigator.clipboard.writeText(url)
       }
-      const ta = document.createElement("textarea");
-      ta.value = url;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "absolute";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      return Promise.resolve();
+      const ta = document.createElement("textarea")
+      ta.value = url
+      ta.setAttribute("readonly", "")
+      ta.style.position = "absolute"
+      ta.style.left = "-9999px"
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
+      return Promise.resolve()
     } catch (err) {
-      return Promise.reject(err);
+      return Promise.reject(err)
     }
   }
 
   function copyPlainText(value) {
     try {
-      const { navigator, document } = window;
+      const {navigator, document} = window
       if (navigator?.clipboard?.writeText) {
-        return navigator.clipboard.writeText(value);
+        return navigator.clipboard.writeText(value)
       }
-      const ta = document.createElement("textarea");
-      ta.value = value;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "absolute";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      return Promise.resolve();
+      const ta = document.createElement("textarea")
+      ta.value = value
+      ta.setAttribute("readonly", "")
+      ta.style.position = "absolute"
+      ta.style.left = "-9999px"
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
+      return Promise.resolve()
     } catch (err) {
-      return Promise.reject(err);
+      return Promise.reject(err)
     }
   }
 
   function formatAliasOperands(operands) {
     return Object.entries(operands)
       .map(([name, value]) => `${name}=${value}`)
-      .join(", ");
+      .join(", ")
   }
 
   function cleanAliasDescription(html) {
-    if (typeof html !== "string") return "";
-    let output = html.trim();
-    if (!output) return "";
-    output = output.replace(/^<p>/i, "").replace(/<\/p>$/i, "");
-    output = output.replace(/\.+$/g, "");
-    return output.trim();
+    if (typeof html !== "string") return ""
+    let output = html.trim()
+    if (!output) return ""
+    output = output.replace(/^<p>/i, "").replace(/<\/p>$/i, "")
+    output = output.replace(/\.+$/g, "")
+    return output.trim()
   }
 
   function extractImplementationRefs(implementation) {
-    if (!Array.isArray(implementation)) return [];
+    if (!Array.isArray(implementation)) return []
     return implementation
-      .map((item) => {
-        if (!item || typeof item !== "object") return null;
-        const file = typeof item.file === "string" ? item.file : "";
-        const functionName =
-          typeof item.function_name === "string" ? item.function_name : "";
-        const line = typeof item.line === "number" ? item.line : undefined;
-        const path = typeof item.path === "string" ? item.path : "";
-        if (!file && !functionName && !path) return null;
-        return { file, functionName, line, path };
+      .map(item => {
+        if (!item || typeof item !== "object") return null
+        const file = typeof item.file === "string" ? item.file : ""
+        const functionName = typeof item.function_name === "string" ? item.function_name : ""
+        const line = typeof item.line === "number" ? item.line : undefined
+        const path = typeof item.path === "string" ? item.path : ""
+        if (!file && !functionName && !path) return null
+        return {file, functionName, line, path}
       })
-      .filter(Boolean);
+      .filter(Boolean)
   }
 
   function buildGitHubLineUrl(rawUrl, line) {
-    if (typeof rawUrl !== "string" || !rawUrl) return "";
-    let url = rawUrl;
-    const RAW_PREFIX = "https://raw.githubusercontent.com/";
+    if (typeof rawUrl !== "string" || !rawUrl) return ""
+    let url = rawUrl
+    const RAW_PREFIX = "https://raw.githubusercontent.com/"
     if (rawUrl.startsWith(RAW_PREFIX)) {
-      const parts = rawUrl.slice(RAW_PREFIX.length).split("/");
+      const parts = rawUrl.slice(RAW_PREFIX.length).split("/")
       if (parts.length >= 4) {
-        const owner = parts[0];
-        const repo = parts[1];
-        const commit = parts[2];
-        const filePath = parts.slice(3).join("/");
-        url = `https://github.com/${owner}/${repo}/blob/${commit}/${filePath}`;
+        const owner = parts[0]
+        const repo = parts[1]
+        const commit = parts[2]
+        const filePath = parts.slice(3).join("/")
+        url = `https://github.com/${owner}/${repo}/blob/${commit}/${filePath}`
       } else {
-        url = rawUrl.replace(RAW_PREFIX, "https://github.com/");
+        url = rawUrl.replace(RAW_PREFIX, "https://github.com/")
       }
     }
     if (typeof line === "number" && Number.isFinite(line) && line > 0) {
-      url = url.split("#")[0] + `#L${line}`;
+      url = url.split("#")[0] + `#L${line}`
     }
-    return url;
+    return url
   }
 
   function renderControlFlowSummary(controlFlow) {
     if (!controlFlow || typeof controlFlow !== "object") {
-      return (
-        <p className="tvm-missing-placeholder">
-          Control flow details are not available.
-        </p>
-      );
+      return <p className="tvm-missing-placeholder">Control flow details are not available.</p>
     }
 
-    const branches = Array.isArray(controlFlow.branches)
-      ? controlFlow.branches.filter(Boolean)
-      : [];
-    const nobranch = Boolean(controlFlow.nobranch);
-    const isContinuationObject = (value) =>
-      Boolean(value && typeof value === "object" && typeof value.type === "string");
+    const branches = Array.isArray(controlFlow.branches) ? controlFlow.branches.filter(Boolean) : []
+    const nobranch = Boolean(controlFlow.nobranch)
+    const isContinuationObject = value =>
+      Boolean(value && typeof value === "object" && typeof value.type === "string")
 
-    const formatPrimitiveValue = (value) => {
-      if (value === null || value === undefined) return "";
+    const formatPrimitiveValue = value => {
+      if (value === null || value === undefined) return ""
       if (Array.isArray(value)) {
         return value
-          .map((item) => formatPrimitiveValue(item))
+          .map(item => formatPrimitiveValue(item))
           .filter(Boolean)
-          .join(", ");
+          .join(", ")
       }
       if (typeof value === "object") {
-        return "";
+        return ""
       }
       if (typeof value === "boolean") {
-        return value ? "true" : "false";
+        return value ? "true" : "false"
       }
-      return String(value);
-    };
+      return String(value)
+    }
 
-    const describeContinuation = (node) => {
+    const describeContinuation = node => {
       if (!isContinuationObject(node)) {
         return {
           typeLabel: "unknown",
           valueLabel: "?",
           detailLabel: "",
           text: "unknown ?",
-        };
+        }
       }
 
-      const type = String(node.type || "").toLowerCase();
-      let typeLabel = "unknown";
-      let valueLabel = "";
+      const type = String(node.type || "").toLowerCase()
+      let typeLabel = "unknown"
+      let valueLabel = ""
 
       switch (type) {
         case "variable":
-          typeLabel = "var";
-          valueLabel = typeof node.var_name === "string" ? node.var_name : "?";
-          break;
+          typeLabel = "var"
+          valueLabel = typeof node.var_name === "string" ? node.var_name : "?"
+          break
         case "register":
-          typeLabel = "register";
+          typeLabel = "register"
           if (typeof node.index === "number") {
-            valueLabel = `c${node.index}`;
+            valueLabel = `c${node.index}`
           } else if (typeof node.var_name === "string") {
-            valueLabel = `c{${node.var_name}}`;
+            valueLabel = `c{${node.var_name}}`
           } else {
-            valueLabel = "c?";
+            valueLabel = "c?"
           }
-          break;
+          break
         case "cc":
-          typeLabel = "cc";
-          valueLabel = "";
-          break;
+          typeLabel = "cc"
+          valueLabel = ""
+          break
         case "special":
-          typeLabel = "special";
-          valueLabel = typeof node.name === "string" && node.name ? node.name : "?";
-          break;
+          typeLabel = "special"
+          valueLabel = typeof node.name === "string" && node.name ? node.name : "?"
+          break
         default:
-          typeLabel = node.type ? String(node.type) : "unknown";
-          valueLabel = "";
-          break;
+          typeLabel = node.type ? String(node.type) : "unknown"
+          valueLabel = ""
+          break
       }
 
-      const detailParts = [];
+      const detailParts = []
       if (type === "special") {
-        const args = node.args && typeof node.args === "object" ? node.args : {};
+        const args = node.args && typeof node.args === "object" ? node.args : {}
         Object.entries(args).forEach(([argKey, argValue]) => {
           if (!isContinuationObject(argValue)) {
-            const formatted = formatPrimitiveValue(argValue);
+            const formatted = formatPrimitiveValue(argValue)
             if (formatted) {
-              detailParts.push(`${argKey}=${formatted}`);
+              detailParts.push(`${argKey}=${formatted}`)
             }
           }
-        });
+        })
       }
 
-      const knownKeys = new Set(["type", "var_name", "index", "name", "args", "save"]);
+      const knownKeys = new Set(["type", "var_name", "index", "name", "args", "save"])
       Object.entries(node).forEach(([key, value]) => {
-        if (knownKeys.has(key)) return;
-        const formatted = formatPrimitiveValue(value);
+        if (knownKeys.has(key)) return
+        const formatted = formatPrimitiveValue(value)
         if (formatted) {
-          detailParts.push(`${key}=${formatted}`);
+          detailParts.push(`${key}=${formatted}`)
         }
-      });
+      })
 
-      const detailLabel = detailParts.length > 0 ? `(${detailParts.join(", ")})` : "";
+      const detailLabel = detailParts.length > 0 ? `(${detailParts.join(", ")})` : ""
       const text = [typeLabel, valueLabel, detailLabel]
         .filter(Boolean)
         .join(" ")
         .replace(/\s+/g, " ")
-        .trim();
+        .trim()
 
-      return { typeLabel, valueLabel, detailLabel, text };
-    };
+      return {typeLabel, valueLabel, detailLabel, text}
+    }
 
-    const gatherChildContinuations = (node) => {
-      if (!isContinuationObject(node)) return [];
-      const type = String(node.type || "").toLowerCase();
-      const children = [];
+    const gatherChildContinuations = node => {
+      if (!isContinuationObject(node)) return []
+      const type = String(node.type || "").toLowerCase()
+      const children = []
 
       const saveEntries =
         node.save && typeof node.save === "object"
           ? Object.entries(node.save).filter(([, value]) => isContinuationObject(value))
-          : [];
+          : []
       saveEntries
         .sort(([aKey], [bKey]) => aKey.localeCompare(bKey))
         .forEach(([slot, value]) => {
           children.push({
             label: String(slot),
             node: value,
-          });
-        });
+          })
+        })
 
       if (type === "special") {
-        const args = node.args && typeof node.args === "object" ? node.args : {};
+        const args = node.args && typeof node.args === "object" ? node.args : {}
         Object.entries(args).forEach(([argKey, argValue]) => {
           if (isContinuationObject(argValue)) {
             children.push({
               label: argKey,
               node: argValue,
-            });
+            })
           }
-        });
+        })
       }
 
-      return children.map((child) => {
-        const raw = child.label ? String(child.label) : "";
-        const cleaned = raw.replace(/^(arg|save)\s+/i, "").trim();
+      return children.map(child => {
+        const raw = child.label ? String(child.label) : ""
+        const cleaned = raw.replace(/^(arg|save)\s+/i, "").trim()
         return {
           label: cleaned,
           node: child.node,
-        };
-      });
-    };
+        }
+      })
+    }
 
     const buildContinuationTree = (node, path = "root") => {
-      const summary = describeContinuation(node);
+      const summary = describeContinuation(node)
       const children = gatherChildContinuations(node).map((child, idx) => ({
         label: child.label,
         tree: buildContinuationTree(child.node, `${path}.${idx}`),
-      }));
-      return { id: path, summary, children };
-    };
+      }))
+      return {id: path, summary, children}
+    }
 
-    const splitEdgeLabel = (label) => {
+    const splitEdgeLabel = label => {
       if (!label) {
-        return { primary: "", secondary: "" };
+        return {primary: "", secondary: ""}
       }
-      const text = label.trim();
+      const text = label.trim()
       if (!text) {
-        return { primary: "", secondary: "" };
+        return {primary: "", secondary: ""}
       }
-      const tokens = text.split(/\s+/);
+      const tokens = text.split(/\s+/)
       if (tokens.length <= 1) {
-        return { primary: text, secondary: "" };
+        return {primary: text, secondary: ""}
       }
       return {
         primary: tokens[0],
         secondary: tokens.slice(1).join(" "),
-      };
-    };
-
-    const computeSpan = (tree) => {
-      if (!tree.children || tree.children.length === 0) {
-        tree.span = 1;
-        return 1;
       }
-      let total = 0;
-      tree.children.forEach((child) => {
-        total += computeSpan(child.tree);
-      });
-      tree.span = Math.max(total, 1);
-      return tree.span;
-    };
+    }
 
-    const H_SPACING = 200;
-    const V_SPACING = 110;
-    const NODE_HEIGHT = 42;
-    const NODE_MIN_WIDTH = 140;
-    const PADDING_X = 60;
-    const PADDING_Y = 60;
+    const computeSpan = tree => {
+      if (!tree.children || tree.children.length === 0) {
+        tree.span = 1
+        return 1
+      }
+      let total = 0
+      tree.children.forEach(child => {
+        total += computeSpan(child.tree)
+      })
+      tree.span = Math.max(total, 1)
+      return tree.span
+    }
 
-    let canvasMeasureCtx = null;
-    const measureNodeWidth = (summary) => {
+    const H_SPACING = 200
+    const V_SPACING = 110
+    const NODE_HEIGHT = 42
+    const NODE_MIN_WIDTH = 140
+    const PADDING_X = 60
+    const PADDING_Y = 60
+
+    let canvasMeasureCtx = null
+    const measureNodeWidth = summary => {
       if (typeof document !== "undefined") {
         if (!canvasMeasureCtx) {
-          const canvas = document.createElement("canvas");
-          canvasMeasureCtx = canvas.getContext("2d");
+          const canvas = document.createElement("canvas")
+          canvasMeasureCtx = canvas.getContext("2d")
         }
         if (canvasMeasureCtx) {
-          canvasMeasureCtx.font = "600 13px 'JetBrains Mono', 'Menlo', 'Monaco', monospace";
-          const typeText = (summary.typeLabel || "").toUpperCase();
-          const parts = [typeText];
-          if (summary.valueLabel) parts.push(summary.valueLabel);
-          if (summary.detailLabel) parts.push(summary.detailLabel);
-          const text = parts.join(" ").trim();
-          const metrics = canvasMeasureCtx.measureText(text || "node");
-          return Math.max(metrics.width + 48, NODE_MIN_WIDTH);
+          canvasMeasureCtx.font = "600 13px 'JetBrains Mono', 'Menlo', 'Monaco', monospace"
+          const typeText = (summary.typeLabel || "").toUpperCase()
+          const parts = [typeText]
+          if (summary.valueLabel) parts.push(summary.valueLabel)
+          if (summary.detailLabel) parts.push(summary.detailLabel)
+          const text = parts.join(" ").trim()
+          const metrics = canvasMeasureCtx.measureText(text || "node")
+          return Math.max(metrics.width + 48, NODE_MIN_WIDTH)
         }
       }
       const fallbackLength =
         (summary.typeLabel || "").length +
         (summary.valueLabel || "").length +
-        (summary.detailLabel || "").length;
-      return Math.max(fallbackLength * 7 + 48, NODE_MIN_WIDTH);
-    };
+        (summary.detailLabel || "").length
+      return Math.max(fallbackLength * 7 + 48, NODE_MIN_WIDTH)
+    }
 
-    const assignPositions = (
-      tree,
-      nodes,
-      nodeMap,
-      edges,
-      depth = 0,
-      offsetSpan = 0
-    ) => {
-      const span = Math.max(tree.span || 1, 1);
-      const spanWidth = span * H_SPACING;
-      const x = PADDING_X + offsetSpan + spanWidth / 2;
-      const y = PADDING_Y + depth * V_SPACING;
-      const width = measureNodeWidth(tree.summary);
+    const assignPositions = (tree, nodes, nodeMap, edges, depth = 0, offsetSpan = 0) => {
+      const span = Math.max(tree.span || 1, 1)
+      const spanWidth = span * H_SPACING
+      const x = PADDING_X + offsetSpan + spanWidth / 2
+      const y = PADDING_Y + depth * V_SPACING
+      const width = measureNodeWidth(tree.summary)
       const nodeEntry = {
         id: tree.id,
         summary: tree.summary,
@@ -662,78 +641,86 @@ export const TvmInstructionTable = () => {
         y,
         width,
         height: NODE_HEIGHT,
-      };
-      nodes.push(nodeEntry);
-      nodeMap.set(tree.id, nodeEntry);
+      }
+      nodes.push(nodeEntry)
+      nodeMap.set(tree.id, nodeEntry)
 
-      let childOffset = offsetSpan;
-      tree.children.forEach((child) => {
-        assignPositions(child.tree, nodes, nodeMap, edges, depth + 1, childOffset);
+      let childOffset = offsetSpan
+      tree.children.forEach(child => {
+        assignPositions(child.tree, nodes, nodeMap, edges, depth + 1, childOffset)
         edges.push({
           from: tree.id,
           to: child.tree.id,
           label: child.label,
-        });
-        childOffset += Math.max(child.tree.span || 1, 1) * H_SPACING;
-      });
-    };
+        })
+        childOffset += Math.max(child.tree.span || 1, 1) * H_SPACING
+      })
+    }
 
     return (
       <div>
-        {(branches.length > 0 || !nobranch) ? (<div><b>Falls through: </b>{nobranch ? "Yes" : "No"}</div>) : null}
+        {branches.length > 0 || !nobranch ? (
+          <div>
+            <b>Falls through: </b>
+            {nobranch ? "Yes" : "No"}
+          </div>
+        ) : null}
         {branches.length > 0 ? (
           <div className="tvm-control-flow-branches">
             {branches.map((branch, index) => {
-              const rootSummary = describeContinuation(branch);
-              const branchType = (rootSummary.typeLabel || "").toUpperCase();
+              const rootSummary = describeContinuation(branch)
+              const branchType = (rootSummary.typeLabel || "").toUpperCase()
               const branchTitleText = `Branch -> ${branchType}${
                 rootSummary.valueLabel ? ` ${rootSummary.valueLabel}` : ""
-              }`;
-              const tree = buildContinuationTree(branch, `branch-${index}`);
-              computeSpan(tree);
-              const nodes = [];
-              const nodeMap = new Map();
-              const edges = [];
-              assignPositions(tree, nodes, nodeMap, edges);
+              }`
+              const tree = buildContinuationTree(branch, `branch-${index}`)
+              computeSpan(tree)
+              const nodes = []
+              const nodeMap = new Map()
+              const edges = []
+              assignPositions(tree, nodes, nodeMap, edges)
 
-              let minX = Infinity;
-              let maxX = -Infinity;
-              let minY = Infinity;
-              let maxY = -Infinity;
-              nodes.forEach((node) => {
-                minX = Math.min(minX, node.x - node.width / 2);
-                maxX = Math.max(maxX, node.x + node.width / 2);
-                minY = Math.min(minY, node.y - node.height / 2);
-                maxY = Math.max(maxY, node.y + node.height / 2);
-              });
+              let minX = Infinity
+              let maxX = -Infinity
+              let minY = Infinity
+              let maxY = -Infinity
+              nodes.forEach(node => {
+                minX = Math.min(minX, node.x - node.width / 2)
+                maxX = Math.max(maxX, node.x + node.width / 2)
+                minY = Math.min(minY, node.y - node.height / 2)
+                maxY = Math.max(maxY, node.y + node.height / 2)
+              })
 
-              const shiftX = Number.isFinite(minX) ? PADDING_X - minX : 0;
-              const shiftY = Number.isFinite(minY) ? PADDING_Y - minY : 0;
+              const shiftX = Number.isFinite(minX) ? PADDING_X - minX : 0
+              const shiftY = Number.isFinite(minY) ? PADDING_Y - minY : 0
               if (shiftX || shiftY) {
-                nodes.forEach((node) => {
-                  node.x += shiftX;
-                  node.y += shiftY;
-                });
+                nodes.forEach(node => {
+                  node.x += shiftX
+                  node.y += shiftY
+                })
               }
 
-              const canvasWidth = Math.max(maxX - minX + PADDING_X * 2, 260);
-              const canvasHeight = Math.max(maxY - minY + PADDING_Y * 2, NODE_HEIGHT + PADDING_Y * 2);
+              const canvasWidth = Math.max(maxX - minX + PADDING_X * 2, 260)
+              const canvasHeight = Math.max(
+                maxY - minY + PADDING_Y * 2,
+                NODE_HEIGHT + PADDING_Y * 2,
+              )
 
               const edgeLayouts = edges
                 .map((edge, edgeIdx) => {
-                  const from = nodeMap.get(edge.from);
-                  const to = nodeMap.get(edge.to);
-                  if (!from || !to) return null;
-                  const fromX = from.x;
-                  const fromY = from.y + from.height / 2;
-                  const toX = to.x;
-                  const toY = to.y - to.height / 2;
-                  const midY = fromY + (toY - fromY) / 2;
-                  const path = `M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`;
-                  const labelX = (fromX + toX) / 2;
-                  const labelY = midY;
-                  const segments = splitEdgeLabel(edge.label);
-                  const hasSecondary = Boolean(segments.secondary);
+                  const from = nodeMap.get(edge.from)
+                  const to = nodeMap.get(edge.to)
+                  if (!from || !to) return null
+                  const fromX = from.x
+                  const fromY = from.y + from.height / 2
+                  const toX = to.x
+                  const toY = to.y - to.height / 2
+                  const midY = fromY + (toY - fromY) / 2
+                  const path = `M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`
+                  const labelX = (fromX + toX) / 2
+                  const labelY = midY
+                  const segments = splitEdgeLabel(edge.label)
+                  const hasSecondary = Boolean(segments.secondary)
                   return {
                     id: `${edge.from}->${edge.to}-${edgeIdx}`,
                     path,
@@ -741,9 +728,9 @@ export const TvmInstructionTable = () => {
                     labelY,
                     segments,
                     hasSecondary,
-                  };
+                  }
                 })
-                .filter(Boolean);
+                .filter(Boolean)
 
               return (
                 <div key={`branch-${index}`} className="tvm-control-flow-branch">
@@ -780,7 +767,7 @@ export const TvmInstructionTable = () => {
                             <path d="M1 1 L7 4 L1 7 Z" fill="currentColor" />
                           </marker>
                         </defs>
-                        {edgeLayouts.map((edge) => (
+                        {edgeLayouts.map(edge => (
                           <path
                             key={`edge-path-${edge.id}`}
                             d={edge.path}
@@ -789,30 +776,33 @@ export const TvmInstructionTable = () => {
                           />
                         ))}
                       </svg>
-                      {edgeLayouts.map((edge) => (
+                      {edgeLayouts.map(edge =>
                         edge.segments.primary ? (
-                      <div
-                        key={`edge-label-${edge.id}`}
-                        className={`tvm-flow-edge-label${
-                          edge.hasSecondary ? ' has-secondary' : ''
-                        }`}
-                        style={{
-                          left: `${edge.labelX}px`,
-                          top: `${edge.labelY}px`,
-                        }}
-                      >
-                        <span className="tvm-flow-edge-label-primary">
-                          {highlightMatches(edge.segments.primary.toUpperCase(), searchTokens)}
-                        </span>
-                        {edge.segments.secondary && (
-                          <span className="tvm-flow-edge-label-secondary">
-                            {highlightMatches(edge.segments.secondary.toUpperCase(), searchTokens)}
-                          </span>
-                        )}
-                      </div>
-                        ) : null
-                      ))}
-                      {nodes.map((node) => (
+                          <div
+                            key={`edge-label-${edge.id}`}
+                            className={`tvm-flow-edge-label${
+                              edge.hasSecondary ? " has-secondary" : ""
+                            }`}
+                            style={{
+                              left: `${edge.labelX}px`,
+                              top: `${edge.labelY}px`,
+                            }}
+                          >
+                            <span className="tvm-flow-edge-label-primary">
+                              {highlightMatches(edge.segments.primary.toUpperCase(), searchTokens)}
+                            </span>
+                            {edge.segments.secondary && (
+                              <span className="tvm-flow-edge-label-secondary">
+                                {highlightMatches(
+                                  edge.segments.secondary.toUpperCase(),
+                                  searchTokens,
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        ) : null,
+                      )}
+                      {nodes.map(node => (
                         <div
                           key={node.id}
                           className="tvm-flow-node"
@@ -823,12 +813,12 @@ export const TvmInstructionTable = () => {
                         >
                           <span
                             className="tvm-control-flow-node-pill"
-                            style={{ minWidth: `${node.width}px` }}
+                            style={{minWidth: `${node.width}px`}}
                           >
                             <span className="tvm-control-flow-node-type">
                               {highlightMatches(
                                 (node.summary.typeLabel || "").toUpperCase(),
-                                searchTokens
+                                searchTokens,
                               )}
                             </span>
                             {node.summary.valueLabel && (
@@ -847,7 +837,7 @@ export const TvmInstructionTable = () => {
                     </div>
                   </div>
                 </div>
-              );
+              )
             })}
           </div>
         ) : (
@@ -858,22 +848,19 @@ export const TvmInstructionTable = () => {
           </p>
         )}
       </div>
-    );
+    )
   }
 
   function renderStackEntry(entry, key, mode) {
-    if (!entry) return null;
+    if (!entry) return null
 
     if (entry.type === "conditional") {
       if (mode === "compact" || mode === "detail-inline") {
         return (
-          <span
-            key={key}
-            className="tvm-stack-pill tvm-stack-pill--conditional"
-          >
+          <span key={key} className="tvm-stack-pill tvm-stack-pill--conditional">
             Conditional: {highlightMatches(String(entry.name || "?"), searchTokens)}
           </span>
-        );
+        )
       }
 
       return (
@@ -883,16 +870,12 @@ export const TvmInstructionTable = () => {
           </span>
           {Array.isArray(entry.match) && entry.match.length > 0 ? (
             entry.match.map((matchArm, idx) => (
-              <div
-                key={`${key}-match-${idx}`}
-                className="tvm-stack-conditional-branch"
-              >
+              <div key={`${key}-match-${idx}`} className="tvm-stack-conditional-branch">
                 <span className="tvm-stack-conditional-label">
                   = {highlightMatches(String(matchArm.value ?? ""), searchTokens)}
                 </span>
                 <div className="tvm-stack-conditional-values">
-                  {Array.isArray(matchArm.stack) &&
-                  matchArm.stack.length > 0 ? (
+                  {Array.isArray(matchArm.stack) && matchArm.stack.length > 0 ? (
                     matchArm.stack
                       .slice()
                       .reverse()
@@ -900,21 +883,17 @@ export const TvmInstructionTable = () => {
                         renderStackEntry(
                           nested,
                           `${key}-match-${idx}-item-${nestedIdx}`,
-                          "detail-inline"
-                        )
+                          "detail-inline",
+                        ),
                       )
                   ) : (
-                    <span className="tvm-stack-pill tvm-stack-pill--empty">
-                      Empty
-                    </span>
+                    <span className="tvm-stack-pill tvm-stack-pill--empty">Empty</span>
                   )}
                 </div>
               </div>
             ))
           ) : (
-            <span className="tvm-stack-pill tvm-stack-pill--empty">
-              Empty branches
-            </span>
+            <span className="tvm-stack-pill tvm-stack-pill--empty">Empty branches</span>
           )}
           {Array.isArray(entry.else) && (
             <div className="tvm-stack-conditional-branch">
@@ -925,83 +904,64 @@ export const TvmInstructionTable = () => {
                     .slice()
                     .reverse()
                     .map((nested, nestedIdx) =>
-                      renderStackEntry(
-                        nested,
-                        `${key}-else-${nestedIdx}`,
-                        "detail-inline"
-                      )
+                      renderStackEntry(nested, `${key}-else-${nestedIdx}`, "detail-inline"),
                     )
                 ) : (
-                  <span className="tvm-stack-pill tvm-stack-pill--empty">
-                    Empty
-                  </span>
+                  <span className="tvm-stack-pill tvm-stack-pill--empty">Empty</span>
                 )}
               </div>
             </div>
           )}
         </div>
-      );
+      )
     }
 
     if (entry.type === "array") {
-      const label = `${entry.name || "items"}[${entry.length_var ?? ""}]`;
+      const label = `${entry.name || "items"}[${entry.length_var ?? ""}]`
       return (
         <span key={key} className="tvm-stack-pill tvm-stack-pill--array">
           {highlightMatches(label, searchTokens)}
         </span>
-      );
+      )
     }
 
     if (entry.type === "const") {
-      const value =
-        entry.value === null
-          ? "null"
-          : entry.value === undefined
-          ? "?"
-          : entry.value;
+      const value = entry.value === null ? "null" : entry.value === undefined ? "?" : entry.value
       return (
         <span key={key} className="tvm-stack-pill tvm-stack-pill--const">
-          {highlightMatches(String(value), searchTokens)}: {highlightMatches(
-            String(entry.value_type || "Const"),
-            searchTokens
-          )}
+          {highlightMatches(String(value), searchTokens)}:{" "}
+          {highlightMatches(String(entry.value_type || "Const"), searchTokens)}
         </span>
-      );
+      )
     }
 
     const valueTypes =
       Array.isArray(entry.value_types) && entry.value_types.length > 0
         ? entry.value_types.join("/")
-        : entry.value_type || "Any";
-    const label = entry.name ? `${entry.name}: ${valueTypes}` : valueTypes;
+        : entry.value_type || "Any"
+    const label = entry.name ? `${entry.name}: ${valueTypes}` : valueTypes
 
     return (
       <span key={key} className="tvm-stack-pill tvm-stack-pill--simple">
         {highlightMatches(label, searchTokens)}
       </span>
-    );
+    )
   }
 
   function renderStackColumn(title, items, mode = "detail") {
-    const safeItems = Array.isArray(items) ? items : [];
-    const reversed = safeItems.slice().reverse();
-    const limit = mode === "compact" ? 4 : reversed.length;
-    const shown = reversed.slice(0, limit);
-    const truncated = mode === "compact" && reversed.length > shown.length;
+    const safeItems = Array.isArray(items) ? items : []
+    const reversed = safeItems.slice().reverse()
+    const limit = mode === "compact" ? 4 : reversed.length
+    const shown = reversed.slice(0, limit)
+    const truncated = mode === "compact" && reversed.length > shown.length
 
     return (
-      <div
-        className={`tvm-stack-column ${
-          mode === "compact" ? "tvm-stack-column--compact" : ""
-        }`}
-      >
+      <div className={`tvm-stack-column ${mode === "compact" ? "tvm-stack-column--compact" : ""}`}>
         <div className="tvm-stack-column-title">{title}</div>
         <div className="tvm-stack-top">TOP</div>
         <div className="tvm-stack-list">
           {shown.length === 0 && <span className="tvm-stack-empty">Empty</span>}
-          {shown.map((entry, idx) =>
-            renderStackEntry(entry, `${title}-${idx}`, mode)
-          )}
+          {shown.map((entry, idx) => renderStackEntry(entry, `${title}-${idx}`, mode))}
           {truncated && (
             <span className="tvm-stack-pill tvm-stack-pill--more">
               +{reversed.length - shown.length} more
@@ -1009,55 +969,50 @@ export const TvmInstructionTable = () => {
           )}
         </div>
       </div>
-    );
+    )
   }
 
   function renderStackColumns(instruction, mode = "detail") {
-    const inputs = instruction?.valueFlow?.inputs ?? [];
-    const outputs = instruction?.valueFlow?.outputs ?? [];
+    const inputs = instruction?.valueFlow?.inputs ?? []
+    const outputs = instruction?.valueFlow?.outputs ?? []
 
     return (
       <div
-        className={`tvm-stack-columns ${
-          mode === "compact" ? "tvm-stack-columns--compact" : ""
-        }`}
+        className={`tvm-stack-columns ${mode === "compact" ? "tvm-stack-columns--compact" : ""}`}
       >
         {renderStackColumn("Inputs", inputs, mode)}
         {renderStackColumn("Outputs", outputs, mode)}
       </div>
-    );
+    )
   }
 
   function renderInstructionDetail(instruction, options = {}) {
-    const { isAnchorTarget = false, onOpenRawJson = () => {} } = options;
-    const hasAliases =
-      Array.isArray(instruction.aliases) && instruction.aliases.length > 0;
+    const {isAnchorTarget = false, onOpenRawJson = () => {}} = options
+    const hasAliases = Array.isArray(instruction.aliases) && instruction.aliases.length > 0
     const readsRegisters = Array.isArray(instruction.registers?.inputs)
       ? instruction.registers.inputs
-      : [];
+      : []
     const writesRegisters = Array.isArray(instruction.registers?.outputs)
       ? instruction.registers.outputs
-      : [];
-    const hasRegisterInfo = readsRegisters.length > 0 || writesRegisters.length > 0;
-    const hasStackData =
-      !instruction.missing.inputs || !instruction.missing.outputs;
+      : []
+    const hasRegisterInfo = readsRegisters.length > 0 || writesRegisters.length > 0
+    const hasStackData = !instruction.missing.inputs || !instruction.missing.outputs
     const hasFiftExamples =
-      Array.isArray(instruction.fiftExamples) &&
-      instruction.fiftExamples.length > 0;
+      Array.isArray(instruction.fiftExamples) && instruction.fiftExamples.length > 0
     const descriptionHtml = highlightHtmlContent(
       instruction.descriptionHtml || instruction.description || "",
-      searchTokens
-    );
+      searchTokens,
+    )
     const implementationRefs = Array.isArray(instruction.implementationRefs)
       ? instruction.implementationRefs.filter(Boolean)
-      : [];
-    const hasImplementation = implementationRefs.length > 0;
+      : []
+    const hasImplementation = implementationRefs.length > 0
 
     const renderRegisterList = (list, keyPrefix) => {
       const tokens = Array.isArray(list)
         ? list
             .map((register, idx) => {
-              if (!register) return null;
+              if (!register) return null
               if (register.type === "special" && register.name) {
                 return (
                   <span
@@ -1066,22 +1021,22 @@ export const TvmInstructionTable = () => {
                   >
                     {register.name}
                   </span>
-                );
+                )
               }
               const sub =
                 register.type === "variable"
                   ? register.var_name || "i"
                   : typeof register.index === "number"
-                  ? register.index
-                  : register.var_name || "?";
+                    ? register.index
+                    : register.var_name || "?"
               return (
                 <span key={`${keyPrefix}-const-${idx}`} className="tvm-register-token">
                   c<sub>{sub}</sub>
                 </span>
-              );
+              )
             })
             .filter(Boolean)
-        : [];
+        : []
 
       return tokens.flatMap((token, idx) =>
         idx === 0
@@ -1091,9 +1046,9 @@ export const TvmInstructionTable = () => {
                 ,{" "}
               </span>,
               token,
-            ]
-      );
-    };
+            ],
+      )
+    }
 
     const badgeNodes = [
       <span key="gas" className="tvm-detail-badge">
@@ -1105,13 +1060,10 @@ export const TvmInstructionTable = () => {
       <span key="version" className="tvm-detail-badge">
         <span className="tvm-detail-badge-label">TVM</span>{" "}
         <span className="tvm-detail-badge-value">
-          {highlightMatches(
-            instruction.since > 0 ? `v${instruction.since}` : "v0",
-            searchTokens
-          )}
+          {highlightMatches(instruction.since > 0 ? `v${instruction.since}` : "v0", searchTokens)}
         </span>
       </span>,
-    ];
+    ]
 
     if (hasRegisterInfo) {
       if (readsRegisters.length > 0) {
@@ -1121,8 +1073,8 @@ export const TvmInstructionTable = () => {
             <span className="tvm-detail-badge-value">
               {renderRegisterList(readsRegisters, "read")}
             </span>
-          </span>
-        );
+          </span>,
+        )
       }
       if (writesRegisters.length > 0) {
         badgeNodes.push(
@@ -1131,14 +1083,12 @@ export const TvmInstructionTable = () => {
             <span className="tvm-detail-badge-value">
               {renderRegisterList(writesRegisters, "write")}
             </span>
-          </span>
-        );
+          </span>,
+        )
       }
     }
 
-    const panelClassName = `tvm-detail-panel${
-      isAnchorTarget ? " is-anchor-target" : ""
-    }`;
+    const panelClassName = `tvm-detail-panel${isAnchorTarget ? " is-anchor-target" : ""}`
 
     return (
       <div className={panelClassName}>
@@ -1151,29 +1101,57 @@ export const TvmInstructionTable = () => {
                 className={`tvm-copy-link${copied[instruction.uid] ? " is-copied" : ""}`}
                 aria-label={copied[instruction.uid] ? "Copied" : "Copy link to instruction"}
                 onClick={() => {
-                  const anchorId = instruction.anchorId || buildAnchorId(instruction);
+                  const anchorId = instruction.anchorId || buildAnchorId(instruction)
                   copyAnchorUrl(anchorId)
                     .then(() => {
-                      setCopied((prev) => ({ ...prev, [instruction.uid]: true }));
+                      setCopied(prev => ({...prev, [instruction.uid]: true}))
                       setTimeout(() => {
-                        setCopied((prev) => {
-                          const { [instruction.uid]: _omit, ...rest } = prev;
-                          return rest;
-                        });
-                      }, 1500);
+                        setCopied(prev => {
+                          const {[instruction.uid]: _omit, ...rest} = prev
+                          return rest
+                        })
+                      }, 1500)
                     })
-                    .catch(() => {});
+                    .catch(() => {})
                 }}
                 title={copied[instruction.uid] ? "Copied" : "Copy link"}
               >
                 {copied[instruction.uid] ? (
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M20 6L9 17l-5-5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 ) : (
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M10.59 13.41a1.996 1.996 0 0 0 2.82 0l3.59-3.59a2 2 0 0 0-2.83-2.83l-1.17 1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M13.41 10.59a1.996 1.996 0 0 0-2.82 0L7 14.18a2 2 0 1 0 2.83 2.83l1.17-1.17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M10.59 13.41a1.996 1.996 0 0 0 2.82 0l3.59-3.59a2 2 0 0 0-2.83-2.83l-1.17 1.17"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M13.41 10.59a1.996 1.996 0 0 0-2.82 0L7 14.18a2 2 0 1 0 2.83 2.83l1.17-1.17"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 )}
               </button>
@@ -1195,7 +1173,7 @@ export const TvmInstructionTable = () => {
             {descriptionHtml ? (
               <div
                 className="tvm-description"
-                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                dangerouslySetInnerHTML={{__html: descriptionHtml}}
               />
             ) : (
               <p className="tvm-missing-placeholder">Description not available.</p>
@@ -1224,12 +1202,10 @@ export const TvmInstructionTable = () => {
                 <span className="tvm-detail-subtitle">Implementation</span>
                 <div className="tvm-impl-badges">
                   {implementationRefs.map((ref, idx) => {
-                    const filename = ref.file || "source";
+                    const filename = ref.file || "source"
                     const linePart =
-                      typeof ref.line === "number" && ref.line > 0
-                        ? `:${ref.line}`
-                        : "";
-                    const href = buildGitHubLineUrl(ref.path, ref.line);
+                      typeof ref.line === "number" && ref.line > 0 ? `:${ref.line}` : ""
+                    const href = buildGitHubLineUrl(ref.path, ref.line)
                     return (
                       <a
                         key={`${instruction.mnemonic}-impl-${idx}`}
@@ -1241,7 +1217,7 @@ export const TvmInstructionTable = () => {
                         {filename}
                         {linePart}
                       </a>
-                    );
+                    )
                   })}
                 </div>
               </div>
@@ -1253,8 +1229,8 @@ export const TvmInstructionTable = () => {
                 <div className="tvm-example-list">
                   {instruction.fiftExamples.map((example, idx) => {
                     const description =
-                      typeof example.description === "string" ? example.description : "";
-                    const fiftCode = typeof example.fift === "string" ? example.fift : "";
+                      typeof example.description === "string" ? example.description : ""
+                    const fiftCode = typeof example.fift === "string" ? example.fift : ""
                     return (
                       <div
                         key={`${instruction.mnemonic}-example-${idx}`}
@@ -1272,7 +1248,7 @@ export const TvmInstructionTable = () => {
                           <code className="tvm-detail-code tvm-example-code">{fiftCode}</code>
                         )}
                       </div>
-                    );
+                    )
                   })}
                 </div>
               </section>
@@ -1282,13 +1258,11 @@ export const TvmInstructionTable = () => {
               <section className="tvm-detail-section tvm-detail-section--wide">
                 <h4 className="tvm-detail-title">Aliases</h4>
                 <div className="tvm-alias-list">
-                  {instruction.aliases.map((alias) => {
-                    const aliasDescriptionHtml = cleanAliasDescription(
-                      alias.description || ""
-                    );
+                  {instruction.aliases.map(alias => {
+                    const aliasDescriptionHtml = cleanAliasDescription(alias.description || "")
                     const hasAliasMeta =
                       Boolean(alias.doc_fift) ||
-                      (alias.operands && Object.keys(alias.operands).length > 0);
+                      (alias.operands && Object.keys(alias.operands).length > 0)
 
                     return (
                       <div key={alias.mnemonic} className="tvm-alias-item">
@@ -1321,7 +1295,7 @@ export const TvmInstructionTable = () => {
                           </div>
                         )}
                       </div>
-                    );
+                    )
                   })}
                 </div>
               </section>
@@ -1352,26 +1326,21 @@ export const TvmInstructionTable = () => {
               {Array.isArray(instruction.operands) && instruction.operands.length > 0 ? (
                 <div className="tvm-operands-list">
                   {instruction.operands.map((operand, idx) => {
-                    if (!operand || typeof operand !== "object") return null;
-                    const summary = highlightMatches(
-                      formatOperandSummary(operand),
-                      searchTokens
-                    );
+                    if (!operand || typeof operand !== "object") return null
+                    const summary = highlightMatches(formatOperandSummary(operand), searchTokens)
                     const hasRange =
-                      operand.min_value !== undefined || operand.max_value !== undefined;
+                      operand.min_value !== undefined || operand.max_value !== undefined
                     return (
                       <div key={`operand-${idx}`} className="tvm-operands-item">
                         <div className="tvm-operands-line">{summary}</div>
                         {hasRange && (
                           <div className="tvm-operands-detail">
-                            Range {highlightMatches(String(operand.min_value ?? "?"), searchTokens)} – {highlightMatches(
-                              String(operand.max_value ?? "?"),
-                              searchTokens
-                            )}
+                            Range {highlightMatches(String(operand.min_value ?? "?"), searchTokens)}{" "}
+                            – {highlightMatches(String(operand.max_value ?? "?"), searchTokens)}
                           </div>
                         )}
                       </div>
-                    );
+                    )
                   })}
                 </div>
               ) : (
@@ -1389,26 +1358,24 @@ export const TvmInstructionTable = () => {
             </div>
           </aside>
         </div>
-
-        
       </div>
-    );
+    )
   }
 
-  const [spec, setSpec] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
-  const [subcategory, setSubcategory] = useState("All");
-  const [sortMode, setSortMode] = useState("opcode");
-  const [expanded, setExpanded] = useState({});
-  const [copied, setCopied] = useState({});
-  const [activeAnchorId, setActiveAnchorId] = useState(null);
-  const [rawModalInstruction, setRawModalInstruction] = useState(null);
-  const [rawModalCopied, setRawModalCopied] = useState(false);
-  const searchInputRef = useRef(null);
-  const rawModalCopyTimeoutRef = useRef(null);
+  const [spec, setSpec] = useState(null)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
+  const [category, setCategory] = useState("All")
+  const [subcategory, setSubcategory] = useState("All")
+  const [sortMode, setSortMode] = useState("opcode")
+  const [expanded, setExpanded] = useState({})
+  const [copied, setCopied] = useState({})
+  const [activeAnchorId, setActiveAnchorId] = useState(null)
+  const [rawModalInstruction, setRawModalInstruction] = useState(null)
+  const [rawModalCopied, setRawModalCopied] = useState(false)
+  const searchInputRef = useRef(null)
+  const rawModalCopyTimeoutRef = useRef(null)
   const tableStyles = useMemo(
     () => `
 .tvm-instruction-app {
@@ -3144,442 +3111,400 @@ export const TvmInstructionTable = () => {
   }
 }
 `,
-    []
-  );
-  const searchTokens = useMemo(() => createSearchTokens(search), [search]);
+    [],
+  )
+  const searchTokens = useMemo(() => createSearchTokens(search), [search])
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     async function load() {
       try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(SPEC_URL);
+        setLoading(true)
+        setError(null)
+        const response = await fetch(SPEC_URL)
         if (!response.ok) {
-          throw new Error(`Failed to load spec (${response.status})`);
+          throw new Error(`Failed to load spec (${response.status})`)
         }
-        const payload = await response.json();
+        const payload = await response.json()
         if (!cancelled) {
-          setSpec(payload);
-          setLoading(false);
-          return;
+          setSpec(payload)
+          setLoading(false)
+          return
         }
       } catch (cause) {
         if (!cancelled) {
-          setError(cause instanceof Error ? cause.message : "Unknown error");
+          setError(cause instanceof Error ? cause.message : "Unknown error")
         }
       } finally {
         if (!cancelled) {
-          setLoading(false);
+          setLoading(false)
         }
       }
     }
 
-    load();
+    load()
 
     return () => {
-      cancelled = true;
-    };
-  }, []);
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
-    setExpanded({});
-  }, [spec]);
+    setExpanded({})
+  }, [spec])
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return
     try {
-      const raw = window.localStorage.getItem(PERSIST_KEY);
-      if (!raw) return;
-      const prefs = JSON.parse(raw);
+      const raw = window.localStorage.getItem(PERSIST_KEY)
+      if (!raw) return
+      const prefs = JSON.parse(raw)
       if (prefs && typeof prefs === "object") {
-        if (typeof prefs.search === "string") setSearch(prefs.search);
+        if (typeof prefs.search === "string") setSearch(prefs.search)
         if (
           typeof prefs.category === "string" &&
           (prefs.category === "All" || CATEGORY_GROUP_KEYS.has(prefs.category))
         ) {
-          setCategory(prefs.category);
+          setCategory(prefs.category)
         }
         if (typeof prefs.subcategory === "string") {
-          setSubcategory(prefs.subcategory);
+          setSubcategory(prefs.subcategory)
         }
         if (
           typeof prefs.sortMode === "string" &&
           ["opcode", "name", "category", "since"].includes(prefs.sortMode)
         ) {
-          setSortMode(prefs.sortMode);
+          setSortMode(prefs.sortMode)
         }
       }
     } catch (err) {
       // ignore malformed localStorage content
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return
     try {
       const payload = JSON.stringify({
         search,
         category,
         subcategory,
         sortMode,
-      });
-      window.localStorage.setItem(PERSIST_KEY, payload);
+      })
+      window.localStorage.setItem(PERSIST_KEY, payload)
     } catch (err) {
       // ignore persistence failures (private mode, etc.)
     }
-  }, [search, category, subcategory, sortMode]);
+  }, [search, category, subcategory, sortMode])
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handler = (event) => {
-      if (event.defaultPrevented || event.key !== "/") return;
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
-      const active = document.activeElement;
+    if (typeof window === "undefined") return
+    const handler = event => {
+      if (event.defaultPrevented || event.key !== "/") return
+      if (event.altKey || event.ctrlKey || event.metaKey) return
+      const active = document.activeElement
       if (active) {
-        const tagName = active.tagName ? active.tagName.toLowerCase() : "";
-        if (
-          tagName === "input" ||
-          tagName === "textarea" ||
-          active.isContentEditable
-        ) {
-          return;
+        const tagName = active.tagName ? active.tagName.toLowerCase() : ""
+        if (tagName === "input" || tagName === "textarea" || active.isContentEditable) {
+          return
         }
       }
-      event.preventDefault();
+      event.preventDefault()
       if (searchInputRef.current && typeof searchInputRef.current.focus === "function") {
-        searchInputRef.current.focus();
+        searchInputRef.current.focus()
       }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return
     const syncHash = () => {
-      const hash = window.location.hash ? window.location.hash.slice(1) : "";
+      const hash = window.location.hash ? window.location.hash.slice(1) : ""
       if (!hash) {
-        setActiveAnchorId(null);
-        return;
+        setActiveAnchorId(null)
+        return
       }
       try {
-        setActiveAnchorId(decodeURIComponent(hash));
+        setActiveAnchorId(decodeURIComponent(hash))
       } catch (_err) {
-        setActiveAnchorId(hash);
+        setActiveAnchorId(hash)
       }
-    };
-    syncHash();
-    window.addEventListener("hashchange", syncHash);
-    return () => window.removeEventListener("hashchange", syncHash);
-  }, []);
+    }
+    syncHash()
+    window.addEventListener("hashchange", syncHash)
+    return () => window.removeEventListener("hashchange", syncHash)
+  }, [])
 
   const instructions = useMemo(() => {
     if (!spec) {
-      return [];
+      return []
     }
 
-    const aliasByMnemonic = new Map();
-    const aliases = Array.isArray(spec.aliases) ? spec.aliases : [];
-    aliases.forEach((alias) => {
-      if (!alias || !alias.alias_of) return;
-      const list = aliasByMnemonic.get(alias.alias_of) || [];
-      list.push(alias);
-      aliasByMnemonic.set(alias.alias_of, list);
-    });
+    const aliasByMnemonic = new Map()
+    const aliases = Array.isArray(spec.aliases) ? spec.aliases : []
+    aliases.forEach(alias => {
+      if (!alias || !alias.alias_of) return
+      const list = aliasByMnemonic.get(alias.alias_of) || []
+      list.push(alias)
+      aliasByMnemonic.set(alias.alias_of, list)
+    })
 
-    return (Array.isArray(spec.instructions) ? spec.instructions : []).map(
-      (raw, idx) => {
-        const doc = raw.doc || {};
-        const bytecode = raw.bytecode || {};
-        const valueFlow = raw.value_flow || {};
-        const inputs = Array.isArray(valueFlow.inputs?.stack)
-          ? valueFlow.inputs.stack
-          : [];
-        const outputs = Array.isArray(valueFlow.outputs?.stack)
-          ? valueFlow.outputs.stack
-          : [];
-        const registersIn = Array.isArray(valueFlow.inputs?.registers)
-          ? valueFlow.inputs.registers
-          : [];
-        const registersOut = Array.isArray(valueFlow.outputs?.registers)
-          ? valueFlow.outputs.registers
-          : [];
+    return (Array.isArray(spec.instructions) ? spec.instructions : []).map((raw, idx) => {
+      const doc = raw.doc || {}
+      const bytecode = raw.bytecode || {}
+      const valueFlow = raw.value_flow || {}
+      const inputs = Array.isArray(valueFlow.inputs?.stack) ? valueFlow.inputs.stack : []
+      const outputs = Array.isArray(valueFlow.outputs?.stack) ? valueFlow.outputs.stack : []
+      const registersIn = Array.isArray(valueFlow.inputs?.registers)
+        ? valueFlow.inputs.registers
+        : []
+      const registersOut = Array.isArray(valueFlow.outputs?.registers)
+        ? valueFlow.outputs.registers
+        : []
 
-        const categoryKeyRaw = doc.category || "uncategorized";
-        const categoryGroup = resolveCategoryGroup(categoryKeyRaw);
-        const categoryGroupKey = categoryGroup.key;
-        const categoryGroupLabel = categoryGroup.label;
-        const rawCategoryLabel = humanizeCategoryKey(categoryKeyRaw);
-        const descriptionMissing = !doc.description;
-        const stackDocMissing = !doc.stack;
-        const gasMissing = !doc.gas;
-        const tlbMissing = !bytecode.tlb;
-        const inputsMissing = !Array.isArray(valueFlow.inputs?.stack);
-        const outputsMissing = !Array.isArray(valueFlow.outputs?.stack);
-        const implementationRefs = extractImplementationRefs(raw.implementation);
-        const implementationMissing = implementationRefs.length === 0;
-        const controlFlowMissing =
-          !raw.control_flow || !Array.isArray(raw.control_flow.branches);
+      const categoryKeyRaw = doc.category || "uncategorized"
+      const categoryGroup = resolveCategoryGroup(categoryKeyRaw)
+      const categoryGroupKey = categoryGroup.key
+      const categoryGroupLabel = categoryGroup.label
+      const rawCategoryLabel = humanizeCategoryKey(categoryKeyRaw)
+      const descriptionMissing = !doc.description
+      const stackDocMissing = !doc.stack
+      const gasMissing = !doc.gas
+      const tlbMissing = !bytecode.tlb
+      const inputsMissing = !Array.isArray(valueFlow.inputs?.stack)
+      const outputsMissing = !Array.isArray(valueFlow.outputs?.stack)
+      const implementationRefs = extractImplementationRefs(raw.implementation)
+      const implementationMissing = implementationRefs.length === 0
+      const controlFlowMissing = !raw.control_flow || !Array.isArray(raw.control_flow.branches)
 
-        const opcode = bytecode.prefix || "";
-        const anchorId = buildAnchorId({ opcode, mnemonic: raw.mnemonic });
+      const opcode = bytecode.prefix || ""
+      const anchorId = buildAnchorId({opcode, mnemonic: raw.mnemonic})
 
-        return {
-          uid: `${raw.mnemonic}__${opcode || 'nop'}__${idx}`,
-          mnemonic: raw.mnemonic,
-          since: typeof raw.since_version === "number" ? raw.since_version : 0,
-          anchorId,
-          categoryKey: categoryGroupKey,
-          categoryLabel: categoryGroupLabel,
-          rawCategoryKey: categoryKeyRaw,
-          rawCategoryLabel,
-          description: doc.description || "",
-          descriptionHtml: typeof doc.description_html === "string"
-            ? doc.description_html
-            : "",
-          fift: doc.fift || "",
-          fiftExamples: Array.isArray(doc.fift_examples)
-            ? doc.fift_examples
-                .map((example) =>
-                  example && typeof example === "object"
-                    ? {
-                        description:
-                          typeof example.description === "string"
-                            ? example.description
-                            : "",
-                        fift:
-                          typeof example.fift === "string" ? example.fift : "",
-                      }
-                    : null
-                )
-                .filter((example) =>
-                  example && (example.description || example.fift)
-                )
-            : [],
-          gas: doc.gas || "",
-          gasDisplay: formatGasDisplay(doc.gas),
-          stackDoc: doc.stack || "",
-          opcode,
-          tlb: bytecode.tlb || "",
-          operands: Array.isArray(bytecode.operands) ? bytecode.operands : [],
-          valueFlow: {
-            inputs,
-            outputs,
-          },
-          registers: {
-            inputs: registersIn,
-            outputs: registersOut,
-          },
-          controlFlow: raw.control_flow || null,
-          implementationRefs,
-          rawSpec: raw,
-          aliases: aliasByMnemonic.get(raw.mnemonic) || [],
-          missing: {
-            description: descriptionMissing,
-            gas: gasMissing,
-            tlb: tlbMissing,
-            stackDoc: stackDocMissing,
-            inputs: inputsMissing,
-            outputs: outputsMissing,
-            implementation: implementationMissing,
-            controlFlow: controlFlowMissing,
-          },
-        };
+      return {
+        uid: `${raw.mnemonic}__${opcode || "nop"}__${idx}`,
+        mnemonic: raw.mnemonic,
+        since: typeof raw.since_version === "number" ? raw.since_version : 0,
+        anchorId,
+        categoryKey: categoryGroupKey,
+        categoryLabel: categoryGroupLabel,
+        rawCategoryKey: categoryKeyRaw,
+        rawCategoryLabel,
+        description: doc.description || "",
+        descriptionHtml: typeof doc.description_html === "string" ? doc.description_html : "",
+        fift: doc.fift || "",
+        fiftExamples: Array.isArray(doc.fift_examples)
+          ? doc.fift_examples
+              .map(example =>
+                example && typeof example === "object"
+                  ? {
+                      description:
+                        typeof example.description === "string" ? example.description : "",
+                      fift: typeof example.fift === "string" ? example.fift : "",
+                    }
+                  : null,
+              )
+              .filter(example => example && (example.description || example.fift))
+          : [],
+        gas: doc.gas || "",
+        gasDisplay: formatGasDisplay(doc.gas),
+        stackDoc: doc.stack || "",
+        opcode,
+        tlb: bytecode.tlb || "",
+        operands: Array.isArray(bytecode.operands) ? bytecode.operands : [],
+        valueFlow: {
+          inputs,
+          outputs,
+        },
+        registers: {
+          inputs: registersIn,
+          outputs: registersOut,
+        },
+        controlFlow: raw.control_flow || null,
+        implementationRefs,
+        rawSpec: raw,
+        aliases: aliasByMnemonic.get(raw.mnemonic) || [],
+        missing: {
+          description: descriptionMissing,
+          gas: gasMissing,
+          tlb: tlbMissing,
+          stackDoc: stackDocMissing,
+          inputs: inputsMissing,
+          outputs: outputsMissing,
+          implementation: implementationMissing,
+          controlFlow: controlFlowMissing,
+        },
       }
-    );
-  }, [spec]);
+    })
+  }, [spec])
 
   const anchorInstruction = useMemo(() => {
-    if (!activeAnchorId) return null;
-    return instructions.find((item) => item.anchorId === activeAnchorId) || null;
-  }, [instructions, activeAnchorId]);
+    if (!activeAnchorId) return null
+    return instructions.find(item => item.anchorId === activeAnchorId) || null
+  }, [instructions, activeAnchorId])
 
   useEffect(() => {
-    if (!anchorInstruction) return;
-    setExpanded((prev) => {
-      if (prev[anchorInstruction.uid]) return prev;
+    if (!anchorInstruction) return
+    setExpanded(prev => {
+      if (prev[anchorInstruction.uid]) return prev
       return {
         ...prev,
         [anchorInstruction.uid]: true,
-      };
-    });
-  }, [anchorInstruction]);
+      }
+    })
+  }, [anchorInstruction])
 
   useEffect(() => {
-    if (!anchorInstruction) return;
-    if (typeof document === "undefined" || typeof window === "undefined") return;
-    if (!anchorInstruction.anchorId) return;
+    if (!anchorInstruction) return
+    if (typeof document === "undefined" || typeof window === "undefined") return
+    if (!anchorInstruction.anchorId) return
     const frame =
       typeof window.requestAnimationFrame === "function"
         ? window.requestAnimationFrame.bind(window)
-        : (cb) => setTimeout(cb, 0);
+        : cb => setTimeout(cb, 0)
     frame(() => {
-      const element = document.getElementById(anchorInstruction.anchorId);
+      const element = document.getElementById(anchorInstruction.anchorId)
       if (element && typeof element.scrollIntoView === "function") {
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
+        element.scrollIntoView({behavior: "smooth", block: "start"})
       }
-    });
-  }, [anchorInstruction]);
+    })
+  }, [anchorInstruction])
 
   const subcategoryMap = useMemo(() => {
-    const groups = new Map();
-    instructions.forEach((item) => {
-      if (!item || !item.categoryKey) return;
-      const groupKey = item.categoryKey;
-      const rawKey = item.rawCategoryKey || "uncategorized";
-      const label = item.rawCategoryLabel || humanizeCategoryKey(rawKey);
+    const groups = new Map()
+    instructions.forEach(item => {
+      if (!item || !item.categoryKey) return
+      const groupKey = item.categoryKey
+      const rawKey = item.rawCategoryKey || "uncategorized"
+      const label = item.rawCategoryLabel || humanizeCategoryKey(rawKey)
       if (!groups.has(groupKey)) {
-        groups.set(groupKey, new Map());
+        groups.set(groupKey, new Map())
       }
-      const entries = groups.get(groupKey);
+      const entries = groups.get(groupKey)
       if (!entries.has(rawKey)) {
         entries.set(rawKey, {
           value: rawKey,
           label,
           count: 0,
-        });
+        })
       }
-      const record = entries.get(rawKey);
-      record.count += 1;
+      const record = entries.get(rawKey)
+      record.count += 1
       if (!record.label && label) {
-        record.label = label;
+        record.label = label
       }
-    });
-    const normalized = new Map();
+    })
+    const normalized = new Map()
     groups.forEach((entries, key) => {
-      const list = Array.from(entries.values()).sort((a, b) =>
-        a.label.localeCompare(b.label)
-      );
-      normalized.set(key, list);
-    });
-    return normalized;
-  }, [instructions]);
+      const list = Array.from(entries.values()).sort((a, b) => a.label.localeCompare(b.label))
+      normalized.set(key, list)
+    })
+    return normalized
+  }, [instructions])
 
   const categoryOptions = useMemo(() => {
-    const present = new Set(subcategoryMap.keys());
-    const ordered = CATEGORY_GROUPS.filter((group) => present.has(group.key)).map(
-      (group) => ({ value: group.key, label: group.label })
-    );
-    return [
-      { value: "All", label: "All categories" },
-      ...ordered,
-    ];
-  }, [subcategoryMap]);
+    const present = new Set(subcategoryMap.keys())
+    const ordered = CATEGORY_GROUPS.filter(group => present.has(group.key)).map(group => ({
+      value: group.key,
+      label: group.label,
+    }))
+    return [{value: "All", label: "All categories"}, ...ordered]
+  }, [subcategoryMap])
 
   const currentSubcategoryOptions = useMemo(() => {
-    if (category === "All") return [];
-    return subcategoryMap.get(category) || [];
-  }, [subcategoryMap, category]);
+    if (category === "All") return []
+    return subcategoryMap.get(category) || []
+  }, [subcategoryMap, category])
 
-  const showSubcategorySelect =
-    category !== "All" && currentSubcategoryOptions.length > 1;
+  const showSubcategorySelect = category !== "All" && currentSubcategoryOptions.length > 1
 
   useEffect(() => {
-    if (category === "All") return;
-    const hasSelection = categoryOptions.some(
-      (option) => option.value === category
-    );
+    if (category === "All") return
+    const hasSelection = categoryOptions.some(option => option.value === category)
     if (!hasSelection) {
-      setCategory("All");
+      setCategory("All")
     }
-  }, [categoryOptions, category]);
+  }, [categoryOptions, category])
 
   useEffect(() => {
     if (category === "All") {
       if (subcategory !== "All") {
-        setSubcategory("All");
+        setSubcategory("All")
       }
-      return;
+      return
     }
-    const options = currentSubcategoryOptions;
+    const options = currentSubcategoryOptions
     if (!options || options.length <= 1) {
       if (subcategory !== "All") {
-        setSubcategory("All");
+        setSubcategory("All")
       }
-      return;
+      return
     }
-    const hasSubcategory = options.some((option) => option.value === subcategory);
+    const hasSubcategory = options.some(option => option.value === subcategory)
     if (!hasSubcategory) {
-      setSubcategory("All");
+      setSubcategory("All")
     }
-  }, [category, subcategory, currentSubcategoryOptions]);
+  }, [category, subcategory, currentSubcategoryOptions])
 
   const filtered = useMemo(() => {
-    const forcedUid = anchorInstruction?.uid ?? null;
-    return instructions.filter((item) => {
-      if (forcedUid && item.uid === forcedUid) return true;
-      if (category !== "All" && item.categoryKey !== category) return false;
-      if (
-        category !== "All" &&
-        subcategory !== "All" &&
-        item.rawCategoryKey !== subcategory
-      ) {
-        return false;
+    const forcedUid = anchorInstruction?.uid ?? null
+    return instructions.filter(item => {
+      if (forcedUid && item.uid === forcedUid) return true
+      if (category !== "All" && item.categoryKey !== category) return false
+      if (category !== "All" && subcategory !== "All" && item.rawCategoryKey !== subcategory) {
+        return false
       }
-      return itemRelevanceScore(item, searchTokens) !== Infinity;
-    });
-  }, [
-    instructions,
-    category,
-    subcategory,
-    searchTokens,
-    anchorInstruction,
-  ]);
+      return itemRelevanceScore(item, searchTokens) !== Infinity
+    })
+  }, [instructions, category, subcategory, searchTokens, anchorInstruction])
 
   const sorted = useMemo(() => {
-    const copy = filtered.slice();
-    const hasQuery = searchTokens.length > 0;
+    const copy = filtered.slice()
+    const hasQuery = searchTokens.length > 0
     if (hasQuery) {
-      const tokens = searchTokens;
+      const tokens = searchTokens
       copy.sort((a, b) => {
-        const sa = itemRelevanceScore(a, tokens);
-        const sb = itemRelevanceScore(b, tokens);
-        if (sa !== sb) return sa - sb;
+        const sa = itemRelevanceScore(a, tokens)
+        const sb = itemRelevanceScore(b, tokens)
+        if (sa !== sb) return sa - sb
         // tie-breakers
-        return (
-          a.mnemonic.localeCompare(b.mnemonic) ||
-          compareOpcodes(a.opcode, b.opcode)
-        );
-      });
+        return a.mnemonic.localeCompare(b.mnemonic) || compareOpcodes(a.opcode, b.opcode)
+      })
     } else if (sortMode !== "opcode") {
       copy.sort((a, b) => {
         switch (sortMode) {
           case "name":
-            return a.mnemonic.localeCompare(b.mnemonic);
+            return a.mnemonic.localeCompare(b.mnemonic)
           case "category":
             return (
-              a.categoryLabel.localeCompare(b.categoryLabel) ||
-              a.opcode.localeCompare(b.opcode)
-            );
+              a.categoryLabel.localeCompare(b.categoryLabel) || a.opcode.localeCompare(b.opcode)
+            )
           case "since":
-            return (b.since == 9999 ? -1 : b.since) -  (a.since == 9999 ? -1 : a.since);
+            return (b.since == 9999 ? -1 : b.since) - (a.since == 9999 ? -1 : a.since)
           default:
-            return (
-              compareOpcodes(a.opcode, b.opcode) ||
-              a.mnemonic.localeCompare(b.mnemonic)
-            );
+            return compareOpcodes(a.opcode, b.opcode) || a.mnemonic.localeCompare(b.mnemonic)
         }
-      });
+      })
     }
 
-    const forcedUid = anchorInstruction?.uid ?? null;
+    const forcedUid = anchorInstruction?.uid ?? null
     if (forcedUid) {
-      let forcedItem = null;
-      const forcedIndex = copy.findIndex((item) => item.uid === forcedUid);
+      let forcedItem = null
+      const forcedIndex = copy.findIndex(item => item.uid === forcedUid)
       if (forcedIndex >= 0) {
-        [forcedItem] = copy.splice(forcedIndex, 1);
+        ;[forcedItem] = copy.splice(forcedIndex, 1)
       } else if (anchorInstruction) {
-        forcedItem = anchorInstruction;
+        forcedItem = anchorInstruction
       }
       if (forcedItem) {
-        copy.unshift(forcedItem);
+        copy.unshift(forcedItem)
       }
     }
 
-    return copy;
-  }, [filtered, sortMode, searchTokens, anchorInstruction]);
+    return copy
+  }, [filtered, sortMode, searchTokens, anchorInstruction])
 
   const hasActiveFilters = useMemo(
     () =>
@@ -3587,62 +3512,60 @@ export const TvmInstructionTable = () => {
       category !== "All" ||
       subcategory !== "All" ||
       sortMode !== "opcode",
-    [searchTokens, category, subcategory, sortMode]
-  );
+    [searchTokens, category, subcategory, sortMode],
+  )
 
   const handleResetFilters = useCallback(() => {
-    setSearch("");
-    setCategory("All");
-    setSubcategory("All");
-    setSortMode("opcode");
-  }, []);
+    setSearch("")
+    setCategory("All")
+    setSubcategory("All")
+    setSortMode("opcode")
+  }, [])
 
   const activeFilters = useMemo(() => {
-    const chips = [];
-    const searchDisplay = search.trim();
+    const chips = []
+    const searchDisplay = search.trim()
     if (searchTokens.length > 0 && searchDisplay) {
       chips.push({
         key: "search",
         label: `Query: "${searchDisplay}"`,
         ariaLabel: `Remove search filter ${searchDisplay}`,
         onRemove: () => setSearch(""),
-      });
+      })
     }
     if (category !== "All") {
-      const match = categoryOptions.find((option) => option.value === category);
-      const label = match ? match.label : humanizeCategoryKey(category);
+      const match = categoryOptions.find(option => option.value === category)
+      const label = match ? match.label : humanizeCategoryKey(category)
       chips.push({
         key: "category",
         label: `Category: ${label}`,
         ariaLabel: `Remove category filter ${label}`,
         onRemove: () => setCategory("All"),
-      });
+      })
     }
     if (category !== "All" && subcategory !== "All") {
-      const match = currentSubcategoryOptions.find(
-        (option) => option.value === subcategory
-      );
-      const label = match ? match.label : humanizeCategoryKey(subcategory);
+      const match = currentSubcategoryOptions.find(option => option.value === subcategory)
+      const label = match ? match.label : humanizeCategoryKey(subcategory)
       chips.push({
         key: "subcategory",
         label: `Subcategory: ${label}`,
         ariaLabel: `Remove subcategory filter ${label}`,
         onRemove: () => setSubcategory("All"),
-      });
+      })
     }
     if (sortMode !== "opcode") {
       const sortLabels = {
         since: "Newest",
-      };
-      const label = sortLabels[sortMode] || "Opcode";
+      }
+      const label = sortLabels[sortMode] || "Opcode"
       chips.push({
         key: "sort",
         label: `Sort: ${label}`,
         ariaLabel: `Remove sort override ${label}`,
         onRemove: () => setSortMode("opcode"),
-      });
+      })
     }
-    return chips;
+    return chips
   }, [
     searchTokens,
     search,
@@ -3655,91 +3578,88 @@ export const TvmInstructionTable = () => {
     setCategory,
     setSubcategory,
     setSortMode,
-  ]);
+  ])
 
-  const toggleRow = useCallback((uid) => {
-    setExpanded((prev) => ({
+  const toggleRow = useCallback(uid => {
+    setExpanded(prev => ({
       ...prev,
       [uid]: !prev[uid],
-    }));
-  }, []);
+    }))
+  }, [])
 
-  const openRawJsonModal = useCallback(
-    (instruction) => {
-      if (!instruction) return;
-      const payload = {
-        mnemonic: instruction.mnemonic,
-        opcode: instruction.opcode,
-        anchorId: instruction.anchorId,
-        raw: instruction.rawSpec || instruction,
-      };
-      setRawModalInstruction(payload);
-      setRawModalCopied(false);
-      if (rawModalCopyTimeoutRef.current) {
-        clearTimeout(rawModalCopyTimeoutRef.current);
-        rawModalCopyTimeoutRef.current = null;
-      }
-    },
-    []
-  );
+  const openRawJsonModal = useCallback(instruction => {
+    if (!instruction) return
+    const payload = {
+      mnemonic: instruction.mnemonic,
+      opcode: instruction.opcode,
+      anchorId: instruction.anchorId,
+      raw: instruction.rawSpec || instruction,
+    }
+    setRawModalInstruction(payload)
+    setRawModalCopied(false)
+    if (rawModalCopyTimeoutRef.current) {
+      clearTimeout(rawModalCopyTimeoutRef.current)
+      rawModalCopyTimeoutRef.current = null
+    }
+  }, [])
 
   const closeRawJsonModal = useCallback(() => {
-    setRawModalInstruction(null);
-    setRawModalCopied(false);
+    setRawModalInstruction(null)
+    setRawModalCopied(false)
     if (rawModalCopyTimeoutRef.current) {
-      clearTimeout(rawModalCopyTimeoutRef.current);
-      rawModalCopyTimeoutRef.current = null;
+      clearTimeout(rawModalCopyTimeoutRef.current)
+      rawModalCopyTimeoutRef.current = null
     }
-  }, []);
+  }, [])
 
-  const handleCopyRawJson = useCallback((jsonText) => {
+  const handleCopyRawJson = useCallback(jsonText => {
     copyPlainText(jsonText)
       .then(() => {
-        setRawModalCopied(true);
+        setRawModalCopied(true)
         if (rawModalCopyTimeoutRef.current) {
-          clearTimeout(rawModalCopyTimeoutRef.current);
+          clearTimeout(rawModalCopyTimeoutRef.current)
         }
         rawModalCopyTimeoutRef.current = setTimeout(() => {
-          setRawModalCopied(false);
-          rawModalCopyTimeoutRef.current = null;
-        }, 1500);
+          setRawModalCopied(false)
+          rawModalCopyTimeoutRef.current = null
+        }, 1500)
       })
       .catch(() => {
         // ignore clipboard failures
-      });
-  }, []);
+      })
+  }, [])
 
   useEffect(() => {
-    if (!rawModalInstruction) return;
-    if (typeof window === "undefined") return;
-    const handleKeyDown = (event) => {
-      if (event.defaultPrevented) return;
+    if (!rawModalInstruction) return
+    if (typeof window === "undefined") return
+    const handleKeyDown = event => {
+      if (event.defaultPrevented) return
       if (event.key === "Escape") {
-        event.preventDefault();
-        closeRawJsonModal();
+        event.preventDefault()
+        closeRawJsonModal()
       }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [rawModalInstruction, closeRawJsonModal]);
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [rawModalInstruction, closeRawJsonModal])
 
   const rawModalJson = useMemo(() => {
-    if (!rawModalInstruction) return "";
+    if (!rawModalInstruction) return ""
     try {
-      return JSON.stringify(rawModalInstruction.raw ?? null, null, 2);
+      return JSON.stringify(rawModalInstruction.raw ?? null, null, 2)
     } catch (err) {
-      return "// Failed to serialize instruction";
+      return "// Failed to serialize instruction"
     }
-  }, [rawModalInstruction]);
+  }, [rawModalInstruction])
 
   useEffect(() => {
     return () => {
       if (rawModalCopyTimeoutRef.current) {
-        clearTimeout(rawModalCopyTimeoutRef.current);
-        rawModalCopyTimeoutRef.current = null;
+        clearTimeout(rawModalCopyTimeoutRef.current)
+        rawModalCopyTimeoutRef.current = null
       }
-    };
-  }, []);
+    }
+  }, [])
 
   return (
     <div className="not-prose tvm-instruction-app w-full max-w-none">
@@ -3752,18 +3672,8 @@ export const TvmInstructionTable = () => {
             <div className="tvm-search-row">
               <div className="tvm-search-input">
                 <span className="tvm-search-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <circle
-                      cx="11"
-                      cy="11"
-                      r="6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="2" />
                     <path
                       d="M20 20l-3.5-3.5"
                       stroke="currentColor"
@@ -3777,7 +3687,7 @@ export const TvmInstructionTable = () => {
                   type="search"
                   placeholder="Find by mnemonic, opcode, description…"
                   value={search}
-                  onChange={(event) => setSearch(event.currentTarget.value)}
+                  onChange={event => setSearch(event.currentTarget.value)}
                   ref={searchInputRef}
                 />
                 {search && (
@@ -3787,11 +3697,7 @@ export const TvmInstructionTable = () => {
                     onClick={() => setSearch("")}
                     aria-label="Clear search"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path
                         d="M15 9l-6 6"
                         stroke="currentColor"
@@ -3828,7 +3734,7 @@ export const TvmInstructionTable = () => {
             <select
               id="tvm-sort"
               value={sortMode}
-              onChange={(event) => setSortMode(event.currentTarget.value)}
+              onChange={event => setSortMode(event.currentTarget.value)}
             >
               <option value="opcode">Opcode</option>
               <option value="since">Newest</option>
@@ -3840,9 +3746,9 @@ export const TvmInstructionTable = () => {
             <select
               id="tvm-category"
               value={category}
-              onChange={(event) => setCategory(event.currentTarget.value)}
+              onChange={event => setCategory(event.currentTarget.value)}
             >
-              {categoryOptions.map((option) => (
+              {categoryOptions.map(option => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -3856,10 +3762,10 @@ export const TvmInstructionTable = () => {
               <select
                 id="tvm-subcategory"
                 value={subcategory}
-                onChange={(event) => setSubcategory(event.currentTarget.value)}
+                onChange={event => setSubcategory(event.currentTarget.value)}
               >
                 <option value="All">All subcategories</option>
-                {currentSubcategoryOptions.map((option) => (
+                {currentSubcategoryOptions.map(option => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -3884,7 +3790,7 @@ export const TvmInstructionTable = () => {
         </div>
         {activeFilters.length > 0 && (
           <div className="tvm-meta-chips" aria-live="polite">
-            {activeFilters.map(({ key, label, ariaLabel, onRemove }) => (
+            {activeFilters.map(({key, label, ariaLabel, onRemove}) => (
               <button
                 key={key}
                 type="button"
@@ -3915,35 +3821,31 @@ export const TvmInstructionTable = () => {
 
           {!error && (
             <>
-              {loading && (
-                <div className="tvm-loading-row">Loading specification…</div>
-              )}
+              {loading && <div className="tvm-loading-row">Loading specification…</div>}
               {!loading && sorted.length === 0 && (
-                <div className="tvm-empty-row">
-                  No instructions match the filters.
-                </div>
+                <div className="tvm-empty-row">No instructions match the filters.</div>
               )}
               {!loading &&
-                sorted.flatMap((instruction) => {
-                  const isExpanded = Boolean(expanded[instruction.uid]);
+                sorted.flatMap(instruction => {
+                  const isExpanded = Boolean(expanded[instruction.uid])
                   const aliasCount = Array.isArray(instruction.aliases)
                     ? instruction.aliases.length
-                    : 0;
-                  const detailId = `tvm-detail-${instruction.uid}`;
-                  const anchorId = instruction.anchorId || buildAnchorId(instruction);
+                    : 0
+                  const detailId = `tvm-detail-${instruction.uid}`
+                  const anchorId = instruction.anchorId || buildAnchorId(instruction)
                   const isAnchorTarget =
-                    anchorInstruction && anchorInstruction.uid === instruction.uid;
+                    anchorInstruction && anchorInstruction.uid === instruction.uid
                   const rowClassName = [
                     "tvm-spec-row",
                     isExpanded ? "is-expanded" : "",
                     isAnchorTarget ? "is-anchor-target" : "",
                   ]
                     .filter(Boolean)
-                    .join(" ");
+                    .join(" ")
                   const descriptionHtml = highlightHtmlContent(
                     instruction.descriptionHtml || instruction.description || "",
-                    searchTokens
-                  );
+                    searchTokens,
+                  )
 
                   const nodes = [
                     <div
@@ -3955,20 +3857,15 @@ export const TvmInstructionTable = () => {
                       aria-expanded={isExpanded}
                       aria-controls={detailId}
                       onClick={() => toggleRow(instruction.uid)}
-                      onKeyDown={(event) => {
+                      onKeyDown={event => {
                         if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          toggleRow(instruction.uid);
+                          event.preventDefault()
+                          toggleRow(instruction.uid)
                         }
                       }}
                     >
                       <div className="tvm-spec-cell tvm-spec-cell--opcode">
-                        <code>
-                          {highlightMatches(
-                            instruction.opcode || "—",
-                            searchTokens
-                          )}
-                        </code>
+                        <code>{highlightMatches(instruction.opcode || "—", searchTokens)}</code>
                       </div>
                       <div className="tvm-spec-cell tvm-spec-cell--name">
                         <div className="tvm-name-line">
@@ -3976,14 +3873,13 @@ export const TvmInstructionTable = () => {
                             {instruction.opcode || "—"}
                           </code>
                           <span className="tvm-mnemonic">
-                            {highlightMatches(
-                              instruction.mnemonic,
-                              searchTokens
-                            )}
+                            {highlightMatches(instruction.mnemonic, searchTokens)}
                           </span>
                           {instruction.since > 0 && (
                             <span className="tvm-inline-badge">
-                              {instruction.since != 9999 ? `since v${instruction.since}` : 'unimplemented yet' }
+                              {instruction.since != 9999
+                                ? `since v${instruction.since}`
+                                : "unimplemented yet"}
                             </span>
                           )}
                           {aliasCount > 0 && (
@@ -3992,16 +3888,10 @@ export const TvmInstructionTable = () => {
                             </span>
                           )}
                           <span
-                            className={`tvm-row-indicator ${
-                              isExpanded ? "is-expanded" : ""
-                            }`}
+                            className={`tvm-row-indicator ${isExpanded ? "is-expanded" : ""}`}
                             aria-hidden="true"
                           >
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path
                                 d="M6 9l6 6 6-6"
                                 stroke="currentColor"
@@ -4016,10 +3906,7 @@ export const TvmInstructionTable = () => {
                           <div className="tvm-operands">
                             {instruction.operands.map((operand, idx) => (
                               <span key={idx} className="tvm-operand-chip">
-                                {highlightMatches(
-                                  formatOperandSummary(operand),
-                                  searchTokens
-                                )}
+                                {highlightMatches(formatOperandSummary(operand), searchTokens)}
                               </span>
                             ))}
                           </div>
@@ -4029,17 +3916,15 @@ export const TvmInstructionTable = () => {
                         {instruction.description || instruction.descriptionHtml ? (
                           <div
                             className="tvm-description"
-                            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                            dangerouslySetInnerHTML={{__html: descriptionHtml}}
                           />
                         ) : null}
                         <div className="tvm-description-meta">
-                          <span className="tvm-category-pill">
-                            {instruction.categoryLabel}
-                          </span>
+                          <span className="tvm-category-pill">{instruction.categoryLabel}</span>
                         </div>
                       </div>
                     </div>,
-                  ];
+                  ]
 
                   if (isExpanded) {
                     nodes.push(
@@ -4049,25 +3934,22 @@ export const TvmInstructionTable = () => {
                           isAnchorTarget ? "is-anchor-target" : ""
                         }`}
                       >
-                        <div
-                          className="tvm-spec-cell tvm-spec-cell--full"
-                          id={detailId}
-                        >
+                        <div className="tvm-spec-cell tvm-spec-cell--full" id={detailId}>
                           {renderInstructionDetail(instruction, {
                             isAnchorTarget,
                             onOpenRawJson: openRawJsonModal,
                           })}
                         </div>
-                      </div>
-                    );
+                      </div>,
+                    )
                   }
 
-                  return nodes;
+                  return nodes
                 })}
             </>
           )}
+        </div>
       </div>
-    </div>
 
       {rawModalInstruction && (
         <div
@@ -4080,7 +3962,7 @@ export const TvmInstructionTable = () => {
           <div
             className="tvm-modal-dialog"
             role="document"
-            onClick={(event) => event.stopPropagation()}
+            onClick={event => event.stopPropagation()}
           >
             <div className="tvm-modal-header">
               <div className="tvm-modal-header-text">
@@ -4088,8 +3970,7 @@ export const TvmInstructionTable = () => {
                 <p className="tvm-modal-subtitle">
                   {rawModalInstruction.opcode ? (
                     <>
-                      <code>{rawModalInstruction.opcode}</code>
-                      {" "}
+                      <code>{rawModalInstruction.opcode}</code>{" "}
                     </>
                   ) : null}
                   {rawModalInstruction.mnemonic}
@@ -4103,11 +3984,7 @@ export const TvmInstructionTable = () => {
                 >
                   {rawModalCopied ? "Copied" : "Copy JSON"}
                 </button>
-                <button
-                  type="button"
-                  className="tvm-button"
-                  onClick={closeRawJsonModal}
-                >
+                <button type="button" className="tvm-button" onClick={closeRawJsonModal}>
                   Close
                 </button>
               </div>
@@ -4117,7 +3994,7 @@ export const TvmInstructionTable = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default TvmInstructionTable;
+export default TvmInstructionTable

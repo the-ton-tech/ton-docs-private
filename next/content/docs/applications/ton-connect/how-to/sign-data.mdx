@@ -78,7 +78,7 @@ interface SignDataResult {
 }
 ```
 
-`payload` is the original request payload, echoed back verbatim. Reuse it when reconstructing the signed bytes for verification — never re-serialise.
+`payload` is the original request payload, echoed back verbatim. Reuse it when reconstructing the signed bytes for verification — never re-serialize.
 
 ```ts
 const result = await tonConnectUi.signData(payload, {

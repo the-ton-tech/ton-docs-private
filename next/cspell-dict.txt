@@ -1,5 +1,5 @@
 #   Custom dictionaries support a few special characters:
-# ! is a prefix that forbids a word — use -ban.txt files for those.
+# ! is a prefix that forbids a word.
 # * is a prefix/suffix that tells the spell checker that a word can be combined with another word.
 # + is a prefix/suffix that tells the spell checker that a word MUST be combined with another word to be valid.
 # ~ is a prefix that tells the spell checker to only use the word when case sensitivity is turned off.
@@ -38,9 +38,6 @@ Andrew
 Andrey
 antecessor
 antecessors
-AppKit
-Appkit
-appkit
 Anton
 Antonoff
 Appender
@@ -83,7 +80,6 @@ bitcode
 bitmask
 Bitmask
 Bitshares
-behaviour
 bitshift
 bitstring
 bitstrings
@@ -102,7 +98,6 @@ BoC
 BoCs
 booleans
 Booleans
-boc
 bounceability
 bounceable
 Bounceable
@@ -114,7 +109,6 @@ Buildx
 bundler
 Burnosov
 Buterin
-CAIP
 callables
 Callables
 callee
@@ -122,7 +116,6 @@ callout
 callouts
 canonicalization
 catchain
-colour
 Catchain
 catchains
 Catchains
@@ -216,8 +209,6 @@ datagrams
 DCA
 declarator
 decodable
-dedust
-DeDust
 decompiled
 Decompiled
 Decompiler
@@ -235,7 +226,6 @@ deployer
 Deployer
 dequeued
 dequeueing
-deeplink
 dereference
 dereferenced
 deserialization
@@ -257,8 +247,6 @@ Dockerized
 Dodis
 Domínguez
 dotenv
-Defi
-DeFi
 dTON
 Duif
 Durov
@@ -266,7 +254,6 @@ Dyor
 DYOR
 DYX
 EIP
-eip
 Emelyanenko
 enablement
 endian
@@ -328,6 +315,7 @@ gwei
 hackathon
 Hackathon
 hackathons
+HackenProof
 hard-code
 hardcode
 hard-coded
@@ -395,7 +383,6 @@ KYC
 Lamport
 Lange
 Larimer
-Layerswap
 Lateinit
 Latinisms
 Lavinia
@@ -444,7 +431,6 @@ memoization
 Memoizing
 mempool
 Mempool
-Mercuryo
 mergesort
 merkle
 Merkle
@@ -501,7 +487,6 @@ Namespace
 namespaces
 Namespaces
 nano
-nanocoins
 nanogram
 nanoton
 nanoTon
@@ -516,7 +501,6 @@ NFA
 nft
 nginx
 NFTs
-Nfts
 Nginx
 Niels
 Nikolay
@@ -601,8 +585,6 @@ queryable
 ragpull
 Ratelance
 reconnections
-recognise
-recognises
 recv
 redeclaration
 redeclared
@@ -615,8 +597,6 @@ Reindexes
 reindexing
 Reindexing
 reinitializes
-reown
-Reown
 reinstalls
 relatedly
 Relatedly
@@ -636,7 +616,6 @@ rldp
 rollup
 Rollup
 RPCs
-rpc
 RTT
 ruleset
 runbooks
@@ -762,13 +741,9 @@ tolk
 Tolk
 TON
 TON.cx
-TONCONNECT
 TONCO
 Toncoin
 toncoin.org
-Tonhub
-TonConnect
-tonconnect
 Tonkeeper
 tonlib
 Tonscan
@@ -852,8 +827,6 @@ Vultr
 Wagmi
 walkthrough
 Walkthrough
-WalletKit
-walletkit
 Walletconnect
 wargame
 Watchlist
@@ -883,3 +856,63 @@ Mbit
 tonstatus
 testnetstatus
 ZK-proofs
+apiv
+appkit
+asmfun
+backgrounding
+BLOCKLT
+bootloader
+CAIP
+callstack
+CHKSIGNS
+CHKSIGNU
+ciphertext
+codemod
+CONFIGROOT
+CTOS
+decompile
+deeplink
+Defi
+DUEPAYMENT
+filetree
+Fumadocs
+GETPRECOMPILEDGAS
+hardforks
+HASHBU
+HASHEXT
+hotspot
+howto
+INCOMINGVALUE
+INMSGPARAMS
+KECCAK
+keypairs
+Layerswap
+LTIME
+Mercuryo
+MYADDR
+MYCODE
+mylocalton
+nanocoins
+PREVBLOCKSINFOTUPLE
+PREVMCBLOCKS
+RANDSEED
+recvfun
+reown
+resends
+RUNVM
+SBITS
+SDEQ
+SENDMSG
+SETCP
+Shiki
+STORAGEFEES
+subsecond
+tonapi
+toncenter
+tonconnect
+Tonhub
+UNPACKEDCONFIGTUPLE
+unregisters
+unserializable
+walletkit
+XCTOS

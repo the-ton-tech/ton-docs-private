@@ -5,11 +5,7 @@ import {baseOptions} from "@/lib/layout.shared"
 
 export default function NotFound() {
   return (
-    <DocsLayout
-      tree={source.pageTree}
-      sidebar={{className: "ton-docs-sidebar"}}
-      {...baseOptions()}
-    >
+    <DocsLayout tree={source.pageTree} sidebar={{className: "ton-docs-sidebar"}} {...baseOptions()}>
       <FumadocsNotFound getSuggestions={async () => []} />
     </DocsLayout>
   )

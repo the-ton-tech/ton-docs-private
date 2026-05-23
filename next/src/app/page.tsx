@@ -53,7 +53,10 @@ const JOURNEYS: JourneyProps[] = [
     description: "Run and manage TON blockchain nodes.",
     steps: [
       {title: "Start from nodes overview", href: "/blockchain-basics/nodes/overview"},
-      {title: "Learn about validator node", href: "/blockchain-basics/nodes/overview#validator-node"},
+      {
+        title: "Learn about validator node",
+        href: "/blockchain-basics/nodes/overview#validator-node",
+      },
       {title: "Setup C++ node", href: "/blockchain-basics/nodes/cpp/setup-mytonctrl"},
       {title: "Setup Rust node", href: "/blockchain-basics/nodes/rust/quick-start"},
     ],
@@ -94,7 +97,10 @@ export default function Page() {
     <HomeLayout {...baseOptions()}>
       <main className="mx-auto w-full max-w-5xl px-6 pb-24">
         <section className="relative isolate py-8 sm:py-12 lg:py-16">
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-40 -z-10 overflow-hidden blur-3xl">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 -top-40 -z-10 overflow-hidden blur-3xl"
+          >
             <div
               style={{
                 clipPath:

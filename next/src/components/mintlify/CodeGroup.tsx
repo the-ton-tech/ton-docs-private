@@ -1,9 +1,6 @@
 import type {ReactNode} from "react"
 import {Children, isValidElement} from "react"
-import {
-  Tabs as FumaTabs,
-  Tab as FumaTab,
-} from "fumadocs-ui/components/tabs"
+import {Tabs as FumaTabs, Tab as FumaTab} from "fumadocs-ui/components/tabs"
 
 /**
  * Mintlify's `<CodeGroup>` wraps a set of fenced code blocks; each child code
@@ -24,9 +21,7 @@ export function CodeGroup({children}: {children?: ReactNode}) {
       filename?: string
       "data-language"?: string
     }
-    return (
-      props.title ?? props.filename ?? props["data-language"] ?? `Snippet ${idx + 1}`
-    )
+    return props.title ?? props.filename ?? props["data-language"] ?? `Snippet ${idx + 1}`
   })
 
   return (

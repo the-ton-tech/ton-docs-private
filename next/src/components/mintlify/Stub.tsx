@@ -6,7 +6,8 @@ export function Stub({issue}: {issue?: string | number}) {
       This page is a placeholder.
       {issue && (
         <>
-          {" "}You can track progress on this page in{" "}
+          {" "}
+          You can track progress on this page in{" "}
           <a href={`https://github.com/ton-org/docs/issues/${issue}`}>issue #{issue}</a>.
         </>
       )}

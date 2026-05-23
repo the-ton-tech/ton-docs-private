@@ -31,11 +31,7 @@ function main() {
     if (isExcludedFromNavigation(pagePath)) continue
     if (isInNavigation(pagePath)) continue
 
-    const metaPath = path.posix.join(
-      CONTENT_ROOT,
-      path.posix.dirname(pagePath),
-      "meta.json",
-    )
+    const metaPath = path.posix.join(CONTENT_ROOT, path.posix.dirname(pagePath), "meta.json")
     const entry = path.posix.basename(pagePath, ".mdx")
     errors.push({metaPath, pagePath, expectedEntry: entry})
   }
@@ -53,9 +49,7 @@ function main() {
   for (const [metaPath, group] of grouped) {
     console.error(`\nMissing entries in ${metaPath}:`)
     for (const err of group) {
-      console.error(
-        `  - "${err.expectedEntry}" (page: content/docs/${err.pagePath})`,
-      )
+      console.error(`  - "${err.expectedEntry}" (page: content/docs/${err.pagePath})`)
     }
   }
   console.error(`\nnavigation FAILED: ${errors.length} pages not listed`)
@@ -143,7 +137,10 @@ function isExcludedFromNavigation(pagePath: string): boolean {
       meta?.pages?.some(item => {
         if (!item.startsWith("!")) return false
         const excluded = item.slice(1)
-        const relative = segments.slice(i).join("/").replace(/\.mdx$/, "")
+        const relative = segments
+          .slice(i)
+          .join("/")
+          .replace(/\.mdx$/, "")
         const first = relative.split("/", 1)[0]
         return (
           excluded === first ||

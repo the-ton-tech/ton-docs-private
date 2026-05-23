@@ -27,9 +27,7 @@ export function Update({
             ))}
         </header>
       )}
-      {description && (
-        <p className="m-0 text-fd-muted-foreground">{description}</p>
-      )}
+      {description && <p className="m-0 text-fd-muted-foreground">{description}</p>}
       <div className="mt-2">{children}</div>
     </section>
   )

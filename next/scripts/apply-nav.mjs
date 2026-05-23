@@ -26,11 +26,9 @@ import {promises as fs} from "node:fs"
 import path from "node:path"
 import {
   CONTENT_ROOT,
-  DOCS_JSON_PATH,
   NAV_BACKUP_DIR,
   NAV_OVERLAYS_PATH,
   REPO_ROOT,
-  attachOrphansToConfig,
   buildIdIndex,
   collectReferencedIds,
   getFrontmatterField,
@@ -43,11 +41,9 @@ import {
   readConfig,
   readRedirects,
   resolveCurrentSlug,
-  seedConfigFromDocsJson,
   setFrontmatterField,
   stampId,
   walkPages,
-  writeConfig,
   writeRedirects,
 } from "./nav-config.mjs"
 import {stableStringify} from "../src/lib/stable-stringify"
@@ -64,13 +60,9 @@ async function main() {
   if (DRY_RUN) console.log("(dry-run - no files will be written)")
 
   // -------------------------------------------------------------------------
-  // 1. Load (or seed) config. Seeding is deferred until after we've built the
-  //    id index so we can attach orphan .mdx files (OpenAPI-generated pages,
-  //    new files added post-Mintlify) to the deepest matching folder-backed
-  //    group automatically.
+  // 1. Load config.
   // -------------------------------------------------------------------------
-  let config = await readConfig()
-  const isFirstRun = !config
+  const config = await readConfig()
 
   // -------------------------------------------------------------------------
   // 2. Build id index from content/docs/**/*.mdx frontmatter.
@@ -88,16 +80,7 @@ async function main() {
     process.exit(1)
   }
 
-  if (isFirstRun) {
-    console.log("  no navigation.config.json found; seeding from docs.json + filesystem...")
-    const docs = await readJson(DOCS_JSON_PATH)
-    config = seedConfigFromDocsJson(docs)
-    attachOrphansToConfig(config, idToSlug.keys())
-    if (!DRY_RUN) await writeConfig(config)
-    console.log(`  seeded ${config.tabs.length} tab(s) (${idToSlug.size} pages)`)
-  } else {
-    console.log(`  loaded ${config.tabs.length} tab(s)`)
-  }
+  console.log(`  loaded ${config.tabs.length} tab(s)`)
 
   // -------------------------------------------------------------------------
   // 3. Validate config.
@@ -195,11 +178,6 @@ async function main() {
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function readJson(file) {
-  const raw = await fs.readFile(file, "utf8")
-  return JSON.parse(raw)
-}
-
 async function pathExists(p) {
   try {
     await fs.stat(p)
@@ -234,8 +212,10 @@ function validateConfig(config, idToSlug) {
   const seenIds = new Map()
 
   for (const tab of config.tabs) {
-    if (!tab.id || typeof tab.id !== "string") errors.push(`tab has no id: ${JSON.stringify(tab.title)}`)
-    if (typeof tab.title !== "string" || !tab.title.trim()) errors.push(`tab "${tab.id}" has no title`)
+    if (!tab.id || typeof tab.id !== "string")
+      errors.push(`tab has no id: ${JSON.stringify(tab.title)}`)
+    if (typeof tab.title !== "string" || !tab.title.trim())
+      errors.push(`tab "${tab.id}" has no title`)
     if (seenTabIds.has(tab.id)) errors.push(`duplicate tab id: ${tab.id}`)
     seenTabIds.add(tab.id)
     if (isExternalTab(tab)) {
@@ -484,9 +464,7 @@ function resolveGroupMode(entry, ctx) {
   if (entry.flatten === true) return "flatten"
   if (entry.flatten === false) return "folder"
   if (ctx.isTopLevelInTab) return "flatten"
-  const hasIntroPage = (entry.pages ?? []).some(
-    (child) => isPage(child) && child.slug === "",
-  )
+  const hasIntroPage = (entry.pages ?? []).some(child => isPage(child) && child.slug === "")
   return hasIntroPage ? "section" : "folder"
 }
 
@@ -524,7 +502,7 @@ async function emitMetaTree(config) {
     const d = ensureDir(dir)
     for (const [k, v] of Object.entries(defaults)) {
       if (v !== undefined && /** @type {Record<string, unknown>} */ (d)[k] === undefined) {
-        /** @type {Record<string, unknown>} */ (d)[k] = v
+        /** @type {Record<string, unknown>} */ d[k] = v
       }
     }
   }
@@ -543,7 +521,10 @@ async function emitMetaTree(config) {
    */
   function backfillIntermediateFolders(currentFolderDir, pageDir) {
     if (pageDir === currentFolderDir) return
-    if (!pageDir.startsWith(currentFolderDir === "" ? "" : currentFolderDir + "/") && currentFolderDir !== "") {
+    if (
+      !pageDir.startsWith(currentFolderDir === "" ? "" : currentFolderDir + "/") &&
+      currentFolderDir !== ""
+    ) {
       return
     }
     const rel = currentFolderDir === "" ? pageDir : pageDir.slice(currentFolderDir.length + 1)
@@ -740,7 +721,12 @@ async function appendUnlistedChildren(dirs) {
     const extras = []
     for (const entry of entries) {
       if (entry.name === "meta.json" || entry.name.startsWith(".")) continue
-      const name = entry.isFile() && entry.name.endsWith(".mdx") ? entry.name.replace(/\.mdx$/, "") : entry.isDirectory() ? entry.name : null
+      const name =
+        entry.isFile() && entry.name.endsWith(".mdx")
+          ? entry.name.replace(/\.mdx$/, "")
+          : entry.isDirectory()
+            ? entry.name
+            : null
       if (!name) continue
       // `...name` (extract prefix) and `!name` (exclude) cover the same folder
       // as a bare `name` entry, so treat them as already-listed.

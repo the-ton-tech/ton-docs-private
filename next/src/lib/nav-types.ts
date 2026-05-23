@@ -114,9 +114,7 @@ export function isLink(entry: unknown): entry is LinkRef {
 }
 
 export function isGroup(entry: unknown): entry is GroupRef {
-  return (
-    typeof entry === "object" && entry !== null && "group" in entry && !isLink(entry)
-  )
+  return typeof entry === "object" && entry !== null && "group" in entry && !isLink(entry)
 }
 
 export function isPage(entry: unknown): entry is PageRef {
@@ -175,11 +173,7 @@ export function getEffectiveTabs(config: NavConfig): Tab[] {
   const legacy = config.navbarLinks ?? []
   if (legacy.length === 0) return baseTabs
   const usedIds = new Set(baseTabs.map(t => t.id))
-  const usedUrls = new Set(
-    baseTabs
-      .filter(isExternalTab)
-      .map(t => t.url),
-  )
+  const usedUrls = new Set(baseTabs.filter(isExternalTab).map(t => t.url))
   const extras: ExternalTab[] = []
   for (const link of legacy) {
     if (usedUrls.has(link.url)) continue
@@ -218,11 +212,7 @@ export function resolveCurrentSlug(targetId: string, config: NavConfig): string 
   return undefined
 }
 
-function walkAndFind(
-  pages: NavEntry[],
-  targetId: string,
-  prefix: string[],
-): string | undefined {
+function walkAndFind(pages: NavEntry[], targetId: string, prefix: string[]): string | undefined {
   for (const entry of pages) {
     if (isLink(entry)) continue
     if (isGroup(entry)) {
@@ -244,7 +234,12 @@ function walkAndFind(
  */
 export function walkPages(
   config: NavConfig,
-  visitor: (page: PageRef, slug: string, parent: GroupRef | InternalTab, slugParts: string[]) => void,
+  visitor: (
+    page: PageRef,
+    slug: string,
+    parent: GroupRef | InternalTab,
+    slugParts: string[],
+  ) => void,
 ): void {
   for (const tab of config.tabs ?? []) {
     if (!isInternalTab(tab)) continue
@@ -257,7 +252,12 @@ function walkInner(
   pages: NavEntry[],
   prefix: string[],
   parent: GroupRef | InternalTab,
-  visitor: (page: PageRef, slug: string, parent: GroupRef | InternalTab, slugParts: string[]) => void,
+  visitor: (
+    page: PageRef,
+    slug: string,
+    parent: GroupRef | InternalTab,
+    slugParts: string[],
+  ) => void,
 ): void {
   for (const entry of pages) {
     if (isLink(entry)) continue
@@ -292,10 +292,7 @@ export function collectReferencedIds(config: NavConfig): Set<string> {
  *   3. Heuristic: top-level-in-tab → `flatten`; sub-group with an intro page
  *      (a `PageRef` whose `slug === ""`) → `section`; everything else → `folder`.
  */
-export function resolveGroupMode(
-  group: GroupRef,
-  ctx: {isTopLevelInTab: boolean},
-): GroupMode {
+export function resolveGroupMode(group: GroupRef, ctx: {isTopLevelInTab: boolean}): GroupMode {
   if (group.mode === "flatten" || group.mode === "section" || group.mode === "folder") {
     return group.mode
   }
