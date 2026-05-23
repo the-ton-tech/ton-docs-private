@@ -133,6 +133,15 @@ export const DEFAULT_PINS: Record<string, string> = {
   mcp: "/overview/ai/mcp",
   tonpay: "/applications/ton-pay/overview",
   "ton pay": "/applications/ton-pay/overview",
+  // "block explorer" / "blockchain explorer" are the universal external
+  // names for what TON docs call simply "explorers" — the canonical landing
+  // page never says the literal phrase, so without a pin BM25 floats
+  // unrelated "block"-dense pages above it.
+  "block explorer": "/overview/infrastructure/explorers/overview",
+  "blockchain explorer": "/overview/infrastructure/explorers/overview",
+  blockexplorer: "/overview/infrastructure/explorers/overview",
+  explorer: "/overview/infrastructure/explorers/overview",
+  explorers: "/overview/infrastructure/explorers/overview",
 }
 
 /**
@@ -1101,7 +1110,15 @@ export async function runRankedSearch(
       const [pinned] = ranked.splice(idx, 1)
       ranked.unshift(pinned)
     } else if (idx < 0) {
-      const doc = getByID(db, pinnedUrl) as IndexedDoc | undefined
+      // fumadocs assigns page-row ids as `<url>#` (the URL is the path, the
+      // hash is the empty heading slug). Try the bare URL first for
+      // forward-compatibility, then the `<url>#` form. Without this fallback
+      // the pin silently fails whenever the page has no token-level match
+      // (e.g. `toolset` query vs the /overview/toolset page whose copy
+      // never says "toolset").
+      const doc = (getByID(db, pinnedUrl) ?? getByID(db, pinnedUrl + "#")) as
+        | IndexedDoc
+        | undefined
       if (doc) ranked.unshift({page: doc, hits: [], bm25: 0})
     }
   }

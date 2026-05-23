@@ -83,6 +83,11 @@ export const DEFAULT_PINS = {
   mcp: "/overview/ai/mcp",
   tonpay: "/applications/ton-pay/overview",
   "ton pay": "/applications/ton-pay/overview",
+  "block explorer": "/overview/infrastructure/explorers/overview",
+  "blockchain explorer": "/overview/infrastructure/explorers/overview",
+  blockexplorer: "/overview/infrastructure/explorers/overview",
+  explorer: "/overview/infrastructure/explorers/overview",
+  explorers: "/overview/infrastructure/explorers/overview",
 }
 
 export const DEFAULT_SPELL = {
@@ -608,7 +613,10 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
       const [pinned] = ranked.splice(idx, 1)
       ranked.unshift(pinned)
     } else if (idx < 0) {
-      const doc = getByID(db, pinnedUrl)
+      // Page rows are indexed with id = `<url>#`; bare URL fallback first
+      // for forward-compat. Without `<url>#` fallback the pin silently
+      // fails whenever the page has no token-level match in the corpus.
+      const doc = getByID(db, pinnedUrl) ?? getByID(db, pinnedUrl + "#")
       if (doc) ranked.unshift({page: doc, hits: [], bm25: 0})
     }
   }
@@ -637,6 +645,12 @@ export async function runRankedSearch(db, query, tuning = DEFAULT_TUNING) {
       } else if (type === "text") {
         anchor = currentAnchor
       }
+      // Suppress the synthetic `#Keywords` block from the rendered results.
+      // It is indexed purely as a synonym signal — its content is a flat
+      // space-joined bag of frontmatter keywords, not prose meant for a
+      // human reader. Ranking still benefits because the parent page row
+      // was already pushed above.
+      if (typeof doc.url === "string" && doc.url.endsWith("#Keywords")) continue
       raw.push({
         id: String(doc.id),
         type,
