@@ -136,56 +136,28 @@ function formatRelativeTime(ts: number): string {
   return `${day} day${day === 1 ? "" : "s"} ago`
 }
 
-/** Serialize the visible conversation to a portable Markdown transcript. */
-function conversationToMarkdown(messages: ChatUIMessage[]): string {
-  const blocks: string[] = []
-  for (const msg of messages) {
-    if (msg.role !== "user" && msg.role !== "assistant") continue
-    const text = collectText(msg).trim()
-    if (text.length === 0) continue
-    const label = msg.role === "user" ? "You" : "Assistant"
-    blocks.push(`**${label}:** ${text}`)
-  }
-  return blocks.join("\n\n---\n\n")
-}
-
 function AISearchPanelHeader({className, ...props}: ComponentProps<"div">) {
   const {setOpen} = useAISearchContext()
   const {messages, setMessages} = useChatContext()
-  const [copied, setCopied] = useState(false)
-
-  function onCopyTranscript() {
-    const md = conversationToMarkdown(messages)
-    if (md.length === 0) return
-    void navigator.clipboard?.writeText(md)?.then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
   return (
     <div className={cn("border-b px-[13px] pb-3", className)} {...props}>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <p className="flex-1 text-sm font-semibold">Ask AI</p>
-
         {messages.length > 0 && (
-          <>
-            <button
-              type="button"
-              className={cn(
-                buttonVariants({
-                  color: "ghost",
-                  size: "sm",
-                  className: "text-fd-muted-foreground",
-                }),
-              )}
-              onClick={() => setMessages([])}
-            >
-              Clear chat
-            </button>
-          </>
+          <button
+            type="button"
+            className={cn(
+              buttonVariants({
+                color: "ghost",
+                size: "sm",
+                className: "text-fd-muted-foreground",
+              }),
+            )}
+            onClick={() => setMessages([])}
+          >
+            Clear chat
+          </button>
         )}
-
         <button
           type="button"
           aria-label="Close"
@@ -197,11 +169,11 @@ function AISearchPanelHeader({className, ...props}: ComponentProps<"div">) {
             }),
           )}
           onClick={() => setOpen(false)}
+          style={{paddingRight: 0, paddingLeft: 0}}
         >
           <X />
         </button>
       </div>
-
       <p className="mt-0.5 text-xs text-fd-muted-foreground">
         AI can be inaccurate, please verify the answers. Powered by OpenRouter.
       </p>
