@@ -13,7 +13,6 @@ import {
   Check,
   Copy,
   FileText,
-  Pencil,
   RotateCcw,
   Search,
   Send,
@@ -771,31 +770,15 @@ function FeedbackButtons({
 }
 
 function MessageImpl({message, isLast}: {message: ChatUIMessage; isLast: boolean}) {
-  const {regenerate, status, messages, setMessages} = useChatContext()
-  const {setInput, stoppedMessageIds} = useAISearchContext()
+  const {regenerate, status} = useChatContext()
+  const {stoppedMessageIds} = useAISearchContext()
   const isAssistant = message.role === "assistant"
-  const isUser = message.role === "user"
   const text = collectText(message)
   const showActions = isAssistant && text.trim().length > 0
   const canRegenerate = isAssistant && isLast && status === "ready"
-  const canEdit = isUser && status === "ready"
   const streaming = status === "streaming" || status === "submitted"
   const isStreamingThis = isAssistant && isLast && streaming
   const wasStopped = isAssistant && stoppedMessageIds.has(message.id)
-
-  function onEdit() {
-    if (!canEdit) return
-    setInput(text)
-    const idx = messages.findIndex(m => m.id === message.id)
-    if (idx >= 0) setMessages(messages.slice(0, idx))
-    setTimeout(() => {
-      const el = document.getElementById("nd-ai-input") as HTMLTextAreaElement | null
-      if (el) {
-        el.focus()
-        el.setSelectionRange(text.length, text.length)
-      }
-    }, 0)
-  }
 
   return (
     <div onClick={e => e.stopPropagation()} aria-busy={isStreamingThis || undefined}>
@@ -841,24 +824,6 @@ function MessageImpl({message, isLast}: {message: ChatUIMessage; isLast: boolean
               Stopped by you
             </span>
           )}
-        </div>
-      )}
-      {canEdit && text.trim().length > 0 && (
-        <div className="mt-1.5 flex items-center gap-0.5">
-          <button
-            type="button"
-            aria-label="Edit and resend message"
-            onClick={onEdit}
-            className={cn(
-              buttonVariants({
-                color: "ghost",
-                size: "icon-sm",
-                className: "text-fd-muted-foreground",
-              }),
-            )}
-          >
-            <Pencil className="size-3.5" />
-          </button>
         </div>
       )}
     </div>
