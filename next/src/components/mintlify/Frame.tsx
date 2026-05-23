@@ -1,12 +1,6 @@
 import type {ReactNode} from "react"
 
-export function Frame({
-  caption,
-  children,
-}: {
-  caption?: ReactNode
-  children?: ReactNode
-}) {
+export function Frame({caption, children}: {caption?: ReactNode; children?: ReactNode}) {
   return (
     <figure className="my-6 overflow-hidden rounded-2xl border border-fd-border bg-fd-card p-2">
       <div className="overflow-hidden rounded-xl">{children}</div>

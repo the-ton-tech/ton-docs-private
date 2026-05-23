@@ -212,8 +212,10 @@ function validateConfig(config, idToSlug) {
   const seenIds = new Map()
 
   for (const tab of config.tabs) {
-    if (!tab.id || typeof tab.id !== "string") errors.push(`tab has no id: ${JSON.stringify(tab.title)}`)
-    if (typeof tab.title !== "string" || !tab.title.trim()) errors.push(`tab "${tab.id}" has no title`)
+    if (!tab.id || typeof tab.id !== "string")
+      errors.push(`tab has no id: ${JSON.stringify(tab.title)}`)
+    if (typeof tab.title !== "string" || !tab.title.trim())
+      errors.push(`tab "${tab.id}" has no title`)
     if (seenTabIds.has(tab.id)) errors.push(`duplicate tab id: ${tab.id}`)
     seenTabIds.add(tab.id)
     if (isExternalTab(tab)) {
@@ -462,9 +464,7 @@ function resolveGroupMode(entry, ctx) {
   if (entry.flatten === true) return "flatten"
   if (entry.flatten === false) return "folder"
   if (ctx.isTopLevelInTab) return "flatten"
-  const hasIntroPage = (entry.pages ?? []).some(
-    (child) => isPage(child) && child.slug === "",
-  )
+  const hasIntroPage = (entry.pages ?? []).some(child => isPage(child) && child.slug === "")
   return hasIntroPage ? "section" : "folder"
 }
 
@@ -502,7 +502,7 @@ async function emitMetaTree(config) {
     const d = ensureDir(dir)
     for (const [k, v] of Object.entries(defaults)) {
       if (v !== undefined && /** @type {Record<string, unknown>} */ (d)[k] === undefined) {
-        /** @type {Record<string, unknown>} */ (d)[k] = v
+        /** @type {Record<string, unknown>} */ d[k] = v
       }
     }
   }
@@ -521,7 +521,10 @@ async function emitMetaTree(config) {
    */
   function backfillIntermediateFolders(currentFolderDir, pageDir) {
     if (pageDir === currentFolderDir) return
-    if (!pageDir.startsWith(currentFolderDir === "" ? "" : currentFolderDir + "/") && currentFolderDir !== "") {
+    if (
+      !pageDir.startsWith(currentFolderDir === "" ? "" : currentFolderDir + "/") &&
+      currentFolderDir !== ""
+    ) {
       return
     }
     const rel = currentFolderDir === "" ? pageDir : pageDir.slice(currentFolderDir.length + 1)
@@ -718,7 +721,12 @@ async function appendUnlistedChildren(dirs) {
     const extras = []
     for (const entry of entries) {
       if (entry.name === "meta.json" || entry.name.startsWith(".")) continue
-      const name = entry.isFile() && entry.name.endsWith(".mdx") ? entry.name.replace(/\.mdx$/, "") : entry.isDirectory() ? entry.name : null
+      const name =
+        entry.isFile() && entry.name.endsWith(".mdx")
+          ? entry.name.replace(/\.mdx$/, "")
+          : entry.isDirectory()
+            ? entry.name
+            : null
       if (!name) continue
       // `...name` (extract prefix) and `!name` (exclude) cover the same folder
       // as a bare `name` entry, so treat them as already-listed.

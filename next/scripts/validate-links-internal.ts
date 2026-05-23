@@ -208,7 +208,10 @@ function extractLinks(content: string): ExtractedLink[] {
   const jsxHref = /\bhref\s*=\s*["']([^"']+)["']/g
   let inFence = false
   for (let i = 0; i < lines.length; i++) {
-    if (/^\s*```/.test(lines[i])) { inFence = !inFence; continue }
+    if (/^\s*```/.test(lines[i])) {
+      inFence = !inFence
+      continue
+    }
     if (inFence) continue
     for (const re of [mdLink, jsxHref]) {
       re.lastIndex = 0

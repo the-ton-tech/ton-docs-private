@@ -22,7 +22,7 @@
  * @typedef {InternalTab | ExternalTab} Tab
  * @typedef {{version: 1, tabs: Tab[], navbarLinks?: LinkRef[]}} NavConfig
  */
-import { stableStringify } from "../src/lib/stable-stringify"
+import {stableStringify} from "../src/lib/stable-stringify"
 import {existsSync, promises as fs} from "node:fs"
 import path from "node:path"
 import {fileURLToPath} from "node:url"

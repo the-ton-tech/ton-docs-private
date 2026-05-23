@@ -92,12 +92,7 @@ function TagBadge({tag, className}: {tag?: string; className?: string}) {
  * that signal regardless of whether the entry carries its own icon.
  */
 function ExternalArrow() {
-  return (
-    <ArrowUpRight
-      aria-hidden
-      className="ms-auto size-3.5 shrink-0 text-fd-muted-foreground"
-    />
-  )
+  return <ArrowUpRight aria-hidden className="ms-auto size-3.5 shrink-0 text-fd-muted-foreground" />
 }
 
 export function SidebarItemWithTag({item}: {item: Item}) {
@@ -151,13 +146,7 @@ function FolderTriggerInner({item, tagged}: {item: Folder; tagged: TaggedFolder}
  * (e.g. AppKit's "Installation"), where the orphan sibling page re-parented
  * by `source.ts` sits as the first row beneath the header.
  */
-function FolderSectionTriggerInner({
-  item,
-  tagged,
-}: {
-  item: Folder
-  tagged: TaggedFolder
-}) {
+function FolderSectionTriggerInner({item, tagged}: {item: Folder; tagged: TaggedFolder}) {
   const folder = useFolder()
   const depth = folder?.depth ?? 1
   return (

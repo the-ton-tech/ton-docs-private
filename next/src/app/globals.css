@@ -90,10 +90,8 @@ figure.shiki > div[role="region"] {
 
   position: relative;
   isolation: isolate;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    #0a0f1f;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px), #0a0f1f;
   background-size: 24px 24px;
 }
 
@@ -131,8 +129,7 @@ figure.shiki > div[role="region"] {
   position: relative;
   min-width: 0;
   overflow: hidden;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     radial-gradient(circle at 50% 50%, rgba(0, 152, 234, 0.08), transparent 42%),
     var(--color-fd-background);

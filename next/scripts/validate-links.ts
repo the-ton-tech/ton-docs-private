@@ -393,7 +393,10 @@ function extractLinks(content: string): ExtractedLink[] {
   const lines = content.split("\n")
   let inFence = false
   for (let i = 0; i < lines.length; i++) {
-    if (/^\s*```/.test(lines[i])) { inFence = !inFence; continue }
+    if (/^\s*```/.test(lines[i])) {
+      inFence = !inFence
+      continue
+    }
     if (inFence) continue
     const line = lines[i]
     for (const [re, kind] of [
@@ -1508,9 +1511,7 @@ async function main(): Promise<void> {
     passRUnresolvable = unresolvable
     if (flags.verbose) {
       for (const r of repairs.slice(0, 25)) {
-        console.log(
-          `    ↻ ${r.source}: ${r.oldDestination} -> ${r.newDestination}  (${r.reason})`,
-        )
+        console.log(`    ↻ ${r.source}: ${r.oldDestination} -> ${r.newDestination}  (${r.reason})`)
       }
       if (repairs.length > 25) console.log(`    ... and ${repairs.length - 25} more`)
       for (const d of drops.slice(0, 10)) {

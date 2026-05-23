@@ -5,13 +5,7 @@ import path from "node:path"
 import {createElement, type ComponentType, type SVGProps} from "react"
 import {ThemeLogo} from "@/components/ThemeLogo"
 import type {GroupRef, InternalTab, NavConfig, NavEntry} from "@/lib/nav-types"
-import {
-  getEffectiveTabs,
-  isExternalTab,
-  isGroup,
-  isLink,
-  isPage,
-} from "@/lib/nav-types"
+import {getEffectiveTabs, isExternalTab, isGroup, isLink, isPage} from "@/lib/nav-types"
 
 export const logo = <ThemeLogo />
 
@@ -49,18 +43,14 @@ function toPascalCase(name: string): string {
 
 function resolveLucideIcon(name: string | undefined) {
   if (!name) return undefined
-  const Comp = (icons as Record<string, ComponentType<SVGProps<SVGSVGElement>>>)[
-    toPascalCase(name)
-  ]
+  const Comp = (icons as Record<string, ComponentType<SVGProps<SVGSVGElement>>>)[toPascalCase(name)]
   if (!Comp) return undefined
   return createElement(Comp)
 }
 
 function resolveLucideTabIcon(name: string | undefined) {
   if (!name) return undefined
-  const Comp = (icons as Record<string, ComponentType<SVGProps<SVGSVGElement>>>)[
-    toPascalCase(name)
-  ]
+  const Comp = (icons as Record<string, ComponentType<SVGProps<SVGSVGElement>>>)[toPascalCase(name)]
   if (!Comp) return undefined
   return createElement(Comp, {className: "size-full"})
 }
@@ -78,7 +68,9 @@ function collectPageUrls(entries: NavEntry[], prefix: string[]): string[] {
   for (const entry of entries) {
     if (isLink(entry)) continue
     if (isGroup(entry)) {
-      const next = (entry as GroupRef).slug ? [...prefix, (entry as GroupRef).slug as string] : prefix
+      const next = (entry as GroupRef).slug
+        ? [...prefix, (entry as GroupRef).slug as string]
+        : prefix
       out.push(...collectPageUrls((entry as GroupRef).pages ?? [], next))
       continue
     }

@@ -25,11 +25,7 @@ export function Accordion({
 }) {
   const titleString = (title as string) ?? ""
   return (
-    <FumaAccordions
-      type="single"
-      collapsible
-      defaultValue={defaultOpen ? titleString : undefined}
-    >
+    <FumaAccordions type="single" collapsible defaultValue={defaultOpen ? titleString : undefined}>
       <FumaAccordion title={titleString} value={titleString}>
         {children}
       </FumaAccordion>
