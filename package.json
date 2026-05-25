@@ -5,5 +5,9 @@
     "node": ">=22.22",
     "npm": ">=11"
   },
-  "packageManager": "npm@11.11.1"
+  "packageManager": "npm@11.11.1",
+  "scripts": {
+    "export": "cd next && npm ci && npm run build",
+    "unzip": "rm -rf dist && cp -R next/out dist"
+  }
 }
