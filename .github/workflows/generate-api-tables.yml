@@ -1,0 +1,39 @@
+name: Generate API Tables
+
+env:
+  PYTHON_VERSION: "3.11"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml==6.0.3
+
+      - name: Generate tables
+        run: |
+          python3 .github/scripts/generate-v2-api-table.py
+          python3 .github/scripts/generate-v3-api-table.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ecosystem/api/toncenter/v2/overview.mdx ecosystem/api/toncenter/v3/overview.mdx
+          git diff --staged --quiet || git commit -m "chore(bot): auto-generate API tables"
+          git push
