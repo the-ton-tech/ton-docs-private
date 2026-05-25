@@ -8,6 +8,7 @@ import {
   SearchDialogIcon,
   SearchDialogInput,
   SearchDialogList,
+  SearchDialogListItem,
   SearchDialogOverlay,
   type SharedProps,
 } from "fumadocs-ui/components/dialog/search"
@@ -91,7 +92,15 @@ export default function DefaultSearchDialog(props: SharedProps) {
           <SearchDialogInput />
           <SearchDialogClose className="max-md:hidden" />
         </SearchDialogHeader>
-        <SearchDialogList items={query.data !== "empty" ? query.data : null} />
+        <SearchDialogList
+          items={query.data !== "empty" ? query.data : null}
+          // Fumadocs renders the result breadcrumb trail as a non-wrapping
+          // `inline-flex` row (the item's first child); on deeply-nested pages
+          // it overflows the dialog and is clipped mid-word. Let it wrap.
+          Item={props => (
+            <SearchDialogListItem {...props} className="[&>div:first-child]:flex-wrap" />
+          )}
+        />
       </SearchDialogContent>
     </SearchDialog>
   )
