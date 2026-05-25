@@ -20,22 +20,22 @@ npm run start      # http://localhost:3000
 
 Verify the following endpoints respond as expected:
 
-| URL                                                                | Expected |
-|--------------------------------------------------------------------|----------|
-| `/`                                                                | 200 — landing page                              |
-| `/start-here`                                                      | 200 — first doc                                 |
-| `/tolk/overview`                                                   | 200 — Tolk overview                             |
-| `/ecosystem/api/toncenter/v3/accounts/get-account-states`          | 200 — OpenAPI-rendered                          |
-| `/participate/explorers`                                           | 308 → `/ecosystem/explorers/overview`           |
-| `/v3/concepts/dive-into-ton/introduction`                          | 308 → `/start-here`                             |
-| `/this-page-does-not-exist`                                        | 404                                             |
-| `/llms.txt`                                                        | 200 plain text                                  |
-| `/llms-full.txt`                                                   | 200 plain text                                  |
-| `/llms.mdx/start-here.md`                                          | 200 Markdown                                    |
-| `/og/docs/start-here/image.png`                                    | 200 PNG (≈60 KB)                                |
-| `/sitemap.xml`                                                     | 200 XML                                         |
-| `/robots.txt`                                                      | 200 text                                        |
-| `/api/search?query=tolk`                                           | 200 Orama JSON                                  |
+| URL                                                       | Expected                              |
+| --------------------------------------------------------- | ------------------------------------- |
+| `/`                                                       | 200 — landing page                    |
+| `/start-here`                                             | 200 — first doc                       |
+| `/tolk/overview`                                          | 200 — Tolk overview                   |
+| `/ecosystem/api/toncenter/v3/accounts/get-account-states` | 200 — OpenAPI-rendered                |
+| `/participate/explorers`                                  | 308 → `/ecosystem/explorers/overview` |
+| `/v3/concepts/dive-into-ton/introduction`                 | 308 → `/start-here`                   |
+| `/this-page-does-not-exist`                               | 404                                   |
+| `/llms.txt`                                               | 200 plain text                        |
+| `/llms-full.txt`                                          | 200 plain text                        |
+| `/llms.mdx/start-here.md`                                 | 200 Markdown                          |
+| `/og/docs/start-here/image.png`                           | 200 PNG (≈60 KB)                      |
+| `/sitemap.xml`                                            | 200 XML                               |
+| `/robots.txt`                                             | 200 text                              |
+| `/api/search?query=tolk`                                  | 200 Orama JSON                        |
 
 ## 2. Lint suite
 
