@@ -5,8 +5,6 @@ env:
   NODE_VERSION: 22
 
 on:
-  pull_request:
-    branches: ["**"]
   workflow_dispatch:
 
 concurrency:

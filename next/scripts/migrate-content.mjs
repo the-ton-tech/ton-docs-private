@@ -400,7 +400,9 @@ async function main() {
   }
   console.log(`  migrated: ${migrated} pages (${moved} routed via config)`)
   if (externals.size > 0) {
-    console.log(`  external: ${externals.size} page(s) with url: frontmatter (not written to content/docs)`)
+    console.log(
+      `  external: ${externals.size} page(s) with url: frontmatter (not written to content/docs)`,
+    )
   }
 
   const backfilled = await backfillIds()
@@ -461,7 +463,9 @@ async function rewriteExternalPagesAsLinks(config, externals) {
     return
   }
   await writeConfig(config)
-  console.log(`  rewrote ${converted} page entr${converted === 1 ? "y" : "ies"} as external link(s) in navigation.config.json`)
+  console.log(
+    `  rewrote ${converted} page entr${converted === 1 ? "y" : "ies"} as external link(s) in navigation.config.json`,
+  )
 }
 
 main().catch(err => {

@@ -116,7 +116,7 @@ async function main() {
   // Pre-existing broken links inherited from the Mintlify content are tracked
   // by a baseline budget. CI fails only when the count exceeds the budget so
   // PRs are blocked on *new* regressions, not on legacy debt.
-  const baseline = Number.parseInt(process.env.LINKS_BASELINE ?? "313", 10)
+  const baseline = Number.parseInt(process.env.LINKS_BASELINE ?? "0", 10)
   console.error(`\n${errors.length} broken internal references (baseline: ${baseline})`)
   if (errors.length > baseline) {
     console.error(`links FAILED: ${errors.length - baseline} new broken references introduced`)
@@ -206,7 +206,13 @@ function extractLinks(content: string): ExtractedLink[] {
   const lines = content.split("\n")
   const mdLink = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g
   const jsxHref = /\bhref\s*=\s*["']([^"']+)["']/g
+  let inFence = false
   for (let i = 0; i < lines.length; i++) {
+    if (/^\s*```/.test(lines[i])) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
     for (const re of [mdLink, jsxHref]) {
       re.lastIndex = 0
       let m: RegExpExecArray | null

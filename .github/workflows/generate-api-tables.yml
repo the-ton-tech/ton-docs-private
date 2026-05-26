@@ -2,15 +2,9 @@ name: Generate API Tables
 
 env:
   PYTHON_VERSION: "3.11"
-  NODE_VERSION: "22"
 
 on:
-  push:
-    paths:
-      - 'ecosystem/api/toncenter/v2.json'
-      - 'ecosystem/api/toncenter/v3.yaml'
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -27,22 +21,14 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-
       - name: Install dependencies
         run: |
           pip install pyyaml==6.0.3
-          corepack enable
-          npm ci
 
       - name: Generate tables
         run: |
           python3 .github/scripts/generate-v2-api-table.py
           python3 .github/scripts/generate-v3-api-table.py
-          npm run fmt:some -- ecosystem/api/toncenter/v2/overview.mdx ecosystem/api/toncenter/v3/overview.mdx
 
       - name: Commit changes
         run: |

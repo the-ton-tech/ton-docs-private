@@ -46,9 +46,7 @@ for (const r of redirects) {
     continue
   }
   const clean = r.source.replace(/^\/+/, "").replace(/\/+$/, "")
-  const target = clean
-    ? join(outDir, clean, "index.html")
-    : join(outDir, "index.html")
+  const target = clean ? join(outDir, clean, "index.html") : join(outDir, "index.html")
 
   if (await exists(target)) {
     skippedExisting++

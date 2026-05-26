@@ -21,9 +21,7 @@ function resolveIcon(icon?: string | ReactNode, iconType?: string) {
     // Force `block`: the shim Icon defaults to `inline-block` for inline text
     // usage, which makes the fumadocs card's `w-fit` icon wrapper inherit
     // line-height and render as a tall rectangle instead of a square.
-    return (
-      <MintlifyIcon icon={icon} iconType={iconType} size={16} className="block" />
-    )
+    return <MintlifyIcon icon={icon} iconType={iconType} size={16} className="block" />
   }
   return icon
 }
@@ -36,13 +34,7 @@ export function Card({title, icon, iconType, href, children}: CardProps) {
   )
 }
 
-export function CardGroup({
-  cols = 2,
-  children,
-}: {
-  cols?: number
-  children?: ReactNode
-}) {
+export function CardGroup({cols = 2, children}: {cols?: number; children?: ReactNode}) {
   return (
     <FumaCards
       className={cn(
@@ -60,12 +52,6 @@ export function CardGroup({
 /**
  * Mintlify `<Columns>` is essentially `<CardGroup cols>` — alias for clarity.
  */
-export function Columns({
-  cols = 2,
-  children,
-}: {
-  cols?: number
-  children?: ReactNode
-}) {
+export function Columns({cols = 2, children}: {cols?: number; children?: ReactNode}) {
   return <CardGroup cols={cols}>{children}</CardGroup>
 }

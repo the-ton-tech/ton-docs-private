@@ -160,7 +160,7 @@ Returns `Promise<Traceable<SendTransactionResponse>>`. Signed transaction boc th
 - `WalletWrongNetworkError` — the wallet's `account.chain` differs from the network on `transaction`.
 - `UserRejectsError` — the user rejected the transaction in the wallet UI.
 - `BadRequestError` — the wallet rejected the request as malformed.
-- `UnknownAppError` — the wallet does not recognise this dApp session.
+- `UnknownAppError` — the wallet does not recognize this dApp session.
 - [`TonConnectError`](#tonconnecterror) — `transaction` failed validation or the request was aborted via `options.signal`.
 
 A legacy overload is preserved for backwards compatibility and marked `@deprecated` — use sendTransaction(transaction, options) instead.
@@ -199,7 +199,7 @@ Returns `Promise<Traceable<SignDataResponse>>`. The signed payload together with
 - `WalletWrongNetworkError` — the wallet's `account.chain` differs from the network on `data`.
 - `UserRejectsError` — the user rejected the request in the wallet UI.
 - `BadRequestError` — the wallet rejected the payload as malformed.
-- `UnknownAppError` — the wallet does not recognise this dApp session.
+- `UnknownAppError` — the wallet does not recognize this dApp session.
 - [`TonConnectError`](#tonconnecterror) — `data` failed validation or the request was aborted via `options.signal`.
 
 ### `signMessage()`
@@ -229,7 +229,7 @@ Returns `Promise<Traceable<SignMessageResponse>>`. The signed internal-message B
 - `WalletWrongNetworkError` — the wallet's `account.chain` differs from the network on `message`.
 - `UserRejectsError` — the user rejected the request in the wallet UI.
 - `BadRequestError` — the wallet rejected the message as malformed.
-- `UnknownAppError` — the wallet does not recognise this dApp session.
+- `UnknownAppError` — the wallet does not recognize this dApp session.
 - [`TonConnectError`](#tonconnecterror) — `message` failed validation or the request was aborted via `options.signal`.
 
 ### `setConnectionNetwork()`

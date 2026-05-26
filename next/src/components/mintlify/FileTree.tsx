@@ -33,7 +33,9 @@ function renderItem(item: FileTreeItem, index: number, defaultOpen: boolean): Re
       return (
         <div key={index}>
           <File name={item.name} />
-          <span className="block ps-8 -mt-1 pb-1 text-xs text-fd-muted-foreground">{item.note}</span>
+          <span className="block ps-8 -mt-1 pb-1 text-xs text-fd-muted-foreground">
+            {item.note}
+          </span>
         </div>
       )
     }
@@ -45,7 +47,9 @@ function renderItem(item: FileTreeItem, index: number, defaultOpen: boolean): Re
     return (
       <Folder key={index} name={item.name} defaultOpen={isOpen}>
         {item.note && (
-          <span className="block whitespace-pre-line px-2 -mt-0.5 pb-0.5 text-xs text-fd-muted-foreground">{item.note}</span>
+          <span className="block whitespace-pre-line px-2 -mt-0.5 pb-0.5 text-xs text-fd-muted-foreground">
+            {item.note}
+          </span>
         )}
         {item.items?.map((child, childIdx) => renderItem(child, childIdx, defaultOpen))}
       </Folder>
@@ -56,7 +60,11 @@ function renderItem(item: FileTreeItem, index: number, defaultOpen: boolean): Re
 }
 
 export function FileTree({items = [], defaultOpen = true}: FileTreeProps) {
-  return <Files className="[&_svg]:shrink-0 [&_.ms-2]:ms-[15px]">{items.map((item, idx) => renderItem(item, idx, defaultOpen))}</Files>
+  return (
+    <Files className="[&_svg]:shrink-0 [&_.ms-2]:ms-[15px]">
+      {items.map((item, idx) => renderItem(item, idx, defaultOpen))}
+    </Files>
+  )
 }
 
 /**
@@ -77,7 +85,10 @@ Tree.Folder = function TreeFolder({children, ...props}: ComponentProps<typeof Fo
   )
 }
 
-Tree.File = function TreeFile({children, ...props}: ComponentProps<typeof File> & {children?: ReactNode}) {
+Tree.File = function TreeFile({
+  children,
+  ...props
+}: ComponentProps<typeof File> & {children?: ReactNode}) {
   if (children) {
     return (
       <div>

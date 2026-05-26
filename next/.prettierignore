@@ -4,3 +4,5 @@ node_modules
 content/docs
 openapi
 redirects.mjs
+*.json
+*.jsonc

@@ -441,6 +441,11 @@ export const redirects = [
     "permanent": true
   },
   {
+    "source": "/contribute/style-guide-extended",
+    "destination": "/overview/contribute/style-guide",
+    "permanent": true
+  },
+  {
     "source": "/develop/blockchain/sharding-lifecycle",
     "destination": "/blockchain-basics/primitives/shards",
     "permanent": true
@@ -473,6 +478,11 @@ export const redirects = [
   {
     "source": "/develop/dapps/apis/toncenter",
     "destination": "https://old-docs.ton.org/v3/guidelines/dapps/apis-sdks/api-types",
+    "permanent": true
+  },
+  {
+    "source": "/develop/dapps/asset-processing",
+    "destination": "/blockchain-basics/payments/overview",
     "permanent": true
   },
   {
@@ -2521,6 +2531,11 @@ export const redirects = [
     "permanent": true
   },
   {
+    "source": "/foundations/consensus/catchain-overview",
+    "destination": "/blockchain-basics/whitepapers/catchain",
+    "permanent": true
+  },
+  {
     "source": "/foundations/consensus/catchain-visualizer",
     "destination": "/blockchain-basics/primitives/consensus/catchain-visualizer",
     "permanent": true
@@ -2651,6 +2666,36 @@ export const redirects = [
     "permanent": true
   },
   {
+    "source": "/foundations/tlb/complex-and-non-trivial-examples",
+    "destination": "/blockchain-basics/languages/tl-b/complex-and-non-trivial-examples",
+    "permanent": true
+  },
+  {
+    "source": "/foundations/tlb/overview",
+    "destination": "/blockchain-basics/languages/tl-b/overview",
+    "permanent": true
+  },
+  {
+    "source": "/foundations/tlb/simple-examples",
+    "destination": "/blockchain-basics/languages/tl-b/simple-examples",
+    "permanent": true
+  },
+  {
+    "source": "/foundations/tlb/syntax-and-semantics",
+    "destination": "/blockchain-basics/languages/tl-b/syntax-and-semantics",
+    "permanent": true
+  },
+  {
+    "source": "/foundations/tlb/tep-examples",
+    "destination": "/blockchain-basics/languages/tl-b/tep-examples",
+    "permanent": true
+  },
+  {
+    "source": "/foundations/tlb/tooling",
+    "destination": "/blockchain-basics/languages/tl-b/tooling",
+    "permanent": true
+  },
+  {
     "source": "/foundations/traces",
     "destination": "/blockchain-basics/primitives/traces",
     "permanent": true
@@ -2683,6 +2728,11 @@ export const redirects = [
   {
     "source": "/foundations/whitepapers/catchain",
     "destination": "/blockchain-basics/whitepapers/catchain",
+    "permanent": true
+  },
+  {
+    "source": "/foundations/whitepapers/comments",
+    "destination": "/blockchain-basics/whitepapers/overview",
     "permanent": true
   },
   {
@@ -2861,6 +2911,16 @@ export const redirects = [
     "permanent": true
   },
   {
+    "source": "/languages/fift/basic-values",
+    "destination": "/blockchain-basics/languages/fift/overview",
+    "permanent": true
+  },
+  {
+    "source": "/languages/fift/control",
+    "destination": "/blockchain-basics/languages/fift/overview",
+    "permanent": true
+  },
+  {
     "source": "/languages/fift/deep-dive",
     "destination": "/blockchain-basics/languages/fift/deep-dive",
     "permanent": true
@@ -2871,12 +2931,27 @@ export const redirects = [
     "permanent": true
   },
   {
+    "source": "/languages/fift/fift-assembler",
+    "destination": "/blockchain-basics/languages/fift/fift-and-tvm-assembly",
+    "permanent": true
+  },
+  {
     "source": "/languages/fift/multisig",
     "destination": "/blockchain-basics/languages/fift/multisig",
     "permanent": true
   },
   {
     "source": "/languages/fift/overview",
+    "destination": "/blockchain-basics/languages/fift/overview",
+    "permanent": true
+  },
+  {
+    "source": "/languages/fift/types",
+    "destination": "/blockchain-basics/languages/fift/overview",
+    "permanent": true
+  },
+  {
+    "source": "/languages/fift/variables",
     "destination": "/blockchain-basics/languages/fift/overview",
     "permanent": true
   },
@@ -3336,6 +3411,11 @@ export const redirects = [
     "permanent": true
   },
   {
+    "source": "/standard/tokens/nft/nft-2.0",
+    "destination": "/blockchain-basics/standard/tokens/nft/overview",
+    "permanent": true
+  },
+  {
     "source": "/standard/tokens/nft/nft-reference",
     "destination": "/blockchain-basics/standard/tokens/nft/nft-reference",
     "permanent": true
@@ -3378,6 +3458,11 @@ export const redirects = [
   {
     "source": "/standard/wallets/comparison",
     "destination": "/blockchain-basics/standard/wallets/comparison",
+    "permanent": true
+  },
+  {
+    "source": "/standard/wallets/gasless",
+    "destination": "/applications/appkit/howto/gasless",
     "permanent": true
   },
   {
@@ -4381,6 +4466,11 @@ export const redirects = [
     "permanent": true
   },
   {
+    "source": "/toolset",
+    "destination": "/overview/toolset",
+    "permanent": true
+  },
+  {
     "source": "/tvm/builders-and-slices",
     "destination": "/blockchain-basics/tvm/builders-and-slices",
     "permanent": true
@@ -4643,6 +4733,11 @@ export const redirects = [
   {
     "source": "/v3/documentation/dapps/assets/overview",
     "destination": "/blockchain-basics/standard/tokens/overview",
+    "permanent": true
+  },
+  {
+    "source": "/v3/documentation/dapps/assets/toncoin",
+    "destination": "/blockchain-basics/standard/wallets/how-it-works",
     "permanent": true
   },
   {

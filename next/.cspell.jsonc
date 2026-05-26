@@ -1,0 +1,61 @@
+// CSpell configuration for the next/ documentation app.
+// Run in CI by .github/workflows/spell-check.yml against
+// next/ Markdown and MDX files only.
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en-US",
+  "useGitignore": true,
+  "dictionaryDefinitions": [
+    {
+      "name": "project-words",
+      "path": "cspell-dict.txt"
+    }
+  ],
+  "dictionaries": ["project-words"],
+  "ignorePaths": [
+    // Generated TVM instruction reference
+    "**/tvm/instructions.mdx",
+    // Whitepapers: dense math notation rather than prose
+    "**/whitepapers/tblkch.mdx",
+    "**/whitepapers/ton.mdx",
+    "**/whitepapers/tvm.mdx",
+    "**/fift/whitepaper.mdx",
+    "**/tolk/features/standard-library.mdx"
+  ],
+  "ignoreRegExpList": [
+    // Predefined cspell patterns
+    "SpellCheckerDisable",
+    "SpellCheckerIgnoreInDocSetting",
+    "Urls",
+    "Email",
+    "RsaCert",
+    "SshRsa",
+    "Base64MultiLine",
+    "Base64SingleLine",
+    "CommitHash",
+    "CommitHashLink",
+    "CStyleHexValue",
+    "CSSHexValue",
+    "SHA",
+    "HashStrings",
+    "UnicodeRef",
+    "UUID",
+    "href",
+    // MDX syntax that is not prose
+    "\\]\\([^)]*\\)",
+    "url: \".*?\"",
+    "\\s*[^\\s]*?=[\"'\\{]",
+    "=\\s*\".*?\"",
+    "=\\s*'.*?'",
+    "(?<!\\\\)\\$(?:\\\\.|[^$\\\\])*?\\$",
+    "/(?<!\\\\)\\$\\$[\\s\\S]*?\\$\\$/g",
+    "(?<!\\\\)``.*?``",
+    "(?<!\\\\)`.*?`",
+    "/^([ \\t]*```).*([\\s\\S]*?)^\\1$/gmx",
+    "^import[ \\t].+$",
+    "/^export[ \\t].+?(?=\\r?\\n\\r?\\n)/gms",
+    "(?<!\\\\)\\{(?:[^{}]|\\{(?:[^{}]|\\{[^{}]*\\})*\\})*\\}",
+    "openapi: .+$"
+  ]
+}

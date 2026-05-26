@@ -11,9 +11,7 @@ export async function getLLMText(page: InferPageType<typeof source>) {
 ${processed}${openapiSection}`
 }
 
-async function getOpenAPISection(
-  page: InferPageType<typeof source>,
-): Promise<string> {
+async function getOpenAPISection(page: InferPageType<typeof source>): Promise<string> {
   const openapi = page.data.openapi
   if (typeof openapi !== "string") return ""
 
