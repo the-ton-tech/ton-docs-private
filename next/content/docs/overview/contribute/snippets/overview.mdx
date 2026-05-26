@@ -5,191 +5,392 @@ sidebarTitle: "Overview"
 description: ""
 ---
 
-_Snippets_ keep the same content in sync across pages, while _components_ provide reusable UI elements with consistent styling. Examples include a [link card](https://www.mintlify.com/docs/components/cards) or a [YouTube embed](https://www.mintlify.com/docs/create/image-embeds#youtube-embeds).
+This documentation site is built with [Fumadocs](https://fumadocs.dev), a Next.js documentation framework. Pages are written in MDX — Markdown with JSX support.
 
-Mintlify supports MDX snippets and JSX (React) components in MDX files, and provides several [built-in components](#built-in-components). In addition, this documentation includes a number of [custom components](#custom-components) in the `snippets/` folder.
-
-## Using a snippet
-
-The [DRY (Don't Repeat Yourself)](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) principle applies to documentation. When the same content appears in multiple places, create a custom snippet to keep it in sync.
-
-All snippets are placed in the root `snippets/` folder. For creation and usage details, see the [Mintlify reusable snippets documentation](https://www.mintlify.com/docs/create/reusable-snippets).
+_Components_ provide reusable UI elements with consistent styling. All components listed below are available globally in every MDX page — no imports needed. Many of them are thin wrappers over [Fumadocs UI components](https://fumadocs.dev/docs/ui/components).
 
 ## Using a component
 
-To use a custom component, import it into the MDX file and render it as a JSX tag. Tags start with an uppercase letter matching the name in the import statement:
+Render any component as a JSX tag. Tags start with an uppercase letter matching the component name:
 
 ```mdx title="some/page.mdx"
----
-title: "Frontmatter goes first, as usual"
----
-
-{/* Snippet imports go right after the frontmatter */}
-import MyMdxSnippet from '/snippets/my-mdx-snippet.mdx';
-
-{/* Component imports follow suit */}
-
-And now, some text and usage!
-
 <Aside>Here we go, some **nested content and formatting**!</Aside>
 ```
 
-Related Mintlify documentation:
+## Guidelines
 
-- [JSX snippets](https://www.mintlify.com/docs/create/reusable-snippets#jsx-snippets)
-- [React components](https://www.mintlify.com/docs/customize/react-components)
+Keep formatting as simple as possible. Avoid components when a paragraph communicates the same intent without them.
 
-## Built-in components
+## Content components
 
-[Mintlify provides built-in components](https://www.mintlify.com/docs/components/index) for common documentation use cases. These components are available globally without needing to import anything.
+### Aside
 
-### Use sparingly
+Callout boxes for secondary information: notes, tips, cautions, and dangers. See [detailed documentation](/overview/contribute/snippets/aside).
 
-Keep formatting as simple as possible. Avoid components when a paragraph or series of paragraphs communicates the same intent and information without them.
+```mdx
+<Aside>A note aside (default).</Aside>
+<Aside type="caution">Watch out!</Aside>
+```
 
-<Card
-  title="Steps"
-  icon="list-ordered"
-  href="https://www.mintlify.com/docs/components/steps"
-  horizontal="true"
+<Aside>A note aside (default).</Aside>
+<Aside type="caution">Watch out!</Aside>
+
+### Steps and Step
+
+Display sequential instructions in a numbered format.
+
+```mdx
+<Steps>
+  <Step title="First step">
+    Do something.
+  </Step>
+  <Step title="Second step">
+    Do something else.
+  </Step>
+</Steps>
+```
+
+<Steps>
+  <Step
+    title="First step"
+  >
+    Do something.
+  </Step>
+
+  <Step
+    title="Second step"
+  >
+    Do something else.
+  </Step>
+</Steps>
+
+### Tabs and Tab
+
+Tabbed content container. Each `<Tab>` needs a `title`.
+
+```mdx
+<Tabs>
+  <Tab title="JavaScript">
+    JavaScript example.
+  </Tab>
+  <Tab title="Python">
+    Python example.
+  </Tab>
+</Tabs>
+```
+
+<Tabs>
+  <Tab
+    title="JavaScript"
+  >
+    JavaScript example.
+  </Tab>
+
+  <Tab
+    title="Python"
+  >
+    Python example.
+  </Tab>
+</Tabs>
+
+### CodeGroup
+
+Wraps multiple fenced code blocks into a tabbed view. Each code block's `title` attribute becomes the tab label.
+
+````mdx
+<CodeGroup>
+```javascript title="example.js"
+const x = 1;
+```
+
+```python title="example.py"
+x = 1
+```
+</CodeGroup>
+````
+
+<CodeGroup>
+  ```javascript title="example.js"
+  const x = 1;
+  ```
+
+  ```python title="example.py"
+  x = 1
+  ```
+</CodeGroup>
+
+### Accordion and AccordionGroup
+
+Collapsible sections for progressive disclosure.
+
+```mdx
+<Accordion title="Click to expand">
+  Hidden content revealed on click.
+</Accordion>
+
+<AccordionGroup>
+  <Accordion title="First section">Content one.</Accordion>
+  <Accordion title="Second section">Content two.</Accordion>
+</AccordionGroup>
+```
+
+<Accordion
+  title="Click to expand"
 >
-  Display sequential instructions in a numbered format.
-</Card>
+  Hidden content revealed on click.
+</Accordion>
 
-<Card
-  title="Code groups"
-  icon="code"
-  href="https://www.mintlify.com/docs/components/code-groups"
-  horizontal="true"
+### Expandable
+
+A lighter collapsible section using native HTML `<details>`.
+
+```mdx
+<Expandable title="Show more">
+  Additional details here.
+</Expandable>
+```
+
+<Expandable
+  title="Show more"
 >
-  Display multiple code examples with a toggle.
-</Card>
+  Additional details here.
+</Expandable>
 
-<Card
-  title="Cards"
-  icon="square"
-  href="https://www.mintlify.com/docs/components/cards"
-  horizontal="true"
+### Tooltip
+
+Displays additional information on hover. Prefer linking to the [glossary](/foundations/glossary) or a reference page instead.
+
+```mdx
+<Tooltip tip="This appears on hover">Hover over me</Tooltip>
+```
+
+<Tooltip tip="This appears on hover">Hover over me</Tooltip>
+
+## Layout components
+
+### Card and CardGroup
+
+Highlighted content containers with icons. Prefer regular Markdown lists and use cards only when links should stand out.
+
+```mdx
+<CardGroup cols={2}>
+  <Card title="First card" icon="rocket" href="/overview/start-here">
+    Description of the first card.
+  </Card>
+  <Card title="Second card" icon="code">
+    Description of the second card.
+  </Card>
+</CardGroup>
+```
+
+<CardGroup cols={2}>
+  <Card
+    title="First card"
+    icon="rocket"
+    href="/overview/start-here"
+  >
+    Description of the first card.
+  </Card>
+
+  <Card
+    title="Second card"
+    icon="code"
+  >
+    Description of the second card.
+  </Card>
+</CardGroup>
+
+### Columns
+
+Alias for `<CardGroup>` — arranges children in responsive column layouts.
+
+```mdx
+<Columns cols={3}>
+  <Card title="One">Content</Card>
+  <Card title="Two">Content</Card>
+  <Card title="Three">Content</Card>
+</Columns>
+```
+
+## Media components
+
+### Image
+
+Display images with light/dark theme support, zoom, and optional clickable links. See [detailed documentation](/overview/contribute/snippets/image).
+
+```mdx
+<Image src="/resources/images/example.png" alt="Example" />
+
+{/* Light and dark theme variants */}
+<Image
+  src="/resources/images/light.png"
+  darkSrc="/resources/images/dark.png"
+  alt="Themed image"
+/>
+```
+
+### Mermaid diagrams
+
+Use fenced code blocks with Mermaid.js syntax to create flowcharts, sequence diagrams, and more.
+
+````mdx
+```mermaid
+graph LR
+  A[Start] --> B[End]
+```
+````
+
+### Icon
+
+Renders a [Lucide](https://lucide.dev/icons) icon by name. Avoid using standalone unless icons in other components are insufficient.
+
+```mdx
+<Icon icon="rocket" size={24} />
+```
+
+<Icon
+  icon="rocket"
+  size={24}
+/>
+
+## Data components
+
+### Tree
+
+Display directory structures with collapsible subdirectories using `<Tree.Folder>` and `<Tree.File>` sub-components. Supports MDX content inside children. See [detailed documentation](/overview/contribute/snippets/tree).
+
+```mdx
+<Tree>
+  <Tree.File name="README.md" />
+  <Tree.Folder name="src" defaultOpen>
+    <Tree.File name="index.ts" />
+    <Tree.File name="utils.ts" />
+  </Tree.Folder>
+  <Tree.File name="package.json" />
+</Tree>
+```
+
+<Tree>
+  <Tree.File
+    name="README.md"
+  />
+
+  <Tree.Folder
+    name="src"
+    defaultOpen
+  >
+    <Tree.File
+      name="index.ts"
+    />
+
+    <Tree.File
+      name="utils.ts"
+    />
+  </Tree.Folder>
+
+  <Tree.File
+    name="package.json"
+  />
+</Tree>
+
+### ResponseField and ParamField
+
+Document API response fields and parameters.
+
+```mdx
+<ParamField name="address" type="string" required>
+  The wallet address to query.
+</ParamField>
+
+<ResponseField name="balance" type="number">
+  The wallet balance in nanotons.
+</ResponseField>
+```
+
+<ParamField
+  name="address"
+  type="string"
+  required
 >
-  Highlight content with customizable containers and icons. Prefer regular ordered or unordered Markdown lists and resort to cards only when the relevant links and content should stand out.
-</Card>
+  The wallet address to query.
+</ParamField>
 
-<Card
-  title="Columns"
-  icon="columns-3"
-  href="https://www.mintlify.com/docs/components/columns"
-  horizontal="true"
+<ResponseField
+  name="balance"
+  type="number"
 >
-  Arrange \<Card> components in responsive layouts.
-</Card>
+  The wallet balance in nanotons.
+</ResponseField>
 
-<Card
-  title="Accordions"
-  icon="chevron-down"
-  href="https://www.mintlify.com/docs/components/accordions"
-  horizontal="true"
->
-  Expandable sections for progressive disclosure of content.
-</Card>
+### Badge
 
-<Card
-  title="Expandables"
-  icon="chevrons-down"
-  href="https://www.mintlify.com/docs/components/expandables"
-  horizontal="true"
->
-  Show and hide detailed content on demand. Append the expandable keyword to the opening part of a code block to collapse large examples.
-</Card>
+Inline labels and status indicators. Use sparingly — mainly for deprecated or outdated items.
 
-<Card
-  title="Badge"
-  icon="award"
-  href="https://www.mintlify.com/docs/components/badge"
-  horizontal="true"
->
-  Add inline labels and status indicators for outdated or deprecated items. Otherwise, avoid this component.
-</Card>
+```mdx
+Regular text with a <Badge>default</Badge> badge.
 
-<Card
-  title="Tooltips"
-  icon="message-circle"
-  href="https://www.mintlify.com/docs/components/tooltips"
-  horizontal="true"
->
-  Display additional information on hover without going too deep. Link to the [glossary](/overview/learn-more/glossary), a detailed explanation page, or a reference page instead.
-</Card>
+<Badge variant="warning">deprecated</Badge> <Badge variant="success">new</Badge> <Badge variant="error">removed</Badge>
+```
 
-<Card
-  title="Fields"
-  icon="text-cursor-input"
-  href="https://www.mintlify.com/docs/components/fields"
-  horizontal="true"
->
-  Display parameter and property definitions, configuration options, or object fields.
-</Card>
+Regular text with a <Badge>default</Badge> badge.
 
-Use either of the following components only on pages that document HTTP APIs. Because they override the default auto-generated blocks, prefer regular code blocks whenever possible.
+<Badge variant="warning">deprecated</Badge> <Badge variant="success">new</Badge> <Badge variant="error">removed</Badge>
 
-<Card
-  title="Responses"
-  icon="arrow-left-right"
-  href="https://www.mintlify.com/docs/components/responses"
-  horizontal="true"
->
-  Show \<ResponseField> that describes API response structures and fields.
-</Card>
+## Callout aliases
 
-<Card
-  title="Examples"
-  icon="file-code"
-  href="https://www.mintlify.com/docs/components/examples"
-  horizontal="true"
->
-  Show \<RequestExample> and \<ResponseExample> side by side.
-</Card>
+These components are shorthand aliases for `<Aside>` with specific types:
 
-When explaining a complex topic or writing a tutorial, use concise diagrams to clarify behavior that text and code cannot.
+| Component   | Equivalent               |
+| ----------- | ------------------------ |
+| `<Note>`    | `<Aside type="note">`    |
+| `<Info>`    | `<Aside type="note">`    |
+| `<Tip>`     | `<Aside type="tip">`     |
+| `<Warning>` | `<Aside type="caution">` |
+| `<Caution>` | `<Aside type="caution">` |
+| `<Danger>`  | `<Aside type="danger">`  |
+| `<Check>`   | success callout          |
 
-<Card
-  title="Mermaid diagrams"
-  icon="network"
-  href="https://www.mintlify.com/docs/components/mermaid-diagrams"
-  horizontal="true"
->
-  Use code blocks with [Mermaid.js](https://mermaid.js.org/) syntax to create flowcharts, sequence diagrams, and more.
-</Card>
+Prefer using `<Aside>` directly for consistency.
 
-### Do not use
+## Do not use
 
 These components have better alternatives:
 
-1. `<Callout>` - use the custom [`<Aside>`](/overview/contribute/snippets/aside) component.
-1. `<Frame>` - use the custom [`<Image>`](/overview/contribute/snippets/image) component.
-1. `<View>` - use `<CodeGroup>`, organize content in sub-headers, or create distinct pages per environment or language.
-1. `<Tile>` - use `<Card>`.
-1. `<Icon>` - do not use unless icons in other components or code blocks are insufficient in the given case.
+1. `<Callout>` — use [`<Aside>`](/overview/contribute/snippets/aside) instead for a unified interface.
+1. `<Frame>` — use [`<Image>`](/overview/contribute/snippets/image) instead, which includes framing, zoom, and dark theme support.
+1. `<Icon>` — do not use standalone unless icons in other components or code blocks are insufficient in the given case.
+
+These components were evaluated and do not fit the documentation UI:
+
+1. `<FileTree>` — data-driven variant, replaced by [`<Tree>`](#tree) which supports native MDX content.
+1. `<SourceCodeLink>` — pill-button style does not fit inline text, tables, or lists. Use regular Markdown links instead.
+1. `<RequestExample>` / `<ResponseExample>` — create a nested "field inside field" effect. Use fenced code blocks with `title` instead.
+1. `<CommandOptions>` / `<CommandOption>` — existing tables and lists for CLI flags are clearer.
 
 These components are currently unused:
 
-1. `<Banner>` - reserved for special occasions and public releases.
-1. `<Update>` - the documentation does not contain changelogs.
+1. `<Banner>` — reserved for special occasions and public releases.
+1. `<Update>` — the documentation does not contain changelogs.
+
+## Specialized components
+
+These components are used in specific contexts:
+
+- `<Stub issue={123}>` — placeholder for work-in-progress pages, with an optional link to a tracking issue.
+- `<FenceTable>` — pre-formatted table display.
+- `<CatchainVisualizer>` — catchain visualization (legacy).
+- `<TvmInstructionTable>` — TVM instruction reference table (legacy).
 
 ## Custom components
 
-TON documentation includes custom components built for various needs. See items on the left navigation panel within the "Components and snippets" group under the "Contribute" section, such as: [Aside](/overview/contribute/snippets/aside), [Image](/overview/contribute/snippets/image), etc.
+TON documentation includes custom components built for various needs. See items on the left navigation panel within the "Components and snippets" group under the "Contribute" section, such as: [Aside](/overview/contribute/snippets/aside), [Tree](/overview/contribute/snippets/tree), [Image](/overview/contribute/snippets/image), etc.
 
 ## Styling
 
-Mintlify supports [Tailwind CSS v3][tailwind] for styling HTML elements and any components or snippets from the `snippets/` folder.
+Fumadocs uses [Tailwind CSS v4](https://tailwindcss.com/docs) as its styling foundation. Tailwind utility classes can be used directly in MDX pages on HTML elements.
 
 Related resources:
 
-- [Styling with Tailwind CSS in the Mintlify documentation](https://www.mintlify.com/docs/settings/custom-scripts#styling-with-tailwind-css)
-- [Tailwind CSS v3 documentation][tailwind]
-- [Unofficial Tailwind CSS v3 cheatsheet](https://tailwindcss.504b.cc/)
-
-## See also
-
-- [Text formatting, headers, and styling with Mintlify](https://www.mintlify.com/docs/create/text)
-
-[tailwind]: https://v3.tailwindcss.com/docs/utility-first
+- [Fumadocs documentation](https://fumadocs.dev)
+- [Tailwind CSS v4 documentation](https://tailwindcss.com/docs)
+- [Unofficial Tailwind CSS cheatsheet](https://tailwindcss.504b.cc/)

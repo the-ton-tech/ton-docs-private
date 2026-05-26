@@ -422,7 +422,12 @@ export const redirects = [
   },
   {
     "source": "/contribute/snippets/filetree",
-    "destination": "/overview/contribute/snippets/filetree",
+    "destination": "/overview/contribute/snippets/tree",
+    "permanent": true
+  },
+  {
+    "source": "/contribute/snippets/tree",
+    "destination": "/overview/contribute/snippets/tree",
     "permanent": true
   },
   {
