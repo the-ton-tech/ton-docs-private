@@ -180,7 +180,7 @@ The same logic applies to any gateway that may return HTML for a path the wallet
 
 ### Caching pitfalls
 
-The TON Connect protocol does not define manifest caching. Wallets cache at their own discretion, so behaviour is implementation-specific.
+The protocol leaves caching to wallets but tells them to honour standard HTTP cache headers (RFC 9111) and, when no headers are present, cache for up to 24 h."
 
 After publishing a fix:
 
