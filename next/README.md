@@ -231,7 +231,7 @@ English tokenizer, **stemming on**, **`allowDuplicates: true`** at both index- a
    description: ""
    ---
    ```
-   For tone and conventions read [`style-guide.mdx`](./content/docs/overview/contribute/style-guide.mdx) and [`../contribute/style-guide-extended.mdx`](../contribute/style-guide-extended.mdx).
+   For tone and conventions read [`style-guide.mdx`](./content/docs/overview/contribute/style-guide.mdx).
 3. **Preview** with `npm run dev` — that's enough for a typo or content fix.
 4. **Run the checks** before pushing anything bigger:
    ```sh
