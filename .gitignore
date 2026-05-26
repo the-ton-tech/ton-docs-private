@@ -31,3 +31,9 @@ __pycache__
 dist
 export.zip
 next/pnpm-lock.yaml
+
+# Locally-imported search-relevance eval harness. Lives on branch
+# claude/improve-orama-search-EdVJs; pulled into this worktree for ranker
+# experiments only, not meant to land via this branch.
+next/scripts/search-eval/
+.github/workflows/search-eval.yml

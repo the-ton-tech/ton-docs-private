@@ -2,6 +2,8 @@ import {source} from "@/lib/source"
 import {DocsLayout} from "fumadocs-ui/layouts/docs"
 import {baseOptions, buildLayoutTabs} from "@/lib/layout.shared"
 import {SidebarItemWithTag, SidebarFolderWithTag} from "@/components/SidebarItemWithTag"
+import {AISearch, AISearchPanel, AISearchTrigger} from "@/components/ai/search"
+import {Sparkles} from "lucide-react"
 import type {ReactNode} from "react"
 
 export default function Layout({children}: {children: ReactNode}) {
@@ -35,7 +37,24 @@ export default function Layout({children}: {children: ReactNode}) {
       // header from duplicating them.
       links={[]}
     >
-      {children}
+      {/* "Ask AI" chat: a floating trigger plus the slide-in chat panel.
+          `AISearch` is the shared context provider; the chat UI is a client
+          component that POSTs cross-origin to the external backend, so it is
+          fully compatible with this site's static export. */}
+      <AISearch>
+        {children}
+        <AISearchPanel />
+        <AISearchTrigger
+          position="float"
+          className="bg-fd-secondary text-fd-secondary-foreground border rounded-lg px-3 py-2 text-sm font-medium hover:bg-fd-accent hover:text-fd-accent-foreground"
+        >
+          <Sparkles className="size-4" />
+          Ask AI
+          <kbd className="ms-1 hidden lg:inline rounded border bg-fd-background px-1.5 py-0.5 text-[10px] font-mono text-fd-muted-foreground">
+            ⌘/
+          </kbd>
+        </AISearchTrigger>
+      </AISearch>
     </DocsLayout>
   )
 }

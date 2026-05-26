@@ -5,11 +5,116 @@ export const revalidate = false
 
 /**
  * Long prose sections (TON whitepapers, TVM spec, …) emit multi-KB index
- * blocks whose tail almost never decides a match. Capping block length keeps
- * the client-side Orama index small (faster parse + query) without dropping
- * whole sections from search. ~2000 chars ≈ a long paragraph group.
+ * blocks whose tail used to be silently dropped by a hard slice. We now
+ * chunk such blocks into overlapping windows so the index keeps every part
+ * of the section searchable while staying small (each window is a separate
+ * row and ranks independently). MAX_BLOCK_CHARS is the threshold above
+ * which a block is split; below it the block is emitted verbatim.
  */
 const MAX_BLOCK_CHARS = 2000
+/** Target chunk size for split blocks (window length, not a hard cap). */
+const CHUNK_TARGET_CHARS = 1500
+/** Overlap between consecutive chunks — preserves terms straddling boundaries. */
+const CHUNK_OVERLAP_CHARS = 200
+/** Search radius around the target window edge when picking a clean break. */
+const CHUNK_BOUNDARY_RADIUS = 200
+
+/**
+ * If a chunk would end inside an open Markdown fence, extend `cut` past the
+ * next closing fence line so neither this chunk nor the next one carries
+ * orphaned fence content (which pollutes BM25 with code tokens attributed
+ * to prose, or vice versa). Returns `cut` unchanged when the slice has
+ * balanced fences.
+ */
+function balanceFences(text: string, start: number, cut: number): number {
+  let inFence = false
+  let i = start
+  while (i < cut) {
+    const nl = text.indexOf("\n", i)
+    const lineEnd = nl < 0 ? cut : Math.min(nl, cut)
+    if (/^(```|~~~)/.test(text.slice(i, lineEnd))) inFence = !inFence
+    if (nl < 0 || nl >= cut) break
+    i = nl + 1
+  }
+  if (!inFence) return cut
+  let j = cut
+  while (j < text.length) {
+    const nl = text.indexOf("\n", j)
+    const lineEnd = nl < 0 ? text.length : nl
+    if (/^(```|~~~)/.test(text.slice(j, lineEnd))) {
+      return nl < 0 ? text.length : nl + 1
+    }
+    if (nl < 0) return text.length
+    j = nl + 1
+  }
+  return cut
+}
+
+/**
+ * Split a long content block into ~CHUNK_TARGET_CHARS windows with
+ * CHUNK_OVERLAP_CHARS overlap so the tail of an oversized section is no
+ * longer dropped. Prefers a paragraph (`\n\n`) breakpoint within
+ * ±CHUNK_BOUNDARY_RADIUS of the target window edge; falls back to a
+ * sentence boundary (`. `) in the same radius; absolute fallback is a
+ * hard char split at the target edge. After picking a boundary, any cut
+ * that would land inside an open Markdown fence is extended past the
+ * closing fence so per-window BM25 stays clean. Returns the input as a
+ * single window when it already fits under MAX_BLOCK_CHARS.
+ *
+ * Why overlap: a multi-word phrase or co-occurrence pattern that straddles
+ * a chunk boundary would otherwise be unindexable; the overlap restores
+ * it on the following window. Per-window BM25 is bounded by the small
+ * window length, so chunking does not let long pages dominate ranking
+ * the way a single giant document would.
+ */
+function chunkBlockContent(text: string): string[] {
+  if (text.length <= MAX_BLOCK_CHARS) return [text]
+  const chunks: string[] = []
+  let start = 0
+  while (start < text.length) {
+    const remaining = text.length - start
+    if (remaining <= CHUNK_TARGET_CHARS) {
+      chunks.push(text.slice(start))
+      break
+    }
+    const targetEnd = start + CHUNK_TARGET_CHARS
+    const lo = Math.max(start + 1, targetEnd - CHUNK_BOUNDARY_RADIUS)
+    const hi = Math.min(text.length, targetEnd + CHUNK_BOUNDARY_RADIUS)
+    // Paragraph break first: pick the occurrence nearest the target edge.
+    let cut = -1
+    let bestDist = Infinity
+    for (let i = lo; i < hi - 1; i++) {
+      if (text.charCodeAt(i) === 10 && text.charCodeAt(i + 1) === 10) {
+        const d = Math.abs(i + 2 - targetEnd)
+        if (d < bestDist) {
+          bestDist = d
+          cut = i + 2
+        }
+      }
+    }
+    // Sentence break fallback.
+    if (cut < 0) {
+      bestDist = Infinity
+      for (let i = lo; i < hi - 1; i++) {
+        if (text.charCodeAt(i) === 46 && text.charCodeAt(i + 1) === 32) {
+          const d = Math.abs(i + 2 - targetEnd)
+          if (d < bestDist) {
+            bestDist = d
+            cut = i + 2
+          }
+        }
+      }
+    }
+    // Hard fallback: target edge exactly.
+    if (cut < 0) cut = targetEnd
+    cut = balanceFences(text, start, cut)
+    chunks.push(text.slice(start, cut))
+    const nextStart = cut - CHUNK_OVERLAP_CHARS
+    // Guard forward progress: overlap must not stall on the same start index.
+    start = nextStart > start ? nextStart : cut
+  }
+  return chunks
+}
 
 /**
  * Per-page cap for the synthetic "code symbols" block. Fumadocs' structured
@@ -95,11 +200,18 @@ export const {staticGET: GET} = createFromSource(visibleSource, {
   components: {tokenizer: {language: "english", stemming: true, allowDuplicates: true}},
   async buildIndex(page) {
     const sd = await resolveStructuredData(page.data)
-    const contents = sd.contents.map(c =>
-      c.content.length > MAX_BLOCK_CHARS
-        ? {heading: c.heading, content: c.content.slice(0, MAX_BLOCK_CHARS)}
-        : c,
-    )
+    // Chunk oversized blocks into overlapping windows so the tail of a
+    // long section stays indexable (was previously truncated to
+    // MAX_BLOCK_CHARS). Each window is emitted as its own `{heading,
+    // content}` entry; the shared heading text remains the same so the
+    // search-result grouping by `page_id` still places them under the
+    // correct section.
+    const contents: {heading: string | undefined; content: string}[] = []
+    for (const c of sd.contents) {
+      for (const window of chunkBlockContent(c.content)) {
+        contents.push({heading: c.heading, content: window})
+      }
+    }
 
     // Curated synonyms: the `keywords` frontmatter (terms a reader would type
     // that don't appear verbatim on the page — "fungible token", "seed
@@ -137,6 +249,20 @@ export const {staticGET: GET} = createFromSource(visibleSource, {
       if (symbols.length > 0) contents.push({heading: "Code symbols", content: symbols})
     }
 
+    // R4: frontmatter `tag` (e.g. `"deprecated"` on tact.mdx, subsecond.mdx,
+    // webhooks.mdx) flows through fumadocs' buildDocuments onto every row
+    // of this page as `tags: [tag]`. The score function in search-core
+    // reads it to down-rank deprecated pages by 0.5×, so the most relevant
+    // deprecated page still wins among its peers but sinks below
+    // comparably-relevant non-deprecated alternatives.
+    const tagRaw = (page.data as {tag?: unknown}).tag
+    const tag =
+      typeof tagRaw === "string"
+        ? tagRaw
+        : Array.isArray(tagRaw)
+          ? tagRaw.filter((t): t is string => typeof t === "string")
+          : undefined
+
     return {
       title: page.data.title ?? "",
       description: page.data.description,
@@ -148,6 +274,7 @@ export const {staticGET: GET} = createFromSource(visibleSource, {
       // — which cannot appear in a fumadocs path URL — keeps page ids and
       // sub-doc ids in disjoint key spaces.
       id: `${page.url}#`,
+      ...(tag !== undefined ? {tag} : {}),
       structuredData: {headings: sd.headings, contents},
     }
   },

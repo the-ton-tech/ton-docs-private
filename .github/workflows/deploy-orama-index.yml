@@ -1,0 +1,207 @@
+name: Deploy Orama search index and AI backend
+
+# Triggers:
+#   - push to main, only when something deployed to the VPS can change
+#     (MDX content / Next config / orama-server / ai-backend / this workflow)
+#   - manual: run from the Actions tab when a hand-rebuilt index is needed
+#
+# Concurrency: serialize deploys per branch so a fast follow-on push doesn't
+# race the previous run and ship an older index over a newer one.
+on:
+  push:
+    branches: [main, feat/openrouter-ai-assistant]
+    paths:
+      - "next/**"
+      - "orama-server/**"
+      - "ai-backend/**"
+      - ".github/workflows/deploy-orama-index.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-orama-index
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Match the VPS install (Node 22.22). MUST stay in sync with the engines
+  # field of next/package.json and the systemd unit.
+  NODE_VERSION: "22"
+  REMOTE_HOST: ${{ vars.ORAMA_SSH_HOST || 'docs-ton.space' }}
+  REMOTE_USER: ${{ vars.ORAMA_SSH_USER || 'root' }}
+  REMOTE_REPO: /root/ton-docs-private
+  REMOTE_INDEX: /root/ton-docs-private/orama-server/index.json
+  # Per-page Markdown directory served by the orama-search `/page` endpoint.
+  # Sits beside the index so the server's default LLMS_CONTENT_DIR finds it.
+  REMOTE_LLMS: /root/ton-docs-private/orama-server/llms-content
+
+jobs:
+  deploy:
+    name: Build & ship index
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      HUSKY: "0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Need the full tree for fumadocs-mdx to discover every page.
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: next/package-lock.json
+
+      - name: Install Next dependencies
+        working-directory: next
+        run: npm ci
+
+      - name: Generate Fumadocs source
+        working-directory: next
+        run: npm run generated-source
+
+      - name: Build (produces out/api/search — the Orama index JSON)
+        working-directory: next
+        run: npm run build
+
+      - name: Sanity-check the build artifacts
+        working-directory: next
+        run: |
+          test -f out/api/search
+          size=$(wc -c < out/api/search)
+          echo "index size: $size bytes"
+          # Empty/tiny output would mean the static export silently produced
+          # nothing — fail loud before we ship a broken index to prod.
+          if [ "$size" -lt 1000000 ]; then
+            echo "::error::index is suspiciously small ($size bytes), aborting"
+            exit 1
+          fi
+          # Validate it parses as JSON.
+          node -e "JSON.parse(require('fs').readFileSync('out/api/search','utf8'))"
+          # Per-page Markdown export served by the orama-search /page endpoint.
+          test -d out/llms.mdx
+          md_count=$(find out/llms.mdx -name '*.md' | wc -l)
+          echo "page content files: $md_count"
+          if [ "$md_count" -lt 100 ]; then
+            echo "::error::llms.mdx export has only $md_count .md files, aborting"
+            exit 1
+          fi
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ORAMA_SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # Pin host keys so the deploy refuses to talk to anything that
+          # isn't the real server (defense against MITM if DNS is hijacked).
+          # Captured from the live host on 2026-05-20.
+          cat > ~/.ssh/known_hosts <<EOF
+          docs-ton.space ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOzFJ7kjlGtJVG0rgP72r4UnOjkRArNsGLeY5rKBf7qo
+          188.166.162.253 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOzFJ7kjlGtJVG0rgP72r4UnOjkRArNsGLeY5rKBf7qo
+          EOF
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Pull latest server code on VPS
+        # Pull the SAME branch that triggered this run so what we just
+        # built in CI matches what runs on the VPS. `${{ github.ref_name }}`
+        # is the short branch name (main / orama-backend / ...); GitHub
+        # expands it at YAML render time, before the heredoc is shipped to
+        # the remote shell. If the orama-server lockfile drifted, reinstall
+        # node_modules so the new server.mjs starts against fresh deps.
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" bash -se <<'REMOTE'
+          set -euo pipefail
+          BRANCH='${{ github.ref_name }}'
+          cd /root/ton-docs-private
+          git fetch --quiet origin "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+          # Reinstall orama-server deps only if package-lock changed — the
+          # diff returns non-zero both for "files differ" and "either side
+          # missing", so a fresh checkout triggers a clean install too.
+          if ! diff -q orama-server/package-lock.json orama-server/node_modules/.package-lock.json >/dev/null 2>&1 ; then
+            echo "orama-server deps changed — reinstalling"
+            (cd orama-server && npm ci --omit=dev --no-audit --no-fund)
+          fi
+          REMOTE
+
+      - name: Ship index to VPS (atomic replace)
+        # Upload to a sibling tmp file, then rename in one syscall. This way
+        # the running service never observes a half-written index.json (which
+        # would crash JSON.parse at startup if it caught us mid-stream).
+        run: |
+          scp -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            next/out/api/search \
+            "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_INDEX}.new"
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" \
+            "mv -f '${REMOTE_INDEX}.new' '${REMOTE_INDEX}' && chown orama:orama '${REMOTE_INDEX}'"
+
+      - name: Ship per-page content to VPS
+        # The rendered per-page Markdown the orama-search `/page` endpoint
+        # serves. rsync replaces each file atomically and --delete prunes
+        # pages dropped from the docs; the restart below reloads it all.
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
+            next/out/llms.mdx/ \
+            "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_LLMS}/"
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" \
+            "chown -R orama:orama '${REMOTE_LLMS}'"
+
+      - name: Restart service (auto-purges nginx cache via ExecStartPost)
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" \
+            "systemctl restart orama-search && \
+             for i in 1 2 3 4 5 6 7 8 9 10 ; do \
+               ss -tlnp | grep -q :7700 && break ; sleep 1 ; \
+             done && \
+             curl -fsS http://127.0.0.1:7700/health"
+
+      - name: Smoke-test public endpoint
+        # Hit the cache-busted query path so we know the new index is live —
+        # not a stale nginx-cached response from before the restart.
+        run: |
+          BUST="$(date +%s)"
+          for q in tolk jetton "ton%20connect" ; do
+            url="https://${REMOTE_HOST}/search?q=${q}&_=${BUST}"
+            top=$(curl -fsS "$url" | jq -r '.results | map(select(.type=="page")) | .[0].url')
+            echo "  q=${q} top=${top}"
+            test -n "$top"
+          done
+
+      - name: Deploy AI backend on VPS
+        # The AI chat backend (ai-backend/) runs as the `ton-docs-ai` systemd
+        # service from /opt/ton-docs-ai — a deploy dir kept separate from the
+        # repo clone. Sync the freshly-pulled source there (.env is excluded
+        # so the prod OPENROUTER_KEY survives), reinstall deps, rebuild the
+        # TypeScript, then restart. The git reset in "Pull latest server code
+        # on VPS" already refreshed /root/ton-docs-private/ai-backend.
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+            "${REMOTE_USER}@${REMOTE_HOST}" bash -se <<'REMOTE'
+          set -euo pipefail
+          rsync -a --delete --exclude='.env' --exclude='node_modules' \
+            /root/ton-docs-private/ai-backend/ /opt/ton-docs-ai/
+          cd /opt/ton-docs-ai
+          npm ci --no-audit --no-fund
+          npm run build
+          chown -R ton-docs-ai:ton-docs-ai /opt/ton-docs-ai
+          systemctl restart ton-docs-ai
+          for i in 1 2 3 4 5 6 7 8 9 10 ; do
+            ss -tlnp | grep -q :8787 && break ; sleep 1
+          done
+          curl -fsS http://127.0.0.1:8787/api/health
+          REMOTE

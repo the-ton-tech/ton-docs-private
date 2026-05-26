@@ -1,0 +1,72 @@
+# nginx server block for the TON Docs AI backend at docs-ton.space.
+#
+# This service handles only the /api/ path (the chat backend). The docs site
+# itself is a separate static deployment. Adjust the non-/api/ handling to
+# your setup if this host also serves other content.
+#
+# Install:
+#   sudo cp deploy/nginx.conf.example /etc/nginx/sites-available/docs-ton.space
+#   sudo ln -s /etc/nginx/sites-available/docs-ton.space /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# TLS certificate (Let's Encrypt / certbot):
+#   sudo certbot --nginx -d docs-ton.space
+# certbot manages the certificate paths referenced below.
+
+# Rate-limit / connection zones. These live in the http{} context — this file
+# is included from inside nginx's http{} block — and shed floods before
+# requests reach Node (the app keeps its own 1 req/sec + daily limiters).
+limit_req_zone  $binary_remote_addr zone=ton_ai_req:10m rate=2r/s;
+limit_conn_zone $binary_remote_addr zone=ton_ai_conn:10m;
+
+# --- HTTP: redirect everything to HTTPS -------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name docs-ton.space;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# --- HTTPS: terminate TLS, proxy /api/ to the Node service ------------------
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name docs-ton.space;
+
+    # certbot-managed certificate paths (placeholders).
+    ssl_certificate     /etc/letsencrypt/live/docs-ton.space/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/docs-ton.space/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    # Force HTTPS for return visitors.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        # nginx overwrites X-Real-IP with the real socket address, so the
+        # backend can trust it for rate limiting (X-Forwarded-For's first
+        # entry is client-supplied and forgeable).
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Cap request body size — chat payloads are small.
+        client_max_body_size 32k;
+
+        # Shed floods before they reach Node.
+        limit_req  zone=ton_ai_req burst=5 nodelay;
+        limit_conn ton_ai_conn 10;
+
+        # Disable buffering/caching so streamed AI responses flush immediately.
+        proxy_buffering off;
+        proxy_cache off;
+
+        # The model can take a while to respond; allow a long read timeout.
+        proxy_read_timeout 300s;
+    }
+}

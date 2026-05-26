@@ -1,0 +1,51 @@
+# systemd unit for the TON Docs AI backend.
+#
+# Assumptions:
+#   - Code is deployed (built) to /opt/ton-docs-ai, i.e. /opt/ton-docs-ai/dist/server.js exists.
+#   - A .env file with OPENROUTER_KEY (and any overrides) lives at /opt/ton-docs-ai/.env.
+#   - A dedicated unprivileged system user `ton-docs-ai` exists and owns /opt/ton-docs-ai.
+#       sudo useradd --system --no-create-home --shell /usr/sbin/nologin ton-docs-ai
+#   - `node` (>= 18) is on PATH for the service (Node 18+ installed system-wide).
+#
+# Install:
+#   sudo cp deploy/ton-docs-ai.service /etc/systemd/system/ton-docs-ai.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ton-docs-ai
+#   sudo systemctl status ton-docs-ai
+
+[Unit]
+Description=TON Docs AI backend (OpenRouter chat assistant)
+After=network.target
+
+[Service]
+Type=simple
+User=ton-docs-ai
+WorkingDirectory=/opt/ton-docs-ai
+EnvironmentFile=/opt/ton-docs-ai/.env
+ExecStart=/usr/bin/env node dist/server.js
+Restart=always
+RestartSec=3
+
+# --- Sandboxing -------------------------------------------------------------
+# The service only needs outbound TCP and read access to its own directory.
+# These directives shrink the blast radius if the Node process is compromised.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+CapabilityBoundingSet=
+# Node's V8 JIT needs writable+executable memory — MemoryDenyWriteExecute must
+# stay off; do not enable it.
+MemoryDenyWriteExecute=false
+
+[Install]
+WantedBy=multi-user.target
