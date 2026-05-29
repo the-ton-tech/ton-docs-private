@@ -2,6 +2,10 @@
   "title": "Wallet apps",
   "icon": "smartphone",
   "pages": [
-    "wallet-apps"
+    "web",
+    "tonkeeper",
+    "get-coins",
+    "deep-links",
+    "addresses-workflow"
   ]
 }

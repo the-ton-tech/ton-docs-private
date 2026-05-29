@@ -33,23 +33,23 @@
           "pages": [
             {
               "id": "ecosystem/wallet-apps/web",
-              "slug": "wallet-apps/web"
+              "slug": "web"
             },
             {
               "id": "ecosystem/wallet-apps/tonkeeper",
-              "slug": "wallet-apps/tonkeeper"
+              "slug": "tonkeeper"
             },
             {
               "id": "ecosystem/wallet-apps/get-coins",
-              "slug": "wallet-apps/get-coins"
+              "slug": "get-coins"
             },
             {
               "id": "ecosystem/wallet-apps/deep-links",
-              "slug": "wallet-apps/deep-links"
+              "slug": "deep-links"
             },
             {
               "id": "ecosystem/wallet-apps/addresses-workflow",
-              "slug": "wallet-apps/addresses-workflow"
+              "slug": "addresses-workflow"
             }
           ]
         },
@@ -175,13 +175,13 @@
       "url": "https://ton-blockchain.github.io/acton/"
     },
     {
-      "id": "ecosystem",
+      "id": "blockchain-basics",
       "slug": "blockchain-basics",
       "title": "Blockchain basics",
       "icon": "layers",
       "pages": [
         {
-          "id": "foundations/core-concepts",
+          "id": "blockchain-basics/core-concepts",
           "slug": "core-concepts",
           "icon": "lightbulb"
         },

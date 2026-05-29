@@ -657,7 +657,7 @@ export const redirects = [
   },
   {
     "source": "/develop/dapps/ton-connect/web",
-    "destination": "/overview/wallets/wallet-apps/web",
+    "destination": "/overview/wallets/web",
     "permanent": true
   },
   {
@@ -2327,27 +2327,27 @@ export const redirects = [
   },
   {
     "source": "/ecosystem/wallet-apps/addresses-workflow",
-    "destination": "/overview/wallets/wallet-apps/addresses-workflow",
+    "destination": "/overview/wallets/addresses-workflow",
     "permanent": true
   },
   {
     "source": "/ecosystem/wallet-apps/deep-links",
-    "destination": "/overview/wallets/wallet-apps/deep-links",
+    "destination": "/overview/wallets/deep-links",
     "permanent": true
   },
   {
     "source": "/ecosystem/wallet-apps/get-coins",
-    "destination": "/overview/wallets/wallet-apps/get-coins",
+    "destination": "/overview/wallets/get-coins",
     "permanent": true
   },
   {
     "source": "/ecosystem/wallet-apps/tonkeeper",
-    "destination": "/overview/wallets/wallet-apps/tonkeeper",
+    "destination": "/overview/wallets/tonkeeper",
     "permanent": true
   },
   {
     "source": "/ecosystem/wallet-apps/web",
-    "destination": "/overview/wallets/wallet-apps/web",
+    "destination": "/overview/wallets/web",
     "permanent": true
   },
   {
@@ -6042,7 +6042,7 @@ export const redirects = [
   },
   {
     "source": "/v3/guidelines/ton-connect/frameworks/web",
-    "destination": "/overview/wallets/wallet-apps/web",
+    "destination": "/overview/wallets/web",
     "permanent": true
   },
   {
@@ -6057,7 +6057,7 @@ export const redirects = [
   },
   {
     "source": "/v3/guidelines/ton-connect/guidelines/integration-with-javascript-sdk",
-    "destination": "/overview/wallets/wallet-apps/web",
+    "destination": "/overview/wallets/web",
     "permanent": true
   },
   {
@@ -6158,6 +6158,31 @@ export const redirects = [
   {
     "source": "/v3/guidelines/web3/ton-storage/storage-provider",
     "destination": "/blockchain-basics/primitives/web3/ton-storage",
+    "permanent": true
+  },
+  {
+    "source": "/overview/wallets/wallet-apps/addresses-workflow",
+    "destination": "/overview/wallets/addresses-workflow",
+    "permanent": true
+  },
+  {
+    "source": "/overview/wallets/wallet-apps/deep-links",
+    "destination": "/overview/wallets/deep-links",
+    "permanent": true
+  },
+  {
+    "source": "/overview/wallets/wallet-apps/get-coins",
+    "destination": "/overview/wallets/get-coins",
+    "permanent": true
+  },
+  {
+    "source": "/overview/wallets/wallet-apps/tonkeeper",
+    "destination": "/overview/wallets/tonkeeper",
+    "permanent": true
+  },
+  {
+    "source": "/overview/wallets/wallet-apps/web",
+    "destination": "/overview/wallets/web",
     "permanent": true
   }
 ]
