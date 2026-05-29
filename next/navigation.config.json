@@ -106,6 +106,10 @@
               "slug": "overview"
             },
             {
+              "id": "overview/ai/quick-start",
+              "slug": "quick-start"
+            },            
+            {
               "id": "ecosystem/ai/mcp",
               "slug": "mcp"
             },

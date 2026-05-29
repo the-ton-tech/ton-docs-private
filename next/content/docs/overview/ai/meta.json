@@ -3,6 +3,7 @@
   "icon": "sparkles",
   "pages": [
     "overview",
+    "quick-start",
     "mcp",
     "wallets"
   ]
