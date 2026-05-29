@@ -1,13 +1,25 @@
 ---
 id: overview/ai/quick-start
-title: "Quick start: Agentic wallets & @ton/mcp"
+title: "Quick start: Create an agentic wallet"
 sidebarTitle: "Quick start"
 description: ""
 ---
 
 ## Overview
 
-XXX
+The easiest way to get started with AI on TON is creating an [agentic wallet](/overview/ai/wallets).
+
+This guide explains how to do the following:
+
+- Install skills for TON MCP server ([@ton/mcp](/overview/ai/mcp))
+- Prompt an AI agent to create an agentic wallet on TON
+- Manage agentic wallets
+
+<Aside>
+  - Agentic wallets are self-custody wallets designed for autonomous AI agents on TON. They are implemented as [smart contracts](/overview/learn-more/glossary#smart-contract).
+  - TON MCP server is a middleware acting as a bridge between an AI model and TON Blockchain.
+  - Skills are instructions on how to launch and use TON MCP independently: no manual configuration is required. This approach works best with agents that support the [skills specification][skills-spec].
+</Aside>
 
 ## Prerequisites
 
@@ -15,13 +27,13 @@ Before starting, meet the following prerequisites:
 
 - Install an autonomous AI agent such as Claude Code or Codex.
 - Create a wallet on TON — for example, using [Tonkeeper](/overview/wallets/wallet-apps/tonkeeper) or [wallet.ton.org](/overview/wallets/wallet-apps/web).
-- Fund the wallet with Toncoin. The recommended network is Mainnet.
+- Fund the wallet with Toncoin. The recommended network is __Mainnet__.
+
+Your regular wallet on TON will be the owner of the agentic wallet.
 
 ## 1. Install skills
 
-Sills give an agent instructions on how to launch and use `@ton/mcp` on its own. No manual MCP client configuration is required. This approach works best with agents that support the [skills specification][skills-spec].
-
-To install the skills for `@ton/mcp`, run the following command:
+To install skills for `@ton/mcp`, run the following command:
 
 ```bash
 npx skills add ton-connect/kit/packages/mcp
@@ -32,46 +44,69 @@ There are two options available:
 - Run the command anywhere and select the __Global__ scope during installation.
 - Run it in the agent's folder and select __Project__.
 
-After installation, agents can launch and manage `@ton/mcp` on their own. No further configuration is needed. The server starts in [agentic wallets mode](#agentic-wallets-mode) by default.
+<Aside>
+  The server starts in the agentic wallets mode by default. Alternatively, you can use the [single-wallet mode](/overview/ai/mcp#single-wallet-mode).
+</Aside>
 
 ## 2. Create an agentic wallet
 
-To create a first agentic wallet, ask the agent to "create an agentic wallet" and follow the instructions.
+To create a first agentic wallet, follow this flow:
 
-The process goes as follows:
+1. Ask the agent to `create an agentic wallet`.
+2. The agent will generate private keys and suggest opening the [web dashboard](https://agents.ton.org/).
+3. On the dashboard, connect your regular TON wallet by clicking <kbd>Connect</kbd>.
+4. In the __Initial TON deposit__ field, set the amount of Toncoin to deposit from the main wallet.
+5. Deploy the agentic wallet by clicking <kbd>Deploy + First Fund</kbd>. 
+6. Once the deployment is complete, copy the wallet's address from the dashboard.
+7. Provide the address to your AI agent and ask to `import the wallet`.
 
-1. The agent generates private keys for a new wallet and suggests [opening the dashboard](https://agents.ton.org/).
-2. On the dashboard, the user should connect their regular mainnet or testnet TON wallet: it will be the owner of an agentic wallet.
-3. Agentic wallet gets deployed from the dashboard.
-4. User provides the address of the deployed agentic wallet to the agent.
-5. Agent imports the wallet and can then sign transactions using its operator key.
+After importing the wallet, the agent will be able to sign transactions using its operator key.
 
-The user can revoke access or withdraw funds at any time from the dashboard.
+Note that you can create multiple agentic wallets and [manage them](#manage-wallets) form the dashboard.
 
 ## 3. Fund the wallet
 
-An agentic wallet is a TON contract. There are three ways to fund it:
+There are three ways to fund an agentic wallet:
 
-1. During creation: use the "Initial TON deposit" field on the deployment page.
-2. From the dashboard: use the <kbd>Fund</kbd> button to transfer Toncoin, jettons, or NFTs.
-3. Directly: use a wallet app like Tonkeeper to transfer assets to the agentic wallet address directly.
+- During creation: use the __Initial TON deposit__ field on the deployment page.
+- From the [web dashboard](https://agents.ton.org/): click <kbd>Fund</kbd> to transfer Toncoin, jettons, or NFTs.
+- Directly: use a wallet app like Tonkeeper to transfer assets to the agentic wallet address.
 
-To check the balance, ask the agent: "What is my agent balance?"
+To check the balance, ask the agent: `What is my agent balance?`
 
-## 4. Send transactions and manage
+## 4. Use the wallet with AI
 
-Once setup is complete, ask agent to perform desired actions. For example:
+Once setup is complete, you can ask the AI agent to manage assets and wallets:
 
-- `Send 1 TON to UQB.._WALLET_ADDRESS` - sign and send a transfer from the agentic wallet.
-- `Swap 5 TON for USDT` - get a quote and execute a swap.
-- `Resolve the contract address of this DNS domain: DOMAIN_NAME.ton` - obtain the wallet address of the domain owner.
-- `Show my NFTs` - query all NFTs owned by the wallet.
-- `Check my balance` - current Toncoin and jetton balances. Do not use this data for any calculations, as it becomes outdated quickly.
-- `Get my last transactions` - list of several latest events initiated by the wallet.
-- `Import agentic wallet` - reinstate a wallet previously managed by another agent.
+- Get wallet balances
+- Send Toncoin and jettons
+- Swap assets, manage NFTs, buy/sell Backed's xStocks
+- Create and import more agentic wallets
+- List wallets and switch between them
+- Rotate operator keys
 
-Web dashboard allows to see all agentic wallets in one place. Monitor transactions, fund and withdraw assets, grant and revoke accesses, rotate operator keys without redeploying the wallets.
+For example, use prompts like this:
+
+- `Send 1 TON to UQB.._WALLET_ADDRESS` — Sign and send a transfer from the agentic wallet.
+- `Swap 5 TON for USDT` — Get a quote and execute a swap.
+- `Resolve the contract address of this DNS domain: DOMAIN_NAME.ton` — Obtain the wallet address of the domain owner.
+- `Show my NFTs`— Query all NFTs owned by the wallet.
+- `Check my balance` — Get current Toncoin and jetton balances. Do not use this data for any calculations, as it becomes outdated quickly.
+- `Get my last transactions` — List of several latest events initiated by the wallet.
+- `Import agentic wallet` — Reinstate a wallet previously managed by another agent.
+
+## 5. Manage wallets
+
+You can see all agentic wallets and manage them from the [web dashboard](https://agents.ton.org/):
+
+- Monitor transactions
+- Fund and withdraw funds
+- Grant and revoke access
+- Rotate operator keys without redeploying the wallets
 
 ## Next steps
 
-XXX
+To learn more about TON MCP server and ways to use it, see [@ton/mcp](/overview/ai/mcp).
+To learn more about agentic wallets, see [Agentic wallets](/overview/ai/wallets).
+
+[skills-spec]: https://agentskills.io/specification
